@@ -84,3 +84,29 @@ Simulation results: drive signal and LC tank current
 
 Simulation results: LC tank current and antenn voltage swing
 ![LC tank current and antenn voltage swing](images/current_sensing_oscillator_ota_auto_gain_control_v10_ltspice_model_simulation_results_antenna_swing_and_lc_current.png)
+
+
+Current sensing oscillator with automatic gain control - fast drive buffer
+--------------------------------------------------------------------------
+
+This is theremin current sensing oscillator built using 15 BJTs.
+
+Uses fast voltage follower (0.5ns propagation delay).
+
+LTSpice model: [bjt_current_sensing_oscillator_ota_v4.asc](bjt_current_sensing_oscillator_ota_v12.asc)
+![Spice model](images/current_sensing_oscillator_ota_auto_gain_control_v12_ltspice_model.png)
+
+Power supply: 4.5V 45mA
+Inductor: L=2mH R_serial=20 Ohm 
+Phase error: 12ns
+Drive: 2.2Vpp 24mA smooth square
+Antenna voltage swing: 800 Vpp
+May be tuned to be closer to sine (20-40dB harmonic) but with smaller antenna swing.
+
+Simulation results: drive signal and LC tank current
+![drive signal and LC tank current](images/current_sensing_oscillator_ota_auto_gain_control_v12_ltspice_model_simulation_results_drive_and_lc_tank_current.png)
+
+Simulation results: LC tank current and antenn voltage swing
+![LC tank current and antenn voltage swing](images/current_sensing_oscillator_ota_auto_gain_control_v12_ltspice_model_simulation_results_antenna_swing_and_lc_current.png)
+
+
