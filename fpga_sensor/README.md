@@ -1,7 +1,7 @@
 Design of FPGA based theremin sensor with MCU and FPGA compatible interface
 ===========================================================================
 
-* Drive signal is pure sine wave generated with FPGA + DAC (numerically controlled oscillator)[https://en.wikipedia.org/wiki/Numerically_controlled_oscillator].
+* Drive signal is pure sine wave generated with FPGA + DAC [numerically controlled oscillator](https://en.wikipedia.org/wiki/Numerically_controlled_oscillator).
 * Sallen-key filter to convert quantized DAC output into pure sine
 * Filtered and buffered pure sine drive signal is fed to inductor of theremin LC tank (L = inductor, C = antenna).	
 * Current sensing for drive current - measure voltage on sensing resistor between drive buffer and inductor.
