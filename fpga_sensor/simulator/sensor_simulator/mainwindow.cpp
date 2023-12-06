@@ -8,6 +8,8 @@
 #include <QLineEdit>
 #include <QtMath>
 #include <QDebug>
+#include <QDoubleValidator>
+#include <QScrollBar>
 
 void MainWindow::recalculate() {
     _simParams.recalculate();
@@ -17,11 +19,48 @@ void MainWindow::recalculate() {
     }
 }
 
+QLineEdit * MainWindow::createDoubleValueEditor(double * field, double minValue, double maxValue, int precision) {
+    QString text = QString("%1").arg(*field, 0, 'f', precision);
+    QLineEdit * lineEdit = new QLineEdit(text);
+    QDoubleValidator * validator = new QDoubleValidator(minValue, maxValue, precision);
+    lineEdit->setValidator(validator);
+
+    connect(lineEdit, QOverload<void>::of(&QLineEdit::returnPressed),
+        [=]() {
+        bool ok = false;
+        QString txt = lineEdit->text();
+        double newValue = txt.toDouble(&ok);
+        if (!ok) {
+            //lineEdit->set
+            txt = QString("%1").arg(*field, 0, 'f', precision);
+            recalculate();
+        } else {
+            *field = newValue;
+            recalculate();
+        }
+    });
+
+//    connect(lineEdit, QOverload<void>::of(&QLineEdit::textEdited),
+//        [=](const QString &text) {
+//        bool ok = false;
+//        double newValue = text.toDouble(&ok);
+//        if (!ok || newValue < minValue || newValue > maxValue) {
+//            //lineEdit->set
+//        } else {
+
+//        }
+//        _simParams.sampleRate = _cbSampleRate->currentData().toInt()*1000000;
+//        recalculate();
+//    });
+
+    return lineEdit;
+}
+
 void MainWindow::createControls() {
 
     QFormLayout * _globalParamsLayout = new QFormLayout();
     _globalParamsLayout->setSpacing(10);
-    QLineEdit * _edFrequency = new QLineEdit("1012356");
+    QLineEdit * _edFrequency = createDoubleValueEditor(&_simParams.frequency, 100000, 4000000, 2);
     //_edFrequency->setMax
     _globalParamsLayout->addRow(new QLabel("Signal freq Hz"), _edFrequency);
 
@@ -112,6 +151,20 @@ void MainWindow::createControls() {
         recalculate();
     });
 
+    QComboBox * _cbAdcDCOffset = new QComboBox();
+    _cbAdcDCOffset->addItem("-10.0", -10.0);
+    _cbAdcDCOffset->addItem("-5.0", -5.0);
+    _cbAdcDCOffset->addItem("-1.0", -1.0);
+    _cbAdcDCOffset->addItem("0", 0.0);
+    _cbAdcDCOffset->addItem("1.0", 1.0);
+    _cbAdcDCOffset->addItem("5.0", 5.0);
+    _cbAdcDCOffset->addItem("10.0", 10.0);
+    _cbAdcDCOffset->setCurrentIndex(3);
+    _adcParamsLayout->addRow(new QLabel("DS offset, LSB"), _cbAdcDCOffset);
+    connect(_cbAdcDCOffset, QOverload<int>::of(&QComboBox::currentIndexChanged),
+        [=](int index){ _simParams.adcDCOffset = _cbAdcDCOffset->currentData().toDouble();
+        recalculate();
+    });
 
     QGroupBox * _gbAdc = new QGroupBox("ADC");
     _gbAdc->setLayout(_adcParamsLayout);
@@ -138,7 +191,7 @@ void MainWindow::createControls() {
         recalculate();
     });
 
-    QLineEdit * _edSensePhaseShift = new QLineEdit("-0.0765");
+    QLineEdit * _edSensePhaseShift = createDoubleValueEditor(&_simParams.sensePhaseShift, -1.0, 1.0, 6);
     //_edFrequency->setMax
     _senseParamsLayout->addRow(new QLabel("Phase shift 0..1"), _edSensePhaseShift);
 
@@ -162,9 +215,15 @@ MainWindow::MainWindow(QWidget *parent)
 
     createControls();
 
-    _plotWidget = new PlotWidget(&_simParams, &_simState);
+    QScrollBar * _scrollBar = new QScrollBar(Qt::Orientation::Horizontal);
+    _plotWidget = new PlotWidget(&_simParams, &_simState, _scrollBar);
 
-    _bottomLayout->addWidget(_plotWidget);
+    _bottomLayout->addWidget(_plotWidget, 1);
+
+    _scrollBar->setRange(0, 100);
+    _bottomLayout->addWidget(_scrollBar);
+
+
     //_bottomLayout->addWidget(new QLabel("Body"));
 
     _mainLayout->addItem(_topLayout);

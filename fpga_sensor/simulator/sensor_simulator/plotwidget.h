@@ -4,6 +4,7 @@
 #include "simutils.h"
 
 #include <QWidget>
+#include <QScrollBar>
 
 class PlotWidget : public QWidget
 {
@@ -12,17 +13,21 @@ class PlotWidget : public QWidget
     SimParams * _simParams;
     SimState * _simState;
     int _pixelsPerSample;
+    int _scrollX;
+    QScrollBar * _scrollBar;
 public:
-    explicit PlotWidget(SimParams * simParams, SimState * simState, QWidget *parent = nullptr);
+    explicit PlotWidget(SimParams * simParams, SimState * simState, QScrollBar * scrollBar, QWidget *parent = nullptr);
 
     QSize minimumSizeHint() const override;
     QSize sizeHint() const override;
 
     void setPixelsPerSample(int n);
     int getPixelsPerSample() { return _pixelsPerSample; }
-
+    void setScrollPercent(int n);
+    int getScrollPercent();
 protected:
     void paintEvent(QPaintEvent *event) override;
+    void wheelEvent(QWheelEvent * event) override;
 
 signals:
 

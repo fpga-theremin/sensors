@@ -23,6 +23,8 @@ struct SimParams {
 
     // noise in adc output, in LSB (e.g. 0.5 means white noise 1/2 LSB)
     double adcNoise;
+    // DC offset in adc output, in LSB (e.g. 0.5 means ADC returns + 1/2 LSB)
+    double adcDCOffset;
 
     // recalculated
     double realFrequency;
@@ -38,6 +40,8 @@ struct SimParams {
                 , sensePhaseShift(-0.0765)
                 , senseAmplitude(0.8)
                 , adcBits(8)
+                , adcNoise(0)
+                , adcDCOffset(0)
     {
         // recalculate dependent parameters
         recalculate();

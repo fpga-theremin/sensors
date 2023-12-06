@@ -22,6 +22,8 @@ class MainWindow : public QMainWindow
     QComboBox * _cbAdcNoise;
     QComboBox * _cbAdcAmplitude;
     PlotWidget * _plotWidget;
+
+    QLineEdit * createDoubleValueEditor(double * field, double minValue, double maxValue, int precision);
 private:
     void createControls();
     void recalculate();

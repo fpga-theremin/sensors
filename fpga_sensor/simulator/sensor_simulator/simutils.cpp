@@ -113,7 +113,12 @@ void SimState::simulate(SimParams * newParams) {
         double exactSense = sin(exactPhase) * params->senseAmplitude;
         exactSense *= adcScale;
         senseExact[i] = exactSense;
-        double senseWithNoise = exactSense;
+        // apply ADC DC offset
+        double senseWithDCOffset = exactSense + params->adcDCOffset;
+        // apply ADC Noise
+        double noise = 0;
+        double senseWithNoise = senseWithDCOffset + noise;
+        // quantization (rounding to integer)
         sense[i] = (int)round(senseWithNoise);
 
         // multiplied
