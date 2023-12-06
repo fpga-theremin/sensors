@@ -76,6 +76,9 @@ void MainWindow::createControls() {
     _globalParamsLayout->addRow(new QLabel("Signal freq Hz"), _edFrequency);
 
     QComboBox * _cbSampleRate = new QComboBox();
+    _cbSampleRate->addItem("200", 100);
+    _cbSampleRate->addItem("150", 150);
+    _cbSampleRate->addItem("120", 120);
     _cbSampleRate->addItem("100", 100);
     _cbSampleRate->addItem("90",  90);
     _cbSampleRate->addItem("80",  80);
@@ -83,7 +86,7 @@ void MainWindow::createControls() {
     _cbSampleRate->addItem("50",  50);
     _cbSampleRate->addItem("30",  30);
     _cbSampleRate->addItem("25",  25);
-    _cbSampleRate->setCurrentIndex(0);
+    _cbSampleRate->setCurrentIndex(3);
     _globalParamsLayout->addRow(new QLabel("Sample rate MHz"), _cbSampleRate);
     connect(_cbSampleRate, QOverload<int>::of(&QComboBox::currentIndexChanged),
         [=](int index){ _simParams.sampleRate = _cbSampleRate->currentData().toInt()*1000000;
@@ -121,6 +124,8 @@ void MainWindow::createControls() {
     _cbNcoValueBits->addItem("10", 10);
     _cbNcoValueBits->addItem("11", 11);
     _cbNcoValueBits->addItem("12", 12);
+    _cbNcoValueBits->addItem("14", 14);
+    _cbNcoValueBits->addItem("16", 16);
     _cbNcoValueBits->setCurrentIndex(0);
     _ncoParamsLayout->addRow(new QLabel("Value bits"), _cbNcoValueBits);
     connect(_cbNcoValueBits, QOverload<int>::of(&QComboBox::currentIndexChanged),
@@ -144,6 +149,8 @@ void MainWindow::createControls() {
     _cbAdcValueBits->addItem("10", 10);
     _cbAdcValueBits->addItem("11", 11);
     _cbAdcValueBits->addItem("12", 12);
+    _cbAdcValueBits->addItem("14", 14);
+    _cbAdcValueBits->addItem("16", 16);
     _cbAdcValueBits->setCurrentIndex(2);
     _adcParamsLayout->addRow(new QLabel("ADC bits"), _cbAdcValueBits);
     connect(_cbAdcValueBits, QOverload<int>::of(&QComboBox::currentIndexChanged),

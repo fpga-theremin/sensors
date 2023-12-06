@@ -94,7 +94,7 @@ void PlotWidget::paintEvent(QPaintEvent * /* event */)
 
     // senseMulBase scale
     int mulBits = _simParams->ncoValueBits + _simParams->adcBits;
-    double yscalef = (double)(h*0.9) / (1<<(mulBits-1));
+    double yscalef = (double)(h*0.9) / ((uint64_t)1<<(mulBits-1));
     int dx = xscale/2-1;
     if (dx < 2)
         dx = 2;
@@ -134,8 +134,8 @@ void PlotWidget::paintEvent(QPaintEvent * /* event */)
             int fh = painter.fontMetrics().height();
             painter.setPen(pen);
             int nextPeriod = _simState->periodIndex[x+1];
-            int sum1 = _simState->periodSumBase1[nextPeriod];
-            int sum2 = _simState->periodSumBase2[nextPeriod];
+            int64_t sum1 = _simState->periodSumBase1[nextPeriod];
+            int64_t sum2 = _simState->periodSumBase2[nextPeriod];
             double angle = - atan2(sum2, sum1) / M_PI / 2;
             double err = angle - _simParams->sensePhaseShift;
             s = QString(" %1 / %2")

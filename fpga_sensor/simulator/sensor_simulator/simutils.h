@@ -61,15 +61,15 @@ struct SimState {
     double senseExact[SP_SIM_MAX_SAMPLES];
     int sense[SP_SIM_MAX_SAMPLES];
 
-    int senseMulBase1[SP_SIM_MAX_SAMPLES];
-    int senseMulBase2[SP_SIM_MAX_SAMPLES];
+    int64_t senseMulBase1[SP_SIM_MAX_SAMPLES];
+    int64_t senseMulBase2[SP_SIM_MAX_SAMPLES];
 
     int periodIndex[SP_SIM_MAX_SAMPLES];
     int avgMulBase1;
     int avgMulBase2;
 
-    int periodSumBase1[SP_SIM_MAX_SAMPLES/10];
-    int periodSumBase2[SP_SIM_MAX_SAMPLES/10];
+    int64_t periodSumBase1[SP_SIM_MAX_SAMPLES/10];
+    int64_t periodSumBase2[SP_SIM_MAX_SAMPLES/10];
     int periodCount;
 
     // period-aligned sums

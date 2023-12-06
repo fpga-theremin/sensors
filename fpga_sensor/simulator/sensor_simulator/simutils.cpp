@@ -123,8 +123,8 @@ void SimState::simulate(SimParams * newParams) {
         sense[i] = (int)round(senseWithNoise);
 
         // multiplied
-        senseMulBase1[i] = sense[i] * base1[i];
-        senseMulBase2[i] = sense[i] * base2[i];
+        senseMulBase1[i] = sense[i] * (int64_t)base1[i];
+        senseMulBase2[i] = sense[i] * (int64_t)base2[i];
 
         // increment phase
         phase += params->phaseIncrement;
@@ -151,8 +151,8 @@ void SimState::simulate(SimParams * newParams) {
 
     periodCount = 0;
     periodIndex[0] = 0;
-    int sum1 = 0;
-    int sum2 = 0;
+    int64_t sum1 = 0;
+    int64_t sum2 = 0;
     for (int i = 1; i < SP_SIM_MAX_SAMPLES; i++) {
         if ( (sense[i] ^ sense[i-1])>>(params->adcBits - 1) ) {
             // difference in sign bit
