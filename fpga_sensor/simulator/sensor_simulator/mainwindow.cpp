@@ -26,7 +26,7 @@ void MainWindow::recalculate() {
     txt = QString("%1").arg(_simState.alignedSensePhaseShiftDiff, 0, 'f', 6);
     _measuredPhaseShiftError->setText(txt);
 
-    txt = QString("%1").arg(_simParams.realFrequency, 0, 'f', 6);
+    txt = QString("%1").arg(_simParams.realFrequency, 0, 'f', 5);
     _realFrequency->setText(txt);
 }
 
