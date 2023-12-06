@@ -95,6 +95,11 @@ void PlotWidget::paintEvent(QPaintEvent * /* event */)
     // senseMulBase scale
     int mulBits = _simParams->ncoValueBits + _simParams->adcBits;
     double yscalef = (double)(h*0.9) / (1<<(mulBits-1));
+    int dx = xscale/2-1;
+    if (dx < 2)
+        dx = 2;
+    if (dx > 10)
+        dx = 10;
     // sense*base1 (cos)
     {
         int yy = -(int)round(_simState->avgMulBase1 * yscalef) + y0;
@@ -103,7 +108,7 @@ void PlotWidget::paintEvent(QPaintEvent * /* event */)
     for (int i = 0; i < xsamples; i++) {
         int x = sample0 + i;
         int yy = (int)round(_simState->senseMulBase1[x] * yscalef);
-        painter.fillRect( i*xscale, y0, xscale/2-1, -yy, brushMul1);
+        painter.fillRect( i*xscale, y0, dx, -yy, brushMul1);
     }
     // sense*base2 (sin)
     {
@@ -113,7 +118,7 @@ void PlotWidget::paintEvent(QPaintEvent * /* event */)
     for (int i = 0; i < xsamples; i++) {
         int x = sample0 + i;
         int yy = (int)round(_simState->senseMulBase2[x] * yscalef);
-        painter.fillRect( i*xscale+xscale/2+1, y0, xscale/2-1, -yy, brushMul2);
+        painter.fillRect( i*xscale+xscale - dx, y0, dx, -yy, brushMul2);
     }
 
     // sense signal sign change (half-period) marks
@@ -237,7 +242,7 @@ void PlotWidget::wheelEvent(QWheelEvent * event) {
     }
     // touch pad hscroll gesture
     if (angleDelta.y() == 0 && angleDelta.x() != 0 && mouseFlags == 0 && keyFlags == 0) {
-        setScrollPercent(getScrollPercent() + angleDelta.y());
+        setScrollPercent(getScrollPercent() + (angleDelta.x() > 0 ? -1 : 1));
         _scrollBar->setSliderPosition(getScrollPercent());
         event->accept();
         return;
@@ -274,56 +279,5 @@ void PlotWidget::wheelEvent(QWheelEvent * event) {
         event->accept();
         return;
     }
-
-    /*
-    int hScrollDelta = isHScrollEvent(event);
-    if (hScrollDelta) {
-        // horizontal scroll
-        int xdelta = - hScrollDelta * _xscale;
-        int newx = _xposition + xdelta;
-        if (newx < 0)
-            newx = 0;
-        else if (newx > _xlength)
-            newx = _xlength;
-        qDebug("HScroll xdelta=%d %d -> %d", xdelta, _xposition, newx);
-        if (newx != _xposition) {
-            setXPosition(newx);
-            emit xPositionChanged(newx);
-        }
-        event->accept();
-        return;
-    }
-    int hscaleDelta = isHScaleEvent(event);
-    if (hscaleDelta) {
-        // horizontal zoom
-        int xdelta = - hscaleDelta * _xscale;
-        float scaleBase = 256.0f;
-        float newScale = (xdelta > 0)
-                ? (_xscalef * (scaleBase + xdelta) / scaleBase)
-                : (_xscalef * scaleBase / (scaleBase - xdelta));
-        if (_xlength / newScale < width() / 4)
-            newScale = _xlength / (width() / 4);
-        if (newScale < 1.0f)
-            newScale = 1.0f;
-        int newIScale = (int)(newScale + 0.5f);
-        //int x = event->pos().x();
-        int oldpos = _xposition + x * _xscale;
-        int newpos = _xposition + x * newIScale;
-        int posCorrection = oldpos - newpos;
-
-        qDebug("X Zoom: old scale %f new scale %f pos correction %d", _xscalef, newScale, posCorrection);
-        if (_xscalef != newScale) {
-            setXScaleF(newScale);
-            emit xScaleChanged(_xscalef);
-            if (posCorrection != 0) {
-                int correctedPosition = _xposition + posCorrection;
-                setXPosition(correctedPosition);
-                emit xPositionChanged(correctedPosition);
-            }
-        }
-        event->accept();
-        return;
-    }
-    */
 }
 

@@ -15,8 +15,19 @@ void MainWindow::recalculate() {
     _simParams.recalculate();
     _simState.simulate(&_simParams);
     if (_plotWidget && _plotWidget->isVisible()) {
+
+
         _plotWidget->update();
     }
+
+    QString txt;
+    txt = QString("%1").arg(_simState.alignedSensePhaseShift, 0, 'f', 6);
+    _measuredPhaseShift->setText(txt);
+    txt = QString("%1").arg(_simState.alignedSensePhaseShiftDiff, 0, 'f', 6);
+    _measuredPhaseShiftError->setText(txt);
+
+    txt = QString("%1").arg(_simParams.realFrequency, 0, 'f', 6);
+    _realFrequency->setText(txt);
 }
 
 QLineEdit * MainWindow::createDoubleValueEditor(double * field, double minValue, double maxValue, int precision) {
@@ -79,6 +90,10 @@ void MainWindow::createControls() {
         recalculate();
     });
 
+    _realFrequency = new QLineEdit();
+    _realFrequency->setReadOnly(true);
+    _realFrequency->setDisabled(true);
+    _globalParamsLayout->addRow(new QLabel("Real frequency"), _realFrequency);
 
     QGroupBox * _gbGlobal = new QGroupBox("Global");
     _gbGlobal->setLayout(_globalParamsLayout);
@@ -199,6 +214,22 @@ void MainWindow::createControls() {
     _gbSense->setLayout(_senseParamsLayout);
     _topLayout->addWidget(_gbSense);
 
+    // measured values display
+    QFormLayout * _measuredLayout = new QFormLayout();
+    _measuredLayout->setSpacing(10);
+    _measuredPhaseShift = new QLineEdit();
+    _measuredPhaseShift->setReadOnly(true);
+    _measuredPhaseShift->setDisabled(true);
+    _measuredPhaseShiftError = new QLineEdit();
+    _measuredPhaseShiftError->setReadOnly(true);
+    _measuredPhaseShiftError->setDisabled(true);
+    _measuredLayout->addRow(new QLabel("Measured phase"), _measuredPhaseShift);
+    _measuredLayout->addRow(new QLabel("Measured error"), _measuredPhaseShiftError);
+
+    QGroupBox * _gbMeasured = new QGroupBox("Measured");
+    _gbMeasured->setLayout(_measuredLayout);
+    _topLayout->addWidget(_gbMeasured);
+
     _topLayout->addStretch(1);
 }
 
@@ -236,6 +267,7 @@ MainWindow::MainWindow(QWidget *parent)
     _simState.simulate(&_simParams);
 
 //    setCentralWidget(new QLabel("Test label - very very long label"));
+    recalculate();
 }
 
 MainWindow::~MainWindow()

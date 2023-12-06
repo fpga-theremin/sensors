@@ -70,6 +70,13 @@ struct SimState {
 
     int periodSumBase1[SP_SIM_MAX_SAMPLES/10];
     int periodSumBase2[SP_SIM_MAX_SAMPLES/10];
+    int periodCount;
+
+    // period-aligned sums
+    int64_t alignedSumBase1;
+    int64_t alignedSumBase2;
+    double alignedSensePhaseShift;
+    double alignedSensePhaseShiftDiff;
 
     void simulate(SimParams * params);
 };

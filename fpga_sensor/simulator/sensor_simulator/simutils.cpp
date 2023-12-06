@@ -106,6 +106,7 @@ void SimState::simulate(SimParams * newParams) {
 
     int64_t senseShift = (int64_t)round(params->sensePhaseShift * params->phaseModule);
     senseShift &= (params->phaseModule - 1);
+    //senseShift -= params->phaseIncrement / 2;
     phase = senseShift;
     int adcScale = 1<<(params->adcBits - 1);
     for (int i = 0; i < SP_SIM_MAX_SAMPLES; i++) {
@@ -148,22 +149,37 @@ void SimState::simulate(SimParams * newParams) {
         periodSumBase2[i] = 0;
     }
 
-    int pindex = 0;
+    periodCount = 0;
     periodIndex[0] = 0;
     int sum1 = 0;
     int sum2 = 0;
     for (int i = 1; i < SP_SIM_MAX_SAMPLES; i++) {
         if ( (sense[i] ^ sense[i-1])>>(params->adcBits - 1) ) {
             // difference in sign bit
-            periodSumBase1[pindex] = sum1;
-            periodSumBase2[pindex] = sum2;
+            periodSumBase1[periodCount] = sum1;
+            periodSumBase2[periodCount] = sum2;
             sum1 = 0;
             sum2 = 0;
-            pindex++;
+            periodCount++;
         }
         sum1 += senseMulBase1[i];
         sum2 += senseMulBase2[i];
-        periodIndex[i] = pindex;
+        periodIndex[i] = periodCount;
     }
+    // averaging aligned by even period frames
+    int avgPeriodsCount = (periodCount - 1) & 0xffffffe;
+    alignedSumBase1 = 0;
+    alignedSumBase2 = 0;
+    for (int i = 1; i <= avgPeriodsCount; i++) {
+        alignedSumBase1 += periodSumBase1[i];
+        alignedSumBase2 += periodSumBase2[i];
+    }
+    alignedSensePhaseShift = - atan2(alignedSumBase2, alignedSumBase1) / M_PI / 2;
+    alignedSensePhaseShiftDiff = alignedSensePhaseShift - params->sensePhaseShift;
+    if (alignedSensePhaseShiftDiff < -0.5)
+        alignedSensePhaseShiftDiff += 1.0;
+    else if (alignedSensePhaseShiftDiff > 0.5)
+        alignedSensePhaseShiftDiff -= 1.0;
+    qDebug("alignedSensePhaseShiftDiff = %.6f", alignedSensePhaseShiftDiff);
 }
 
