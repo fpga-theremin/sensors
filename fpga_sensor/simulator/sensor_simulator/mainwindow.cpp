@@ -20,14 +20,50 @@ void MainWindow::recalculate() {
         _plotWidget->update();
     }
 
+    // show calculated values in readonly editboxes
     QString txt;
+    // sensed
     txt = QString("%1").arg(_simState.alignedSensePhaseShift, 0, 'f', 6);
     _measuredPhaseShift->setText(txt);
     txt = QString("%1").arg(_simState.alignedSensePhaseShiftDiff, 0, 'f', 6);
     _measuredPhaseShiftError->setText(txt);
-
+    // real frequency recalculated
     txt = QString("%1").arg(_simParams.realFrequency, 0, 'f', 5);
     _realFrequency->setText(txt);
+}
+
+QComboBox * MainWindow::createIntComboBox(int * field, const int * values) {
+    QComboBox * cb = new QComboBox();
+    int defIndex = 0;
+    for (int i = 0; values[i] > -1000000; i++) {
+        int value = values[i];
+        if (value == *field)
+            defIndex = i;
+        cb->addItem(QString("%1").arg(value), value);
+    }
+    cb->setCurrentIndex(defIndex);
+    connect(cb, QOverload<int>::of(&QComboBox::currentIndexChanged),
+        [=](int index){ *field = cb->currentData().toInt();
+        recalculate();
+    });
+    return cb;
+}
+
+QComboBox * MainWindow::createDoubleComboBox(double * field, const double * values) {
+    QComboBox * cb = new QComboBox();
+    int defIndex = 0;
+    for (int i = 0; values[i] > -1000000; i++) {
+        double value = values[i];
+        if ((value >= *field - 0.0000000001) && (value <= *field + 0.0000000001))
+            defIndex = i;
+        cb->addItem(QString("%1").arg(value), value);
+    }
+    cb->setCurrentIndex(defIndex);
+    connect(cb, QOverload<int>::of(&QComboBox::currentIndexChanged),
+        [=](int index){ *field = cb->currentData().toDouble();
+        recalculate();
+    });
+    return cb;
 }
 
 QLineEdit * MainWindow::createDoubleValueEditor(double * field, double minValue, double maxValue, int precision) {
@@ -75,23 +111,9 @@ void MainWindow::createControls() {
     //_edFrequency->setMax
     _globalParamsLayout->addRow(new QLabel("Signal freq Hz"), _edFrequency);
 
-    QComboBox * _cbSampleRate = new QComboBox();
-    _cbSampleRate->addItem("200", 100);
-    _cbSampleRate->addItem("150", 150);
-    _cbSampleRate->addItem("120", 120);
-    _cbSampleRate->addItem("100", 100);
-    _cbSampleRate->addItem("90",  90);
-    _cbSampleRate->addItem("80",  80);
-    _cbSampleRate->addItem("60",  60);
-    _cbSampleRate->addItem("50",  50);
-    _cbSampleRate->addItem("30",  30);
-    _cbSampleRate->addItem("25",  25);
-    _cbSampleRate->setCurrentIndex(3);
-    _globalParamsLayout->addRow(new QLabel("Sample rate MHz"), _cbSampleRate);
-    connect(_cbSampleRate, QOverload<int>::of(&QComboBox::currentIndexChanged),
-        [=](int index){ _simParams.sampleRate = _cbSampleRate->currentData().toInt()*1000000;
-        recalculate();
-    });
+    const int sampleRates[] = {200000000, 150000000, 120000000, 100000000, 90000000, 80000000, 60000000, 50000000, 30000000, 25000000, -1000000};
+    QComboBox * _cbSampleRate = createIntComboBox(&_simParams.sampleRate, sampleRates);
+    _globalParamsLayout->addRow(new QLabel("Sample rate Hz"), _cbSampleRate);
 
     _realFrequency = new QLineEdit();
     _realFrequency->setReadOnly(true);
@@ -105,33 +127,14 @@ void MainWindow::createControls() {
     QFormLayout * _ncoParamsLayout = new QFormLayout();
     _ncoParamsLayout->setSpacing(10);
 
-    _cbNcoPhaseBits = new QComboBox();
-    _cbNcoPhaseBits->addItem("24", 24);
-    _cbNcoPhaseBits->addItem("26", 26);
-    _cbNcoPhaseBits->addItem("28", 28);
-    _cbNcoPhaseBits->addItem("30", 30);
-    _cbNcoPhaseBits->addItem("32", 32);
-    _cbNcoPhaseBits->setCurrentIndex(4);
-    connect(_cbNcoPhaseBits, QOverload<int>::of(&QComboBox::currentIndexChanged),
-        [=](int index){ _simParams.ncoPhaseBits = _cbNcoPhaseBits->currentData().toInt();
-        recalculate();
-    });
-    _ncoParamsLayout->addRow(new QLabel("Phase bits"), _cbNcoPhaseBits);
+    const int phaseBits[] = {24, 26, 28, 30, 32, 34, 36, -1000000};
+    _ncoParamsLayout->addRow(new QLabel("Phase bits"), createIntComboBox(&_simParams.ncoPhaseBits, phaseBits));
 
-    _cbNcoValueBits = new QComboBox();
-    _cbNcoValueBits->addItem("8", 8);
-    _cbNcoValueBits->addItem("9", 9);
-    _cbNcoValueBits->addItem("10", 10);
-    _cbNcoValueBits->addItem("11", 11);
-    _cbNcoValueBits->addItem("12", 12);
-    _cbNcoValueBits->addItem("14", 14);
-    _cbNcoValueBits->addItem("16", 16);
-    _cbNcoValueBits->setCurrentIndex(0);
-    _ncoParamsLayout->addRow(new QLabel("Value bits"), _cbNcoValueBits);
-    connect(_cbNcoValueBits, QOverload<int>::of(&QComboBox::currentIndexChanged),
-        [=](int index){ _simParams.ncoValueBits = _cbNcoValueBits->currentData().toInt();
-        recalculate();
-    });
+    const int ncoValueBits[] = {8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, -1000000};
+    _ncoParamsLayout->addRow(new QLabel("Value bits"), createIntComboBox(&_simParams.ncoPhaseBits, ncoValueBits));
+
+    const int sinTableBits[] = {7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, -1000000};
+    _ncoParamsLayout->addRow(new QLabel("Sin table size"), createIntComboBox(&_simParams.ncoSinTableSizeBits, sinTableBits));
 
     QGroupBox * _gbNco = new QGroupBox("NCO");
     _gbNco->setLayout(_ncoParamsLayout);
@@ -141,52 +144,14 @@ void MainWindow::createControls() {
     QFormLayout * _adcParamsLayout = new QFormLayout();
     _adcParamsLayout->setSpacing(10);
 
-    _cbAdcValueBits = new QComboBox();
-    _cbAdcValueBits->addItem("6", 6);
-    _cbAdcValueBits->addItem("7", 7);
-    _cbAdcValueBits->addItem("8", 8);
-    _cbAdcValueBits->addItem("9", 9);
-    _cbAdcValueBits->addItem("10", 10);
-    _cbAdcValueBits->addItem("11", 11);
-    _cbAdcValueBits->addItem("12", 12);
-    _cbAdcValueBits->addItem("14", 14);
-    _cbAdcValueBits->addItem("16", 16);
-    _cbAdcValueBits->setCurrentIndex(2);
-    _adcParamsLayout->addRow(new QLabel("ADC bits"), _cbAdcValueBits);
-    connect(_cbAdcValueBits, QOverload<int>::of(&QComboBox::currentIndexChanged),
-        [=](int index){ _simParams.adcBits = _cbAdcValueBits->currentData().toInt();
-        recalculate();
-    });
+    const int adcValueBits[] = {6, 7, 8, 9, 10, 11, 12, 13, 14, 16, -1000000};
+    _adcParamsLayout->addRow(new QLabel("ADC bits"), createIntComboBox(&_simParams.adcBits, adcValueBits));
 
-    _cbAdcNoise = new QComboBox();
-    _cbAdcNoise->addItem("0.0", 0.0);
-    _cbAdcNoise->addItem("0.1", 0.1);
-    _cbAdcNoise->addItem("0.5", 0.5);
-    _cbAdcNoise->addItem("1.0", 1.0);
-    _cbAdcNoise->addItem("2.0", 2.0);
-    _cbAdcNoise->addItem("5.0", 5.0);
-    _cbAdcNoise->addItem("10.0", 10.0);
-    _cbAdcNoise->setCurrentIndex(0);
-    _adcParamsLayout->addRow(new QLabel("Noise, LSB"), _cbAdcNoise);
-    connect(_cbAdcNoise, QOverload<int>::of(&QComboBox::currentIndexChanged),
-        [=](int index){ _simParams.adcNoise = _cbAdcNoise->currentData().toDouble();
-        recalculate();
-    });
+    const double adcNoise[] = {0.0, 0.1, 0.25, 0.5, 1.0, 2.0, 5.0, 10.0, -1000000};
+    _adcParamsLayout->addRow(new QLabel("Noise, LSB"), createDoubleComboBox(&_simParams.adcNoise, adcNoise));
 
-    QComboBox * _cbAdcDCOffset = new QComboBox();
-    _cbAdcDCOffset->addItem("-10.0", -10.0);
-    _cbAdcDCOffset->addItem("-5.0", -5.0);
-    _cbAdcDCOffset->addItem("-1.0", -1.0);
-    _cbAdcDCOffset->addItem("0", 0.0);
-    _cbAdcDCOffset->addItem("1.0", 1.0);
-    _cbAdcDCOffset->addItem("5.0", 5.0);
-    _cbAdcDCOffset->addItem("10.0", 10.0);
-    _cbAdcDCOffset->setCurrentIndex(3);
-    _adcParamsLayout->addRow(new QLabel("DS offset, LSB"), _cbAdcDCOffset);
-    connect(_cbAdcDCOffset, QOverload<int>::of(&QComboBox::currentIndexChanged),
-        [=](int index){ _simParams.adcDCOffset = _cbAdcDCOffset->currentData().toDouble();
-        recalculate();
-    });
+    const double adcDCOffset[] = {-10.0, -5.0, -2.5, -1.0, -0.5, 0, 0.5, 1.0, 2.5, 5.0, 10.0, -1000000};
+    _adcParamsLayout->addRow(new QLabel("DC offset, LSB"), createDoubleComboBox(&_simParams.adcDCOffset, adcDCOffset));
 
     QGroupBox * _gbAdc = new QGroupBox("ADC");
     _gbAdc->setLayout(_adcParamsLayout);
@@ -198,20 +163,8 @@ void MainWindow::createControls() {
     QFormLayout * _senseParamsLayout = new QFormLayout();
     _senseParamsLayout->setSpacing(10);
 
-    _cbAdcAmplitude = new QComboBox();
-    _cbAdcAmplitude->addItem("0.95", 0.95);
-    _cbAdcAmplitude->addItem("0.9", 0.9);
-    _cbAdcAmplitude->addItem("0.8", 0.8);
-    _cbAdcAmplitude->addItem("0.7", 0.7);
-    _cbAdcAmplitude->addItem("0.5", 0.5);
-    _cbAdcAmplitude->addItem("0.3", 0.3);
-    _cbAdcAmplitude->addItem("0.1", 0.1);
-    _cbAdcAmplitude->setCurrentIndex(2);
-    _senseParamsLayout->addRow(new QLabel("Amplitude"), _cbAdcAmplitude);
-    connect(_cbAdcAmplitude, QOverload<int>::of(&QComboBox::currentIndexChanged),
-        [=](int index){ _simParams.senseAmplitude = _cbAdcAmplitude->currentData().toDouble();
-        recalculate();
-    });
+    const double senseAmplitude[] = {0.1, 0.25, 0.5, 0.8, 0.9, 0.95, -1000000};
+    _senseParamsLayout->addRow(new QLabel("Amplitude"), createDoubleComboBox(&_simParams.senseAmplitude, senseAmplitude));
 
     QLineEdit * _edSensePhaseShift = createDoubleValueEditor(&_simParams.sensePhaseShift, -1.0, 1.0, 6);
     //_edFrequency->setMax

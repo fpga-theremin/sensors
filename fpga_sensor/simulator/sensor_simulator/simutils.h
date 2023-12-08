@@ -7,7 +7,7 @@ int quantizeSigned(double value, int bits);
 double quantizeDouble(double value, int bits);
 double scaleDouble(double value, int bits);
 
-#define SP_MAX_SIN_TABLE_SIZE 4096
+#define SP_MAX_SIN_TABLE_SIZE (65536)
 struct SimParams {
     double frequency;
     int sampleRate;
@@ -15,6 +15,7 @@ struct SimParams {
     int ncoPhaseBits;
     int ncoValueBits;
     int ncoSinTableSizeBits;
+    double sinTableSizePhaseCorrection;
 
     double sensePhaseShift;
     double senseAmplitude;
@@ -49,6 +50,8 @@ struct SimParams {
 
     void recalculate();
     int tableEntryForPhase(int64_t phase);
+    // atan, phase corrected
+    double phaseByAtan2(int64_t y, int64_t x);
 };
 
 #define SP_SIM_MAX_SAMPLES 10000

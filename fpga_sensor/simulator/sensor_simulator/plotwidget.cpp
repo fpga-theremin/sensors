@@ -136,7 +136,7 @@ void PlotWidget::paintEvent(QPaintEvent * /* event */)
             int nextPeriod = _simState->periodIndex[x+1];
             int64_t sum1 = _simState->periodSumBase1[nextPeriod];
             int64_t sum2 = _simState->periodSumBase2[nextPeriod];
-            double angle = - atan2(sum2, sum1) / M_PI / 2;
+            double angle = _simParams->phaseByAtan2(sum2, sum1); //- atan2(sum2, sum1) / M_PI / 2;
             double err = angle - _simParams->sensePhaseShift;
             s = QString(" %1 / %2")
                     .arg(sum1)
@@ -150,7 +150,7 @@ void PlotWidget::paintEvent(QPaintEvent * /* event */)
             // bottom: avg for 2 halfperiods
             sum1 = _simState->periodSumBase1[nextPeriod] + _simState->periodSumBase1[nextPeriod+1];
             sum2 = _simState->periodSumBase2[nextPeriod] + _simState->periodSumBase2[nextPeriod+1];
-            angle = - atan2(sum2, sum1) / M_PI / 2;
+            angle = _simParams->phaseByAtan2(sum2, sum1); //- atan2(sum2, sum1) / M_PI / 2;
             err = angle - _simParams->sensePhaseShift;
             s = QString(" %1 (%2)")
                     .arg(angle, 0, 'f', 6)
@@ -160,7 +160,7 @@ void PlotWidget::paintEvent(QPaintEvent * /* event */)
             // 2 more periods
             sum1 += _simState->periodSumBase1[nextPeriod+2] + _simState->periodSumBase1[nextPeriod+3];
             sum2 += _simState->periodSumBase2[nextPeriod+2] + _simState->periodSumBase2[nextPeriod+3];
-            angle = - atan2(sum2, sum1) / M_PI / 2;
+            angle = _simParams->phaseByAtan2(sum2, sum1); //- atan2(sum2, sum1) / M_PI / 2;
             err = angle - _simParams->sensePhaseShift;
             s = QString(" %1 (%2)")
                     .arg(angle, 0, 'f', 6)

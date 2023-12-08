@@ -57,13 +57,16 @@ void SimParams::recalculate() {
         sinTable[i] = 0;
     }
     sinTableSize = 1 << ncoSinTableSizeBits;
+    // correction by half of sin table - calculated phase centered at center of table step, not in beginning
+    sinTableSizePhaseCorrection = 1.0 / sinTableSize / 2.0;
 
     qDebug("  calculated:");
-    qDebug("    realFrequency:       %.5f", realFrequency);
-    qDebug("    phaseIncrement:      %lld", phaseIncrement);
-    qDebug("    phaseModule:         %lld", phaseModule);
-    qDebug("    samplesPerPeriod:    %lld", phaseModule / phaseIncrement);
-    qDebug("    sinTableSize:        %d", sinTableSize);
+    qDebug("    realFrequency:         %.5f", realFrequency);
+    qDebug("    phaseIncrement:        %lld", phaseIncrement);
+    qDebug("    phaseModule:           %lld", phaseModule);
+    qDebug("    samplesPerPeriod:      %lld", phaseModule / phaseIncrement);
+    qDebug("    sinTableSize:          %d", sinTableSize);
+    qDebug("    sinTblPhaseCorrection: %d", sinTableSizePhaseCorrection);
 
 #ifdef DEBUG_SIN_TABLE
     qDebug("  sin table:");
@@ -73,19 +76,26 @@ void SimParams::recalculate() {
         double sinValue = sin(phase);
         sinTable[i] = quantizeSigned(sinValue, ncoValueBits);
 #ifdef DEBUG_SIN_TABLE
-        qDebug("    sin[%d] \t%.5f \t%.5f \t%.5f \t%d", i, sinValue,
+        qDebug("    sin[%d] \t%.5f \t%.5f \t%.5f \t%d \tdelta=%d", i, sinValue,
                quantizeDouble(sinValue, ncoValueBits),
                scaleDouble(sinValue, ncoValueBits),
-               sinTable[i]
+               sinTable[i],
+               i>0 ? (sinTable[i] - sinTable[i-1]) : 0
                );
 #endif
     }
+
 }
 
 int SimParams::tableEntryForPhase(int64_t phase) {
     int shiftedPhase = (int)(phase >> (ncoPhaseBits-ncoSinTableSizeBits));
     int shiftedMasked = shiftedPhase & (sinTableSize - 1);
     return sinTable[shiftedMasked];
+}
+
+// atan, phase corrected
+double SimParams::phaseByAtan2(int64_t y, int64_t x) {
+    return - atan2(y, x) / M_PI / 2 - sinTableSizePhaseCorrection;
 }
 
 void SimState::simulate(SimParams * newParams) {
@@ -174,7 +184,7 @@ void SimState::simulate(SimParams * newParams) {
         alignedSumBase1 += periodSumBase1[i];
         alignedSumBase2 += periodSumBase2[i];
     }
-    alignedSensePhaseShift = - atan2(alignedSumBase2, alignedSumBase1) / M_PI / 2;
+    alignedSensePhaseShift = params->phaseByAtan2(alignedSumBase2, alignedSumBase1); //- atan2(alignedSumBase2, alignedSumBase1) / M_PI / 2;
     alignedSensePhaseShiftDiff = alignedSensePhaseShift - params->sensePhaseShift;
     if (alignedSensePhaseShiftDiff < -0.5)
         alignedSensePhaseShiftDiff += 1.0;
