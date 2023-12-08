@@ -20,8 +20,8 @@ void PlotWidget::setPixelsPerSample(int n) {
     _pixelsPerSample = n;
     if (_pixelsPerSample < 3)
         _pixelsPerSample = 3;
-    else if (_pixelsPerSample > 16)
-        _pixelsPerSample = 16;
+    else if (_pixelsPerSample > 32)
+        _pixelsPerSample = 32;
     update();
 }
 
@@ -137,35 +137,54 @@ void PlotWidget::paintEvent(QPaintEvent * /* event */)
             int64_t sum1 = _simState->periodSumBase1[nextPeriod];
             int64_t sum2 = _simState->periodSumBase2[nextPeriod];
             double angle = _simParams->phaseByAtan2(sum2, sum1); //- atan2(sum2, sum1) / M_PI / 2;
-            double err = angle - _simParams->sensePhaseShift;
+            double err = _simParams->phaseError(angle);
+            int exactBits = SimParams::exactBits(err);
             s = QString(" %1 / %2")
                     .arg(sum1)
                     .arg(sum2);
             painter.drawText(QPoint(i * xscale + xscale + 5, fh + 4), s);
-            s = QString(" %1 (%2)")
+            s = QString(" 1h: %1 (%2) %3 bits")
                     .arg(angle, 0, 'f', 6)
-                    .arg(err, 0, 'f', 6);
+                    .arg(err, 0, 'f', 6)
+                    .arg(exactBits)
+                    ;
             painter.drawText(QPoint(i * xscale + xscale + 5, fh*2 + 4), s);
 
             // bottom: avg for 2 halfperiods
-            sum1 = _simState->periodSumBase1[nextPeriod] + _simState->periodSumBase1[nextPeriod+1];
-            sum2 = _simState->periodSumBase2[nextPeriod] + _simState->periodSumBase2[nextPeriod+1];
-            angle = _simParams->phaseByAtan2(sum2, sum1); //- atan2(sum2, sum1) / M_PI / 2;
-            err = angle - _simParams->sensePhaseShift;
-            s = QString(" %1 (%2)")
+            angle = _simState->phaseForPeriods(nextPeriod, 2);
+            err = _simParams->phaseError(angle);
+            exactBits = SimParams::exactBits(err);
+            s = QString(" 1p: %1 (%2) %3 bits %4ns")
                     .arg(angle, 0, 'f', 6)
-                    .arg(err, 0, 'f', 6);
+                    .arg(err, 0, 'f', 6)
+                    .arg(exactBits)
+                    .arg(_simParams->phaseErrorToNanoSeconds(err), 0, 'f', 3)
+                    ;
             painter.drawText(QPoint(i * xscale + xscale + 5, h - fh*1 - 4), s);
 
-            // 2 more periods
-            sum1 += _simState->periodSumBase1[nextPeriod+2] + _simState->periodSumBase1[nextPeriod+3];
-            sum2 += _simState->periodSumBase2[nextPeriod+2] + _simState->periodSumBase2[nextPeriod+3];
-            angle = _simParams->phaseByAtan2(sum2, sum1); //- atan2(sum2, sum1) / M_PI / 2;
-            err = angle - _simParams->sensePhaseShift;
-            s = QString(" %1 (%2)")
+            // 2 more halfperiods
+            angle = _simState->phaseForPeriods(nextPeriod, 4);
+            err = _simParams->phaseError(angle);
+            exactBits = SimParams::exactBits(err);
+            s = QString(" 2p: %1 (%2) %3 bits %4ns")
                     .arg(angle, 0, 'f', 6)
-                    .arg(err, 0, 'f', 6);
+                    .arg(err, 0, 'f', 6)
+                    .arg(exactBits)
+                    .arg(_simParams->phaseErrorToNanoSeconds(err), 0, 'f', 3)
+                    ;
             painter.drawText(QPoint(i * xscale + xscale + 5, h - fh*2 - 4), s);
+
+            // 4 more halfperiods
+            angle = _simState->phaseForPeriods(nextPeriod, 8);
+            err = _simParams->phaseError(angle);
+            exactBits = SimParams::exactBits(err);
+            s = QString(" 4p: %1 (%2) %3 bits %4ns")
+                    .arg(angle, 0, 'f', 6)
+                    .arg(err, 0, 'f', 6)
+                    .arg(exactBits)
+                    .arg(_simParams->phaseErrorToNanoSeconds(err), 0, 'f', 3)
+                    ;
+            painter.drawText(QPoint(i * xscale + xscale + 5, h - fh*3 - 4), s);
         }
     }
 

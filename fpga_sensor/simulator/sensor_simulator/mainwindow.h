@@ -19,11 +19,13 @@ class MainWindow : public QMainWindow
     PlotWidget * _plotWidget;
     QLineEdit * _measuredPhaseShift;
     QLineEdit * _measuredPhaseShiftError;
+    QLineEdit * _measuredPhaseExactBits;
     QLineEdit * _realFrequency;
 
     QLineEdit * createDoubleValueEditor(double * field, double minValue, double maxValue, int precision);
     QComboBox * createIntComboBox(int * field, const int * values);
     QComboBox * createDoubleComboBox(double * field, const double * values);
+    QLineEdit * createReadOnlyEdit();
 
 private:
     void createControls();

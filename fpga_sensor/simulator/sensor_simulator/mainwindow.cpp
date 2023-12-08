@@ -23,10 +23,12 @@ void MainWindow::recalculate() {
     // show calculated values in readonly editboxes
     QString txt;
     // sensed
-    txt = QString("%1").arg(_simState.alignedSensePhaseShift, 0, 'f', 6);
+    txt = QString("%1").arg(_simState.alignedSensePhaseShift, 0, 'f', 8);
     _measuredPhaseShift->setText(txt);
-    txt = QString("%1").arg(_simState.alignedSensePhaseShiftDiff, 0, 'f', 6);
+    txt = QString("%1").arg(_simState.alignedSensePhaseShiftDiff, 0, 'f', 8);
     _measuredPhaseShiftError->setText(txt);
+    txt = QString("%1").arg(_simState.alignedSenseExactBits);
+    _measuredPhaseExactBits->setText(txt);
     // real frequency recalculated
     txt = QString("%1").arg(_simParams.realFrequency, 0, 'f', 5);
     _realFrequency->setText(txt);
@@ -47,6 +49,13 @@ QComboBox * MainWindow::createIntComboBox(int * field, const int * values) {
         recalculate();
     });
     return cb;
+}
+
+QLineEdit * MainWindow::createReadOnlyEdit() {
+    QLineEdit * edit = new QLineEdit();
+    edit->setReadOnly(true);
+    edit->setDisabled(true);
+    return edit;
 }
 
 QComboBox * MainWindow::createDoubleComboBox(double * field, const double * values) {
@@ -131,7 +140,7 @@ void MainWindow::createControls() {
     _ncoParamsLayout->addRow(new QLabel("Phase bits"), createIntComboBox(&_simParams.ncoPhaseBits, phaseBits));
 
     const int ncoValueBits[] = {8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, -1000000};
-    _ncoParamsLayout->addRow(new QLabel("Value bits"), createIntComboBox(&_simParams.ncoPhaseBits, ncoValueBits));
+    _ncoParamsLayout->addRow(new QLabel("Value bits"), createIntComboBox(&_simParams.ncoValueBits, ncoValueBits));
 
     const int sinTableBits[] = {7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, -1000000};
     _ncoParamsLayout->addRow(new QLabel("Sin table size"), createIntComboBox(&_simParams.ncoSinTableSizeBits, sinTableBits));
@@ -177,14 +186,12 @@ void MainWindow::createControls() {
     // measured values display
     QFormLayout * _measuredLayout = new QFormLayout();
     _measuredLayout->setSpacing(10);
-    _measuredPhaseShift = new QLineEdit();
-    _measuredPhaseShift->setReadOnly(true);
-    _measuredPhaseShift->setDisabled(true);
-    _measuredPhaseShiftError = new QLineEdit();
-    _measuredPhaseShiftError->setReadOnly(true);
-    _measuredPhaseShiftError->setDisabled(true);
+    _measuredPhaseShift = createReadOnlyEdit();
+    _measuredPhaseShiftError = createReadOnlyEdit();
+    _measuredPhaseExactBits = createReadOnlyEdit();
     _measuredLayout->addRow(new QLabel("Measured phase"), _measuredPhaseShift);
     _measuredLayout->addRow(new QLabel("Measured error"), _measuredPhaseShiftError);
+    _measuredLayout->addRow(new QLabel("Exact phase bits"), _measuredPhaseExactBits);
 
     QGroupBox * _gbMeasured = new QGroupBox("Measured");
     _gbMeasured->setLayout(_measuredLayout);
@@ -196,7 +203,7 @@ void MainWindow::createControls() {
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
 {
-    setWindowTitle("Theremin Sensor Simulator v0.1");
+    setWindowTitle("Theremin Sensor Simulator v0.2");
     QWidget * _mainWidget = new QWidget();
     QLayout * _mainLayout = new QBoxLayout(QBoxLayout::Direction::TopToBottom);
     _topLayout = new QBoxLayout(QBoxLayout::Direction::LeftToRight);
@@ -214,9 +221,6 @@ MainWindow::MainWindow(QWidget *parent)
     _scrollBar->setRange(0, 100);
     _bottomLayout->addWidget(_scrollBar);
 
-
-    //_bottomLayout->addWidget(new QLabel("Body"));
-
     _mainLayout->addItem(_topLayout);
     _mainLayout->addItem(_bottomLayout);
 
@@ -226,7 +230,6 @@ MainWindow::MainWindow(QWidget *parent)
     _simParams.recalculate();
     _simState.simulate(&_simParams);
 
-//    setCentralWidget(new QLabel("Test label - very very long label"));
     recalculate();
 }
 

@@ -53,10 +53,13 @@ void SimParams::recalculate() {
     phaseModule = ((int64_t)1) << ncoPhaseBits;
     phaseIncrement = (int64_t)round(phaseInc * phaseModule);
     realFrequency = sampleRate / ((double)phaseModule / (double)phaseIncrement);
-    for (int i = 0; i < SP_MAX_SIN_TABLE_SIZE; i++) {
+    sinTableSize = 1 << ncoSinTableSizeBits;
+    if (sinTable)
+        delete [] sinTable;
+    sinTable = new int[sinTableSize];
+    for (int i = 0; i < sinTableSize; i++) {
         sinTable[i] = 0;
     }
-    sinTableSize = 1 << ncoSinTableSizeBits;
     // correction by half of sin table - calculated phase centered at center of table step, not in beginning
     sinTableSizePhaseCorrection = 1.0 / sinTableSize / 2.0;
 
@@ -96,6 +99,38 @@ int SimParams::tableEntryForPhase(int64_t phase) {
 // atan, phase corrected
 double SimParams::phaseByAtan2(int64_t y, int64_t x) {
     return - atan2(y, x) / M_PI / 2 - sinTableSizePhaseCorrection;
+}
+
+// compare phase with expected
+double SimParams::phaseError(double angle) {
+    double diff = angle - sensePhaseShift;
+    if (diff < -0.5)
+        diff = diff + 1.0;
+    else if (diff > 0.5)
+        diff = diff - 1.0;
+    return diff;
+}
+
+// takes phase difference from expected value, and converts to nanos
+double SimParams::phaseErrorToNanoSeconds(double phaseErr) {
+    double nanosecondsPerPeriod = 1000000000 / realFrequency;
+    double absError = phaseErr < 0 ? -phaseErr : phaseErr;
+    double res = nanosecondsPerPeriod * absError;
+    //res = round(res * 1000) / 1000;
+    return res;
+}
+
+// number of exact bits in phase, from phase diff
+int SimParams::exactBits(double phaseDiff) {
+    double v = phaseDiff >= 0 ? phaseDiff : -phaseDiff;
+    int bitCount = 0;
+    while (bitCount < 32) {
+        v = v * 2;
+        if (v >= 1.0)
+            break;
+        bitCount++;
+    }
+    return bitCount;
 }
 
 void SimState::simulate(SimParams * newParams) {
@@ -184,12 +219,32 @@ void SimState::simulate(SimParams * newParams) {
         alignedSumBase1 += periodSumBase1[i];
         alignedSumBase2 += periodSumBase2[i];
     }
-    alignedSensePhaseShift = params->phaseByAtan2(alignedSumBase2, alignedSumBase1); //- atan2(alignedSumBase2, alignedSumBase1) / M_PI / 2;
-    alignedSensePhaseShiftDiff = alignedSensePhaseShift - params->sensePhaseShift;
-    if (alignedSensePhaseShiftDiff < -0.5)
-        alignedSensePhaseShiftDiff += 1.0;
-    else if (alignedSensePhaseShiftDiff > 0.5)
-        alignedSensePhaseShiftDiff -= 1.0;
-    qDebug("alignedSensePhaseShiftDiff = %.6f", alignedSensePhaseShiftDiff);
+    alignedSensePhaseShift = params->phaseByAtan2(alignedSumBase2, alignedSumBase1);
+
+    alignedSensePhaseShiftDiff = params->phaseError(alignedSensePhaseShift);
+    //qDebug("alignedSensePhaseShiftDiff = %.6f", alignedSensePhaseShiftDiff);
+    alignedSenseExactBits = SimParams::exactBits(alignedSensePhaseShiftDiff);
 }
 
+int64_t SimState::sumForPeriodsBase1(int startHalfperiod, int halfPeriodCount) {
+    int64_t res = 0;
+    for (int i = 0; i < halfPeriodCount; i++) {
+        res += periodSumBase1[startHalfperiod + i];
+    }
+    return res;
+}
+
+int64_t SimState::sumForPeriodsBase2(int startHalfperiod, int halfPeriodCount) {
+    int64_t res = 0;
+    for (int i = 0; i < halfPeriodCount; i++) {
+        res += periodSumBase2[startHalfperiod + i];
+    }
+    return res;
+}
+
+double SimState::phaseForPeriods(int startHalfperiod, int halfPeriodCount) {
+    int64_t sumBase1 = sumForPeriodsBase1(startHalfperiod, halfPeriodCount);
+    int64_t sumBase2 = sumForPeriodsBase2(startHalfperiod, halfPeriodCount);
+    double angle = params->phaseByAtan2(sumBase2, sumBase1); //- atan2(sum2, sum1) / M_PI / 2;
+    return angle;
+}
