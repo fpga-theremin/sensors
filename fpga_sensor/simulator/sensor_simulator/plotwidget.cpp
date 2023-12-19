@@ -150,7 +150,7 @@ void PlotWidget::paintEvent(QPaintEvent * /* event */)
                     ;
             painter.drawText(QPoint(i * xscale + xscale + 5, fh*2 + 4), s);
 
-            // bottom: avg for 2 halfperiods
+            // bottom: avg for 1 period (2 halfperiods)
             angle = _simState->phaseForPeriods(nextPeriod, 2);
             err = _simParams->phaseError(angle);
             exactBits = SimParams::exactBits(err);
@@ -162,7 +162,7 @@ void PlotWidget::paintEvent(QPaintEvent * /* event */)
                     ;
             painter.drawText(QPoint(i * xscale + xscale + 5, h - fh*1 - 4), s);
 
-            // 2 more halfperiods
+            // bottom: avg for 2 periods (4 halfperiods)
             angle = _simState->phaseForPeriods(nextPeriod, 4);
             err = _simParams->phaseError(angle);
             exactBits = SimParams::exactBits(err);
@@ -174,7 +174,7 @@ void PlotWidget::paintEvent(QPaintEvent * /* event */)
                     ;
             painter.drawText(QPoint(i * xscale + xscale + 5, h - fh*2 - 4), s);
 
-            // 4 more halfperiods
+            // bottom: avg for 4 periods (8 halfperiods)
             angle = _simState->phaseForPeriods(nextPeriod, 8);
             err = _simParams->phaseError(angle);
             exactBits = SimParams::exactBits(err);
@@ -185,6 +185,18 @@ void PlotWidget::paintEvent(QPaintEvent * /* event */)
                     .arg(_simParams->phaseErrorToNanoSeconds(err), 0, 'f', 3)
                     ;
             painter.drawText(QPoint(i * xscale + xscale + 5, h - fh*3 - 4), s);
+
+            // bottom: avg for 8 periods (16 halfperiods)
+            angle = _simState->phaseForPeriods(nextPeriod, 16);
+            err = _simParams->phaseError(angle);
+            exactBits = SimParams::exactBits(err);
+            s = QString(" 4p: %1 (%2) %3 bits %4ns")
+                    .arg(angle, 0, 'f', 6)
+                    .arg(err, 0, 'f', 6)
+                    .arg(exactBits)
+                    .arg(_simParams->phaseErrorToNanoSeconds(err), 0, 'f', 3)
+                    ;
+            painter.drawText(QPoint(i * xscale + xscale + 5, h - fh*4 - 4), s);
         }
     }
 

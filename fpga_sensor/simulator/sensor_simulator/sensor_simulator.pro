@@ -9,12 +9,14 @@ CONFIG += c++11
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
+    dds.cpp \
     main.cpp \
     mainwindow.cpp \
     plotwidget.cpp \
     simutils.cpp
 
 HEADERS += \
+    dds.h \
     mainwindow.h \
     plotwidget.h \
     simutils.h

@@ -28,7 +28,8 @@ double scaleDouble(double value, int bits) {
 //#define DEBUG_SIN_TABLE
 
 void SimParams::recalculate() {
-    qDebug("SimParams::recalculate()");
+    Q_ASSERT(guard1 == 0x11111111);
+    //qDebug("SimParams::recalculate()");
     /*
     double frequency;
     int sampleRate;
@@ -41,35 +42,41 @@ void SimParams::recalculate() {
     int64_t phaseModule; // 1 << ncoPhaseBits
     int sinTableSize;
      */
-    qDebug("  source:");
-    qDebug("    frequency:           %.5f", frequency);
-    qDebug("    sampleRate:          %d", sampleRate);
-    qDebug("    ncoPhaseBits:        %d", ncoPhaseBits);
-    qDebug("    ncoValueBits:        %d", ncoValueBits);
-    qDebug("    ncoSinTableSizeBits: %d", ncoSinTableSizeBits);
+//    qDebug("  source:");
+//    qDebug("    frequency:           %.5f", frequency);
+//    qDebug("    sampleRate:          %d", sampleRate);
+//    qDebug("    ncoPhaseBits:        %d", ncoPhaseBits);
+//    qDebug("    ncoValueBits:        %d", ncoValueBits);
+//    qDebug("    ncoSinTableSizeBits: %d", ncoSinTableSizeBits);
 
     // frequency, sampleRate
     double phaseInc = frequency / sampleRate;
     phaseModule = ((int64_t)1) << ncoPhaseBits;
     phaseIncrement = (int64_t)round(phaseInc * phaseModule);
     realFrequency = sampleRate / ((double)phaseModule / (double)phaseIncrement);
+    if (sinTable) {
+        Q_ASSERT(guard1 == 0x11111111);
+        Q_ASSERT(sinTable[sinTableSize] == 0x12345678);
+    }
     sinTableSize = 1 << ncoSinTableSizeBits;
-    if (sinTable)
+    if (sinTable) {
         delete [] sinTable;
-    sinTable = new int[sinTableSize];
+    }
+    sinTable = new int[sinTableSize + 1];
     for (int i = 0; i < sinTableSize; i++) {
         sinTable[i] = 0;
     }
+    sinTable[sinTableSize] = 0x12345678;
     // correction by half of sin table - calculated phase centered at center of table step, not in beginning
     sinTableSizePhaseCorrection = 1.0 / sinTableSize / 2.0;
 
-    qDebug("  calculated:");
-    qDebug("    realFrequency:         %.5f", realFrequency);
-    qDebug("    phaseIncrement:        %lld", phaseIncrement);
-    qDebug("    phaseModule:           %lld", phaseModule);
-    qDebug("    samplesPerPeriod:      %lld", phaseModule / phaseIncrement);
-    qDebug("    sinTableSize:          %d", sinTableSize);
-    qDebug("    sinTblPhaseCorrection: %d", sinTableSizePhaseCorrection);
+//    qDebug("  calculated:");
+//    qDebug("    realFrequency:         %.5f", realFrequency);
+//    qDebug("    phaseIncrement:        %lld", phaseIncrement);
+//    qDebug("    phaseModule:           %lld", phaseModule);
+//    qDebug("    samplesPerPeriod:      %lld", phaseModule / phaseIncrement);
+//    qDebug("    sinTableSize:          %d", sinTableSize);
+//    qDebug("    sinTblPhaseCorrection: %d", sinTableSizePhaseCorrection);
 
 #ifdef DEBUG_SIN_TABLE
     qDebug("  sin table:");
@@ -88,6 +95,8 @@ void SimParams::recalculate() {
 #endif
     }
 
+    Q_ASSERT(guard1 == 0x11111111);
+    Q_ASSERT(sinTable[sinTableSize] == 0x12345678);
 }
 
 int SimParams::tableEntryForPhase(int64_t phase) {
@@ -134,7 +143,17 @@ int SimParams::exactBits(double phaseDiff) {
 }
 
 void SimState::simulate(SimParams * newParams) {
+    guard1 = 0x11111111;
+    guard2 = 0x22222222;
+    guard3 = 0x33333333;
+    guard4 = 0x44444444;
+    guard5 = 0x55555555;
+    guard6 = 0x66666666;
+
+
     params = newParams;
+
+    checkGuards();
     // phase for base1
     int64_t phase = 0;
     for (int i = 0; i < SP_SIM_MAX_SAMPLES; i++) {
@@ -148,6 +167,8 @@ void SimState::simulate(SimParams * newParams) {
         phase += params->phaseIncrement;
         phase = phase & (params->phaseModule - 1);
     }
+
+    checkGuards();
 
     int64_t senseShift = (int64_t)round(params->sensePhaseShift * params->phaseModule);
     senseShift &= (params->phaseModule - 1);
@@ -176,6 +197,8 @@ void SimState::simulate(SimParams * newParams) {
         phase = phase & (params->phaseModule - 1);
     }
 
+    checkGuards();
+
     //int avgMulBase1;
     //int avgMulBase2;
 
@@ -188,11 +211,15 @@ void SimState::simulate(SimParams * newParams) {
     avgMulBase1 = (int)(sumMulBase1 / SP_SIM_MAX_SAMPLES);
     avgMulBase2 = (int)(sumMulBase2 / SP_SIM_MAX_SAMPLES);
 
+    checkGuards();
+
 
     for (int i = 0; i < SP_SIM_MAX_SAMPLES/10; i++) {
         periodSumBase1[i] = 0;
         periodSumBase2[i] = 0;
     }
+
+    checkGuards();
 
     periodCount = 0;
     periodIndex[0] = 0;
@@ -211,6 +238,9 @@ void SimState::simulate(SimParams * newParams) {
         sum2 += senseMulBase2[i];
         periodIndex[i] = periodCount;
     }
+
+    checkGuards();
+
     // averaging aligned by even period frames
     int avgPeriodsCount = (periodCount - 1) & 0xffffffe;
     alignedSumBase1 = 0;
@@ -224,6 +254,74 @@ void SimState::simulate(SimParams * newParams) {
     alignedSensePhaseShiftDiff = params->phaseError(alignedSensePhaseShift);
     //qDebug("alignedSensePhaseShiftDiff = %.6f", alignedSensePhaseShiftDiff);
     alignedSenseExactBits = SimParams::exactBits(alignedSensePhaseShiftDiff);
+
+    checkGuards();
+}
+
+void SimState::checkGuards() {
+    Q_ASSERT(params->sinTable[params->sinTableSize] == 0x12345678);
+
+    Q_ASSERT(guard1 == 0x11111111);
+    Q_ASSERT(guard2 == 0x22222222);
+    Q_ASSERT(guard3 == 0x33333333);
+    Q_ASSERT(guard4 == 0x44444444);
+    Q_ASSERT(guard5 == 0x55555555);
+    Q_ASSERT(guard6 == 0x66666666);
+}
+void ExactBitStats::clear() {
+    for (int i = 0; i < 32; i++) {
+        exactBitsCounters[i] = 0;
+        exactBitsPercent[i] = 0;
+        exactBitsPercentLessOrEqual[i] = 0;
+        exactBitsPercentMoreOrEqual[i] = 0;
+    }
+    totalCount = 0;
+}
+
+void ExactBitStats::updateStats() {
+    totalCount = 0;
+    for (int i = 0; i < 32; i++) {
+        totalCount += exactBitsCounters[i];
+    }
+    for (int i = 0; i < 32; i++) {
+        exactBitsPercent[i] = exactBitsCounters[i] * 100.0 / totalCount;
+    }
+    double sum = 0;
+    for (int i = 0; i < 32; i++) {
+        sum += exactBitsPercent[i];
+        exactBitsPercentLessOrEqual[i] = sum;
+    }
+    sum = 0;
+    for (int i = 31; i >= 0; i--) {
+        sum += exactBitsPercent[i];
+        exactBitsPercentMoreOrEqual[i] = sum;
+    }
+}
+
+void collectSimulationStats(SimParams * newParams, int averagingHalfPeriods, int freqVariations, double freqK, int phaseVariations, double phaseK, ExactBitStats & stats) {
+    SimState * state = new SimState();
+    SimParams params = *newParams;
+    double frequency = params.frequency;
+    double phase = params.sensePhaseShift;
+    for (int n1 = -freqVariations/2; n1 <= freqVariations; n1++) {
+        params.frequency = frequency * (1.0 + freqK * n1);
+        for (int n2 = -phaseVariations/2; n2 <= phaseVariations; n2++) {
+            params.sensePhaseShift = phase + phaseK * n2;
+            params.recalculate();
+            state->simulate(&params);
+            for (int i = 1; i < state->periodCount-2; i++) {
+                // bottom: avg for 1 period (2 halfperiods)
+                double angle = state->phaseForPeriods(i, averagingHalfPeriods);
+                double err = params.phaseError(angle);
+                int exactBits = SimParams::exactBits(err);
+                if (exactBits > 31)
+                    exactBits = 31;
+                stats.exactBitsCounters[exactBits]++;
+            }
+        }
+    }
+    stats.updateStats();
+    delete state;
 }
 
 int64_t SimState::sumForPeriodsBase1(int startHalfperiod, int halfPeriodCount) {

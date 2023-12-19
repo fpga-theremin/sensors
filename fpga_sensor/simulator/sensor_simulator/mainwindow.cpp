@@ -32,6 +32,14 @@ void MainWindow::recalculate() {
     // real frequency recalculated
     txt = QString("%1").arg(_simParams.realFrequency, 0, 'f', 5);
     _realFrequency->setText(txt);
+
+    qDebug("================================= PRECISION STATS =================");
+    ExactBitStats stats;
+    collectSimulationStats(&_simParams, 4, 20, 0.001, 20, 0.001, stats);
+    for (int i = 0; i < 24; i++) {
+        if (stats.exactBitsPercentLessOrEqual[i] > 0.0000001 && stats.exactBitsPercentMoreOrEqual[i] > 0.1)
+            qDebug("%2d exact bits: %7.3f   <= %7.3f   >= %7.3f", i, stats.exactBitsPercent[i], stats.exactBitsPercentLessOrEqual[i], stats.exactBitsPercentMoreOrEqual[i]);
+    }
 }
 
 QComboBox * MainWindow::createIntComboBox(int * field, const int * values) {
@@ -120,7 +128,7 @@ void MainWindow::createControls() {
     //_edFrequency->setMax
     _globalParamsLayout->addRow(new QLabel("Signal freq Hz"), _edFrequency);
 
-    const int sampleRates[] = {200000000, 150000000, 120000000, 100000000, 90000000, 80000000, 60000000, 50000000, 30000000, 25000000, -1000000};
+    const int sampleRates[] = {200000000, 150000000, 125000000, 105000000, 100000000, 80000000, 65000000, 40000000, 20000000, 25000000, -1000000};
     QComboBox * _cbSampleRate = createIntComboBox(&_simParams.sampleRate, sampleRates);
     _globalParamsLayout->addRow(new QLabel("Sample rate Hz"), _cbSampleRate);
 
