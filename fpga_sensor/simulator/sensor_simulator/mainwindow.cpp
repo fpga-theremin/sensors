@@ -35,11 +35,15 @@ void MainWindow::recalculate() {
 
     qDebug("================================= PRECISION STATS =================");
     ExactBitStats stats;
-    collectSimulationStats(&_simParams, 4, 20, 0.001, 20, 0.001, stats);
+    collectSimulationStats(&_simParams, 4, 20, 0.0012345, 20, 0.00156789, stats);
     for (int i = 0; i < 24; i++) {
         if (stats.exactBitsPercentLessOrEqual[i] > 0.0000001 && stats.exactBitsPercentMoreOrEqual[i] > 0.1)
             qDebug("%2d exact bits: %7.3f   <= %7.3f   >= %7.3f", i, stats.exactBitsPercent[i], stats.exactBitsPercentLessOrEqual[i], stats.exactBitsPercentMoreOrEqual[i]);
     }
+    qDebug("Sim params: %s", _simParams.toString().toLocal8Bit().data());
+    qDebug("Sim results 10..24: %s", stats.toString().toLocal8Bit().data());
+
+    runSimTestSuite(&_simParams, 10);
 }
 
 QComboBox * MainWindow::createIntComboBox(int * field, const int * values) {
@@ -180,7 +184,7 @@ void MainWindow::createControls() {
     QFormLayout * _senseParamsLayout = new QFormLayout();
     _senseParamsLayout->setSpacing(10);
 
-    const double senseAmplitude[] = {0.1, 0.25, 0.5, 0.8, 0.9, 0.95, -1000000};
+    const double senseAmplitude[] = {0.1, 0.25, 0.5, 0.8, 0.9, 0.95, 1.0, -1000000};
     _senseParamsLayout->addRow(new QLabel("Amplitude"), createDoubleComboBox(&_simParams.senseAmplitude, senseAmplitude));
 
     QLineEdit * _edSensePhaseShift = createDoubleValueEditor(&_simParams.sensePhaseShift, -1.0, 1.0, 6);

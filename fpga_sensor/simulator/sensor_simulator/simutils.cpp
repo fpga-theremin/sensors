@@ -27,21 +27,22 @@ double scaleDouble(double value, int bits) {
 
 //#define DEBUG_SIN_TABLE
 
+QString SimParams::toString() {
+    QString res = QString("SIN:%1bit[%2] ADC:%3MHz/%4bit(%5) freq:%6MHz phase:%7")
+            .arg(ncoValueBits)
+            .arg(sinTableSize)
+            .arg(sampleRate/1000000)
+            .arg(adcBits)
+            .arg(senseAmplitude, 0, 'g')
+            .arg(frequency / 1000000.0, 0, 'g', 7)
+            .arg(sensePhaseShift, 0, 'g', 7)
+            ;
+    return res;
+}
+
 void SimParams::recalculate() {
     Q_ASSERT(guard1 == 0x11111111);
     //qDebug("SimParams::recalculate()");
-    /*
-    double frequency;
-    int sampleRate;
-    // sin table size bits
-    int ncoPhaseBits;
-    int ncoValueBits;
-    int ncoSinTableSizeBits;
-
-    int64_t phaseIncrement;
-    int64_t phaseModule; // 1 << ncoPhaseBits
-    int sinTableSize;
-     */
 //    qDebug("  source:");
 //    qDebug("    frequency:           %.5f", frequency);
 //    qDebug("    sampleRate:          %d", sampleRate);
@@ -56,7 +57,7 @@ void SimParams::recalculate() {
     realFrequency = sampleRate / ((double)phaseModule / (double)phaseIncrement);
     if (sinTable) {
         Q_ASSERT(guard1 == 0x11111111);
-        Q_ASSERT(sinTable[sinTableSize] == 0x12345678);
+        //Q_ASSERT(sinTable[sinTableSize] == 0x12345678);
     }
     sinTableSize = 1 << ncoSinTableSizeBits;
     if (sinTable) {
@@ -97,6 +98,15 @@ void SimParams::recalculate() {
 
     Q_ASSERT(guard1 == 0x11111111);
     Q_ASSERT(sinTable[sinTableSize] == 0x12345678);
+
+    int64_t sinCosProdSum = 0;
+    for (int i = 0; i < sinTableSize; i++) {
+        int j = (i + sinTableSize / 4) & (sinTableSize-1);
+        int sinValue = sinTable[i];
+        int cosValue = sinTable[j];
+        sinCosProdSum += (int64_t)sinValue * cosValue;
+    }
+    Q_ASSERT(sinCosProdSum == 0);
 }
 
 int SimParams::tableEntryForPhase(int64_t phase) {
@@ -278,6 +288,27 @@ void ExactBitStats::clear() {
     totalCount = 0;
 }
 
+QString ExactBitStats::headingString(int minBits, int maxBits) {
+    QString res;
+    for (int i = minBits; i <= maxBits; i++) {
+        res += QString(":%1\t").arg(i);
+    }
+    return res;
+}
+
+QString ExactBitStats::toString(int minBits, int maxBits) {
+    QString res;
+    for (int i = minBits; i <= maxBits; i++) {
+        double v = exactBitsPercent[i];
+        if (i == minBits)
+            v = exactBitsPercentLessOrEqual[i];
+        if (i == maxBits)
+            v = exactBitsPercentMoreOrEqual[i];
+        res += QString("%1\t").arg(v, 0, 'g', 5);
+    }
+    return res;
+}
+
 void ExactBitStats::updateStats() {
     totalCount = 0;
     for (int i = 0; i < 32; i++) {
@@ -296,6 +327,32 @@ void ExactBitStats::updateStats() {
         sum += exactBitsPercent[i];
         exactBitsPercentMoreOrEqual[i] = sum;
     }
+}
+
+void SimParamMutator::runTests(QStringList & results, int variations) {
+    SimState * state = new SimState();
+    QString testName = heading + " : " + params.toString();
+    results.append(testName);
+    qDebug(testName.toLocal8Bit().data());
+    results.append(QString());
+    qDebug("");
+
+    QString headers = heading + "\t" + ExactBitStats::headingString();
+    results.append(headers);
+    qDebug(headers.toLocal8Bit().data());
+    while (next()) {
+        ExactBitStats stats;
+        collectSimulationStats(&params, params.averagingPeriods*2, variations, 0.0012345, variations, 0.00156789, stats);
+        QString res = valueString + "\t" + stats.toString();
+        results.append(res);
+        qDebug(res.toLocal8Bit().data());
+    }
+
+    results.append(QString());
+    qDebug("");
+    results.append(QString());
+    qDebug("");
+    delete state;
 }
 
 void collectSimulationStats(SimParams * newParams, int averagingHalfPeriods, int freqVariations, double freqK, int phaseVariations, double phaseK, ExactBitStats & stats) {
@@ -345,4 +402,19 @@ double SimState::phaseForPeriods(int startHalfperiod, int halfPeriodCount) {
     int64_t sumBase2 = sumForPeriodsBase2(startHalfperiod, halfPeriodCount);
     double angle = params->phaseByAtan2(sumBase2, sumBase1); //- atan2(sum2, sum1) / M_PI / 2;
     return angle;
+}
+
+
+void runSimTestSuite(SimParams * params, int variations) {
+    QStringList results;
+    AveragingMutator avgTest(params);
+    avgTest.runTests(results, variations);
+    ADCBitsMutator adcBitsTest(params);
+    adcBitsTest.runTests(results, variations);
+    SinValueBitsMutator sinValueBitsTest(params);
+    sinValueBitsTest.runTests(results, variations);
+    SinTableSizeMutator sinTableSizeTest(params);
+    sinTableSizeTest.runTests(results, variations);
+    SampleRateMutator sampleRateTest(params);
+    sampleRateTest.runTests(results, variations);
 }

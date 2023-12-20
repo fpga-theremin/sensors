@@ -2,6 +2,8 @@
 #define SIMUTILS_H
 
 #include <stdint.h>
+#include <QString>
+#include <QStringList>
 
 int quantizeSigned(double value, int bits);
 double quantizeDouble(double value, int bits);
@@ -21,6 +23,7 @@ struct SimParams {
     double senseAmplitude;
 
     int adcBits;
+    int averagingPeriods;
 
     // noise in adc output, in LSB (e.g. 0.5 means white noise 1/2 LSB)
     double adcNoise;
@@ -38,11 +41,12 @@ struct SimParams {
     SimParams() : frequency(1012345)
                 , sampleRate(100000000)
                 , ncoPhaseBits(32)
-                , ncoValueBits(8)
-                , ncoSinTableSizeBits(10)
+                , ncoValueBits(10)
+                , ncoSinTableSizeBits(12)
                 , sensePhaseShift(-0.0765)
-                , senseAmplitude(0.8)
+                , senseAmplitude(0.9)
                 , adcBits(8)
+                , averagingPeriods(1)
                 , adcNoise(0)
                 , adcDCOffset(0)
                 , sinTable(NULL)
@@ -67,6 +71,7 @@ struct SimParams {
     // takes phase difference from expected value, and converts to nanoseconds
     double phaseErrorToNanoSeconds(double phaseErr);
 
+    QString toString();
 
     SimParams(const SimParams & v) {
         *this = v;
@@ -83,6 +88,7 @@ struct SimParams {
         senseAmplitude = v.senseAmplitude;
 
         adcBits = v.adcBits;
+        averagingPeriods = v.averagingPeriods;
         adcNoise = v.adcNoise;
         adcDCOffset = v.adcDCOffset;
         realFrequency = v.realFrequency;
@@ -103,8 +109,97 @@ struct ExactBitStats {
     double exactBitsPercentLessOrEqual[32];
     double exactBitsPercentMoreOrEqual[32];
     ExactBitStats() { clear(); }
+    static QString headingString(int minBits = 10, int maxBits = 24);
+    QString toString(int minBits = 10, int maxBits = 24);
     void clear();
     void updateStats();
+};
+
+class SimParamMutator {
+protected:
+    SimParams params;
+    int currentStage;
+    int stageCount;
+    QString heading;
+    QString valueString;
+    void setValue(int value) {
+        valueString = QString(":%1").arg(value);
+    }
+public:
+    SimParamMutator(SimParams * params, QString heading, int stages)
+        : params(*params),
+          currentStage(0),
+          stageCount(stages),
+          heading(heading)
+    {
+
+    }
+    QString toString() { return valueString; }
+    QString headingString() { return heading; }
+    virtual void reset() {
+        currentStage = 0;
+    }
+    virtual bool next() {
+        params.recalculate();
+        currentStage++;
+        return currentStage <= stageCount;
+    }
+    void runTests(QStringList & results, int variations = 5);
+};
+
+class AveragingMutator : public SimParamMutator {
+public:
+    AveragingMutator(SimParams * params, int count = 5) : SimParamMutator(params, "AvgPeriods", count) {
+    }
+    bool next() override {
+        params.averagingPeriods = 1 << currentStage;
+        setValue(params.averagingPeriods);
+        return SimParamMutator::next();
+    }
+};
+
+class ADCBitsMutator : public SimParamMutator {
+public:
+    ADCBitsMutator(SimParams * params, int count = 5) : SimParamMutator(params, "ADCBits", count) {
+    }
+    bool next() override {
+        params.adcBits = 8 + currentStage * 2;
+        setValue(params.adcBits);
+        return SimParamMutator::next();
+    }
+};
+
+class SinValueBitsMutator : public SimParamMutator {
+public:
+    SinValueBitsMutator(SimParams * params, int count = 4) : SimParamMutator(params, "SinValueBits", count) {
+    }
+    bool next() override {
+        params.ncoValueBits = 8 + currentStage * 2;
+        setValue(params.ncoValueBits);
+        return SimParamMutator::next();
+    }
+};
+
+class SinTableSizeMutator : public SimParamMutator {
+public:
+    SinTableSizeMutator(SimParams * params, int count = 4) : SimParamMutator(params, "SinTableSize", count) {
+    }
+    bool next() override {
+        params.ncoSinTableSizeBits = 8 + currentStage * 2;
+        setValue(params.ncoSinTableSizeBits);
+        return SimParamMutator::next();
+    }
+};
+
+class SampleRateMutator : public SimParamMutator {
+public:
+    SampleRateMutator(SimParams * params, int count = 9) : SimParamMutator(params, "SampleRate", count) {
+    }
+    bool next() override {
+        params.sampleRate = 20000000 + currentStage * 20000000;
+        setValue(params.sampleRate/1000000);
+        return SimParamMutator::next();
+    }
 };
 
 void collectSimulationStats(SimParams * newParams, int averagingHalfPeriods, int freqVariations, double freqK, int phaseVariations, double phaseK, ExactBitStats & stats);
@@ -154,6 +249,9 @@ struct SimState {
     double phaseForPeriods(int startHalfperiod, int halfPeriodCount);
 
     void checkGuards();
+
 };
+
+void runSimTestSuite(SimParams * params, int variations=10);
 
 #endif // SIMUTILS_H
