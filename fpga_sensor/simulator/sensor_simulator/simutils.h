@@ -1,6 +1,7 @@
 #ifndef SIMUTILS_H
 #define SIMUTILS_H
 
+#include "dsputils.h"
 #include <stdint.h>
 #include <QString>
 #include <QStringList>
@@ -35,7 +36,9 @@ struct SimParams {
     int64_t phaseIncrement;
     int64_t phaseModule; // 1 << ncoPhaseBits
     int sinTableSize;
-    int * sinTable; // [SP_MAX_SIN_TABLE_SIZE];
+
+    SinTable sinTable;
+    //int * sinTable; // [SP_MAX_SIN_TABLE_SIZE];
 
     int guard1;
     SimParams() : frequency(1012345)
@@ -49,7 +52,7 @@ struct SimParams {
                 , averagingPeriods(1)
                 , adcNoise(0)
                 , adcDCOffset(0)
-                , sinTable(NULL)
+                , sinTable(ncoSinTableSizeBits, ncoValueBits)
                 , guard1(0x11111111)
     {
         // recalculate dependent parameters
@@ -57,8 +60,6 @@ struct SimParams {
     }
 
     ~SimParams() {
-        if (sinTable)
-            delete[] sinTable;
     }
     void recalculate();
     int tableEntryForPhase(int64_t phase);
@@ -96,7 +97,7 @@ struct SimParams {
         phaseModule = v.phaseModule;
         sinTableSize = v.sinTableSize;
         guard1 = v.guard1;
-        sinTable = nullptr;
+        //sinTable = nullptr;
         recalculate();
         return *this;
     }

@@ -55,21 +55,21 @@ void SimParams::recalculate() {
     phaseModule = ((int64_t)1) << ncoPhaseBits;
     phaseIncrement = (int64_t)round(phaseInc * phaseModule);
     realFrequency = sampleRate / ((double)phaseModule / (double)phaseIncrement);
-    if (sinTable) {
-        Q_ASSERT(guard1 == 0x11111111);
-        //Q_ASSERT(sinTable[sinTableSize] == 0x12345678);
-    }
+//    if (sinTable) {
+//        Q_ASSERT(guard1 == 0x11111111);
+//        //Q_ASSERT(sinTable[sinTableSize] == 0x12345678);
+//    }
     sinTableSize = 1 << ncoSinTableSizeBits;
-    if (sinTable) {
-        delete [] sinTable;
-    }
-    sinTable = new int[sinTableSize + 1];
-    for (int i = 0; i < sinTableSize; i++) {
-        sinTable[i] = 0;
-    }
-    sinTable[sinTableSize] = 0x12345678;
+//    if (sinTable) {
+//        delete [] sinTable;
+//    }
+    sinTable.init(ncoSinTableSizeBits, ncoValueBits, 1.0);
+//    for (int i = 0; i < sinTableSize; i++) {
+//        sinTable[i] = 0;
+//    }
+//    sinTable[sinTableSize] = 0x12345678;
     // correction by half of sin table - calculated phase centered at center of table step, not in beginning
-    sinTableSizePhaseCorrection = 1.0 / sinTableSize / 2.0;
+    sinTableSizePhaseCorrection = 0; //1.0 / sinTableSize / 2.0;
 
 //    qDebug("  calculated:");
 //    qDebug("    realFrequency:         %.5f", realFrequency);
@@ -82,22 +82,22 @@ void SimParams::recalculate() {
 #ifdef DEBUG_SIN_TABLE
     qDebug("  sin table:");
 #endif
-    for (int i = 0; i < sinTableSize; i++) {
-        double phase = i * 2*M_PI / sinTableSize;
-        double sinValue = sin(phase);
-        sinTable[i] = quantizeSigned(sinValue, ncoValueBits);
-#ifdef DEBUG_SIN_TABLE
-        qDebug("    sin[%d] \t%.5f \t%.5f \t%.5f \t%d \tdelta=%d", i, sinValue,
-               quantizeDouble(sinValue, ncoValueBits),
-               scaleDouble(sinValue, ncoValueBits),
-               sinTable[i],
-               i>0 ? (sinTable[i] - sinTable[i-1]) : 0
-               );
-#endif
-    }
+//    for (int i = 0; i < sinTableSize; i++) {
+//        double phase = i * 2*M_PI / sinTableSize;
+//        double sinValue = sin(phase);
+//        sinTable[i] = quantizeSigned(sinValue, ncoValueBits);
+//#ifdef DEBUG_SIN_TABLE
+//        qDebug("    sin[%d] \t%.5f \t%.5f \t%.5f \t%d \tdelta=%d", i, sinValue,
+//               quantizeDouble(sinValue, ncoValueBits),
+//               scaleDouble(sinValue, ncoValueBits),
+//               sinTable[i],
+//               i>0 ? (sinTable[i] - sinTable[i-1]) : 0
+//               );
+//#endif
+//    }
 
     Q_ASSERT(guard1 == 0x11111111);
-    Q_ASSERT(sinTable[sinTableSize] == 0x12345678);
+//    Q_ASSERT(sinTable[sinTableSize] == 0x12345678);
 
     int64_t sinCosProdSum = 0;
     for (int i = 0; i < sinTableSize; i++) {
@@ -269,7 +269,7 @@ void SimState::simulate(SimParams * newParams) {
 }
 
 void SimState::checkGuards() {
-    Q_ASSERT(params->sinTable[params->sinTableSize] == 0x12345678);
+//    Q_ASSERT(params->sinTable[params->sinTableSize] == 0x12345678);
 
     Q_ASSERT(guard1 == 0x11111111);
     Q_ASSERT(guard2 == 0x22222222);

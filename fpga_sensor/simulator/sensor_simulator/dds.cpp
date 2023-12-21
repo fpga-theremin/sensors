@@ -12,50 +12,6 @@ uint32_t PhaseAccumulator::frequencyToIncrement(double signalFrequency, double s
     return (int32_t)round((1ull << 32) / (sampleRate / signalFrequency));
 }
 
-
-SinTable::SinTable(int tableSizeBits, int valueBits, double scale)
-    : table(nullptr)
-{
-    init(tableSizeBits, valueBits, scale);
-}
-
-void SinTable::init(int tableSizeBits, int valueBits, double scale) {
-    if (table)
-        delete[] table;
-    this->tableSizeBits = tableSizeBits;
-    this->valueBits = valueBits;
-    this->tableSize = (1 << tableSizeBits);
-    this->table = new int[tableSize];
-    // valueBits includes sign, so positive has valueBits-1 filled with all-ones
-    int maxIntValue = (1 << (valueBits-1)) - 1;
-    double targetScale = maxIntValue * scale;
-    int errCount = 0;
-    for (int i = 0; i < tableSize; i++) {
-        double phase = i * 2*M_PI / tableSize;
-        double sinValue = sin(phase);
-        double scaled = targetScale * sinValue;
-        int rounded = (int)round(scaled);
-        table[i] = rounded;
-        int fourBitValue = (rounded >> (valueBits-4)) & 0xf;
-        bool err = (fourBitValue == 8)||(fourBitValue == 9)||(fourBitValue == 10)||(fourBitValue == 11)
-                ||(fourBitValue == 5)||(fourBitValue == 6)||(fourBitValue == 7);
-        if (err)
-            errCount++;
-        qDebug("    sin[%d] \t%.5f \t%.5f \t%d \tdelta=%d  %x   %s",
-               i,
-               sinValue,
-               scaled,
-               table[i],
-               i>0 ? (table[i] - table[i-1]) : (table[i] - table[tableSize + i-1]),
-               fourBitValue,
-               (err ? "error" : "")
-               );
-
-    }
-    // probably max scale w/o errors is 8.062/16.0
-    qDebug("Done. Range error count: %d", errCount);
-}
-
 DDS::DDS(double sampleRate, int sinTableSizeBits, int sinValueBits, double scale)
     : sinTable(sinTableSizeBits, sinValueBits, scale)
     , sampleRate(sampleRate)
@@ -70,7 +26,7 @@ void DDS::setFrequency(double freq) {
 
 int DDS::nextSample() {
     uint32_t phase = phaseAccum.tick();
-    int sample = sinTable.get(phase);
+    int sample = sinTable.getForPhase(phase);
     return sample;
 }
 
@@ -316,7 +272,7 @@ void testDDS1() {
     DACPWL dac("dac_sine_9bps_33MHz.txt");
     SigmaDelta sigmaDelta(9, 4);
     SigmaDelta sigmaDelta2(16, 4);
-    int shift = dds.sinTable.valueBits - 4;
+    int shift = dds.sinTable.getValueBits() - 4;
     //int shift2 = dds2.sinTable.valueBits - 4;
     for (int i = 0; i < 33*1000; i++) {
         int sample = dds.nextSample();

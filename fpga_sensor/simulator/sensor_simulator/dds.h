@@ -1,7 +1,8 @@
 #ifndef DDS_H
 #define DDS_H
 
-#include <stdint.h>
+#include "dsputils.h"
+
 #include <stdio.h>
 
 struct PhaseAccumulator {
@@ -27,18 +28,6 @@ public:
     }
     void correctIncrement(int32_t incrementDelta) {
         increment += incrementDelta;
-    }
-};
-
-struct SinTable {
-    int tableSizeBits;
-    int tableSize;
-    int valueBits;
-    int* table;
-    SinTable(int tableSizeBits = 10, int valueBits = 9, double scale = 1.0);
-    void init(int tableSizeBits, int valueBits, double scale);
-    int get(uint32_t phase) {
-        return table[phase >> (32-tableSizeBits)];
     }
 };
 

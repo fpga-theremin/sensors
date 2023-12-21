@@ -10,6 +10,7 @@ CONFIG += c++11
 
 SOURCES += \
     dds.cpp \
+    dsputils.cpp \
     main.cpp \
     mainwindow.cpp \
     plotwidget.cpp \
@@ -17,6 +18,7 @@ SOURCES += \
 
 HEADERS += \
     dds.h \
+    dsputils.h \
     mainwindow.h \
     plotwidget.h \
     simutils.h
