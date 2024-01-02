@@ -305,6 +305,16 @@ void testDDS2() {
 }
 
 void testDDS() {
+    SinTable sinTable(10, 12);
+    sinTable.generateVerilog("");
+    sinTable.generateVerilogTestBench("");
+    sinTable.generateSinCosVerilog("");
+    SinTable sinTable2(12, 13);
+    sinTable2.generateVerilog("");
+    sinTable2.generateVerilogTestBench("");
+    sinTable2.generateSinCosVerilog("");
+    sinTable2.generateSinCosVerilogTestBench("");
+
     testDDS1();
     testDDS2();
 }

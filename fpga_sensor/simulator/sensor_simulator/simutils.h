@@ -44,11 +44,11 @@ struct SimParams {
     SimParams() : frequency(1012345)
                 , sampleRate(100000000)
                 , ncoPhaseBits(32)
-                , ncoValueBits(10)
-                , ncoSinTableSizeBits(12)
+                , ncoValueBits(13)         // actual table size is 1/4 (1024) and 12 bits
+                , ncoSinTableSizeBits(12)  // actual table size is 1/4 (1024) and 12 bits
                 , sensePhaseShift(-0.0765)
                 , senseAmplitude(0.9)
-                , adcBits(8)
+                , adcBits(10)
                 , averagingPeriods(1)
                 , adcNoise(0)
                 , adcDCOffset(0)
@@ -68,7 +68,7 @@ struct SimParams {
     // compare phase with expected
     double phaseError(double phase);
     // number of exact bits in phase, from phase diff
-    static int exactBits(double phaseDiff);
+    static int exactBits(double phaseDiff, int fractionCount = 1);
     // takes phase difference from expected value, and converts to nanoseconds
     double phaseErrorToNanoSeconds(double phaseErr);
 
@@ -104,16 +104,23 @@ struct SimParams {
 };
 
 struct ExactBitStats {
-    int exactBitsCounters[32];
+private:
+    int k;
+    int exactBitsCounters[32*10];
     int totalCount;
-    double exactBitsPercent[32];
-    double exactBitsPercentLessOrEqual[32];
-    double exactBitsPercentMoreOrEqual[32];
-    ExactBitStats() { clear(); }
-    static QString headingString(int minBits = 10, int maxBits = 24);
+    double exactBitsPercent[32*10];
+    double exactBitsPercentLessOrEqual[32*10];
+    double exactBitsPercentMoreOrEqual[32*10];
+public:
+    ExactBitStats(int k = 1) : k(k) { clear(); }
+    QString headingString(int minBits = 10, int maxBits = 24);
     QString toString(int minBits = 10, int maxBits = 24);
+    void incrementExactBitsCount(int exactBits) {
+        exactBitsCounters[exactBits]++;
+    }
     void clear();
     void updateStats();
+    int bitFractionCount() const { return k; }
 };
 
 class SimParamMutator {
@@ -145,7 +152,7 @@ public:
         currentStage++;
         return currentStage <= stageCount;
     }
-    void runTests(QStringList & results, int variations = 5);
+    void runTests(QStringList & results, int variations = 5, int bitFractionCount = 5);
 };
 
 class AveragingMutator : public SimParamMutator {
@@ -161,10 +168,10 @@ public:
 
 class ADCBitsMutator : public SimParamMutator {
 public:
-    ADCBitsMutator(SimParams * params, int count = 5) : SimParamMutator(params, "ADCBits", count) {
+    ADCBitsMutator(SimParams * params, int count = 6) : SimParamMutator(params, "ADCBits", count) {
     }
     bool next() override {
-        params.adcBits = 8 + currentStage * 2;
+        params.adcBits = 8 + currentStage;
         setValue(params.adcBits);
         return SimParamMutator::next();
     }
@@ -172,10 +179,10 @@ public:
 
 class SinValueBitsMutator : public SimParamMutator {
 public:
-    SinValueBitsMutator(SimParams * params, int count = 4) : SimParamMutator(params, "SinValueBits", count) {
+    SinValueBitsMutator(SimParams * params, int count = 8) : SimParamMutator(params, "SinValueBits", count) {
     }
     bool next() override {
-        params.ncoValueBits = 8 + currentStage * 2;
+        params.ncoValueBits = 8 + currentStage;
         setValue(params.ncoValueBits);
         return SimParamMutator::next();
     }
@@ -183,10 +190,10 @@ public:
 
 class SinTableSizeMutator : public SimParamMutator {
 public:
-    SinTableSizeMutator(SimParams * params, int count = 4) : SimParamMutator(params, "SinTableSize", count) {
+    SinTableSizeMutator(SimParams * params, int count = 8) : SimParamMutator(params, "SinTableSize", count) {
     }
     bool next() override {
-        params.ncoSinTableSizeBits = 8 + currentStage * 2;
+        params.ncoSinTableSizeBits = 8 + currentStage;
         setValue(params.ncoSinTableSizeBits);
         return SimParamMutator::next();
     }
@@ -253,6 +260,6 @@ struct SimState {
 
 };
 
-void runSimTestSuite(SimParams * params, int variations=10);
+void runSimTestSuite(SimParams * params, int variations=10, int bitFractionCount = 2);
 
 #endif // SIMUTILS_H

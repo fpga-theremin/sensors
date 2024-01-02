@@ -102,8 +102,8 @@ void SimParams::recalculate() {
     int64_t sinCosProdSum = 0;
     for (int i = 0; i < sinTableSize; i++) {
         int j = (i + sinTableSize / 4) & (sinTableSize-1);
-        int sinValue = sinTable[i];
-        int cosValue = sinTable[j];
+        int sinValue = sinTable.get(i);
+        int cosValue = sinTable.get(j);
         sinCosProdSum += (int64_t)sinValue * cosValue;
     }
     Q_ASSERT(sinCosProdSum == 0);
@@ -112,7 +112,7 @@ void SimParams::recalculate() {
 int SimParams::tableEntryForPhase(int64_t phase) {
     int shiftedPhase = (int)(phase >> (ncoPhaseBits-ncoSinTableSizeBits));
     int shiftedMasked = shiftedPhase & (sinTableSize - 1);
-    return sinTable[shiftedMasked];
+    return sinTable.get(shiftedMasked);
 }
 
 // atan, phase corrected
@@ -140,15 +140,18 @@ double SimParams::phaseErrorToNanoSeconds(double phaseErr) {
 }
 
 // number of exact bits in phase, from phase diff
-int SimParams::exactBits(double phaseDiff) {
+int SimParams::exactBits(double phaseDiff, int fractionCount) {
     double v = phaseDiff >= 0 ? phaseDiff : -phaseDiff;
-    int bitCount = 0;
-    while (bitCount < 32) {
-        v = v * 2;
-        if (v >= 1.0)
-            break;
-        bitCount++;
-    }
+    double vlog2 = -log2(v);
+    int bitCount = (int)floor(vlog2*fractionCount);
+    if (bitCount >= 32 * fractionCount)
+        bitCount = 32 * fractionCount - 1;
+//    while (bitCount < 32) {
+//        v = v * 2;
+//        if (v >= 1.0)
+//            break;
+//        bitCount++;
+//    }
     return bitCount;
 }
 
@@ -279,7 +282,7 @@ void SimState::checkGuards() {
     Q_ASSERT(guard6 == 0x66666666);
 }
 void ExactBitStats::clear() {
-    for (int i = 0; i < 32; i++) {
+    for (int i = 0; i < 32*k; i++) {
         exactBitsCounters[i] = 0;
         exactBitsPercent[i] = 0;
         exactBitsPercentLessOrEqual[i] = 0;
@@ -290,19 +293,22 @@ void ExactBitStats::clear() {
 
 QString ExactBitStats::headingString(int minBits, int maxBits) {
     QString res;
-    for (int i = minBits; i <= maxBits; i++) {
-        res += QString(":%1\t").arg(i);
+    for (int i = minBits*k; i <= maxBits*k; i++) {
+        if (k <= 1)
+            res += QString(":%1\t").arg(i);
+        else
+            res += QString(":%1\t").arg(i / (double)k, 0, 'g');
     }
     return res;
 }
 
 QString ExactBitStats::toString(int minBits, int maxBits) {
     QString res;
-    for (int i = minBits; i <= maxBits; i++) {
+    for (int i = minBits*k; i <= maxBits*k; i++) {
         double v = exactBitsPercent[i];
-        if (i == minBits)
+        if (i == minBits*k)
             v = exactBitsPercentLessOrEqual[i];
-        if (i == maxBits)
+        if (i == maxBits*k)
             v = exactBitsPercentMoreOrEqual[i];
         res += QString("%1\t").arg(v, 0, 'g', 5);
     }
@@ -311,25 +317,25 @@ QString ExactBitStats::toString(int minBits, int maxBits) {
 
 void ExactBitStats::updateStats() {
     totalCount = 0;
-    for (int i = 0; i < 32; i++) {
+    for (int i = 0; i < 32*k; i++) {
         totalCount += exactBitsCounters[i];
     }
-    for (int i = 0; i < 32; i++) {
+    for (int i = 0; i < 32*k; i++) {
         exactBitsPercent[i] = exactBitsCounters[i] * 100.0 / totalCount;
     }
     double sum = 0;
-    for (int i = 0; i < 32; i++) {
+    for (int i = 0; i < 32*k; i++) {
         sum += exactBitsPercent[i];
         exactBitsPercentLessOrEqual[i] = sum;
     }
     sum = 0;
-    for (int i = 31; i >= 0; i--) {
+    for (int i = 31*k; i >= 0; i--) {
         sum += exactBitsPercent[i];
         exactBitsPercentMoreOrEqual[i] = sum;
     }
 }
 
-void SimParamMutator::runTests(QStringList & results, int variations) {
+void SimParamMutator::runTests(QStringList & results, int variations, int bitFractionCount) {
     SimState * state = new SimState();
     QString testName = heading + " : " + params.toString();
     results.append(testName);
@@ -337,17 +343,23 @@ void SimParamMutator::runTests(QStringList & results, int variations) {
     results.append(QString());
     qDebug("");
 
-    QString headers = heading + "\t" + ExactBitStats::headingString();
+    ExactBitStats statsHead(bitFractionCount);
+    QString headers = heading + "\t" + statsHead.headingString();
     results.append(headers);
     qDebug(headers.toLocal8Bit().data());
+
     while (next()) {
-        ExactBitStats stats;
+        ExactBitStats stats(bitFractionCount);
         collectSimulationStats(&params, params.averagingPeriods*2, variations, 0.0012345, variations, 0.00156789, stats);
         QString res = valueString + "\t" + stats.toString();
         results.append(res);
         qDebug(res.toLocal8Bit().data());
     }
 
+    results.append(QString());
+    qDebug("");
+    results.append(QString());
+    qDebug("");
     results.append(QString());
     qDebug("");
     results.append(QString());
@@ -370,10 +382,10 @@ void collectSimulationStats(SimParams * newParams, int averagingHalfPeriods, int
                 // bottom: avg for 1 period (2 halfperiods)
                 double angle = state->phaseForPeriods(i, averagingHalfPeriods);
                 double err = params.phaseError(angle);
-                int exactBits = SimParams::exactBits(err);
-                if (exactBits > 31)
-                    exactBits = 31;
-                stats.exactBitsCounters[exactBits]++;
+                int exactBits = SimParams::exactBits(err, stats.bitFractionCount());
+//                if (exactBits > 31)
+//                    exactBits = 31;
+                stats.incrementExactBitsCount(exactBits);
             }
         }
     }
@@ -405,16 +417,16 @@ double SimState::phaseForPeriods(int startHalfperiod, int halfPeriodCount) {
 }
 
 
-void runSimTestSuite(SimParams * params, int variations) {
+void runSimTestSuite(SimParams * params, int variations, int bitFractionCount) {
     QStringList results;
     AveragingMutator avgTest(params);
-    avgTest.runTests(results, variations);
+    avgTest.runTests(results, variations, bitFractionCount);
     ADCBitsMutator adcBitsTest(params);
-    adcBitsTest.runTests(results, variations);
+    adcBitsTest.runTests(results, variations, bitFractionCount);
     SinValueBitsMutator sinValueBitsTest(params);
-    sinValueBitsTest.runTests(results, variations);
+    sinValueBitsTest.runTests(results, variations, bitFractionCount);
     SinTableSizeMutator sinTableSizeTest(params);
-    sinTableSizeTest.runTests(results, variations);
+    sinTableSizeTest.runTests(results, variations, bitFractionCount);
     SampleRateMutator sampleRateTest(params);
-    sampleRateTest.runTests(results, variations);
+    sampleRateTest.runTests(results, variations, bitFractionCount);
 }
