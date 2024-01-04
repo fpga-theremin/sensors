@@ -18,21 +18,21 @@ Choosing FPGA device
 
 Cheap but powerful enough to implement all the features of sensor.
 
-Current candidates (Lattice iCE40 Ultra family, QFN-48 package):
+Current candidates (Lattice iCE40 Ultra family, QFN-48 package, 39 I/O):
 
 | Device   |  Description | Mouser link | Mouser stock | Mouser price | JLCPCB link | JLCPCB price |
 | ------   |  ----------- | ----------- | ------------ | ------------ | ----------- | ------------ |
-| ICE5LP4K-SG48ITR | 3520 LE, 20 EBR, 4 DSP | [842-ICE5LP4K-SG48ITR](https://eu.mouser.com/ProductDetail/Lattice/ICE5LP4K-SG48ITR?qs=ZwKJWZfDtNj9QagUtdRf4g%3D%3D) | 34K | EUR 7.69 | [C2651898](https://jlcpcb.com/partdetail/Lattice-ICE5LP4KSG48ITR/C2651898) | $11.63 |
-| ICE5LP2K-SG48ITR | 2048 LE, 20 EBR, 4 DSP | [842-ICE5LP2K-SG48ITR](https://eu.mouser.com/ProductDetail/Lattice/ICE5LP2K-SG48ITR?qs=ZwKJWZfDtNgAWzMHJRGDug%3D%3D) | 3K | EUR 6.60 | not available | - |
-| ICE5LP1K-SG48ITR | 1100 LE, 16 EBR, 2 DSP | [842-ICE5LP1K-SG48ITR](https://eu.mouser.com/ProductDetail/Lattice/ICE5LP1K-SG48ITR?qs=ZwKJWZfDtNg6punXjA%252B0Og%3D%3D) | 1.5K | EUR 5.22 | [C1550810](https://jlcpcb.com/partdetail/Lattice-ICE5LP1KSG48ITR/C1550810)  | $9.37 |
+| ICE5LP4K-SG48ITR | 3520LE, 20EBR, 4DSP | [842-ICE5LP4K-SG48ITR](https://eu.mouser.com/ProductDetail/Lattice/ICE5LP4K-SG48ITR?qs=ZwKJWZfDtNj9QagUtdRf4g%3D%3D) | 34K | EUR 7.69 | [C2651898](https://jlcpcb.com/partdetail/Lattice-ICE5LP4KSG48ITR/C2651898) | $11.63 |
+| ICE5LP2K-SG48ITR | 2048LE, 20EBR, 4DSP | [842-ICE5LP2K-SG48ITR](https://eu.mouser.com/ProductDetail/Lattice/ICE5LP2K-SG48ITR?qs=ZwKJWZfDtNgAWzMHJRGDug%3D%3D) | 3K | EUR 6.60 | not available | - |
+| ICE5LP1K-SG48ITR | 1100LE, 16EBR, 2DSP | [842-ICE5LP1K-SG48ITR](https://eu.mouser.com/ProductDetail/Lattice/ICE5LP1K-SG48ITR?qs=ZwKJWZfDtNg6punXjA%252B0Og%3D%3D) | 1.5K | EUR 5.22 | [C1550810](https://jlcpcb.com/partdetail/Lattice-ICE5LP1KSG48ITR/C1550810)  | $9.37 |
 
-None of them are in stock on JLCPCB.
+Resources in table above:
 
 * **LE** - logic element (LUT4 + FF)
 * **EBR** - memory block (single port 256x16)
 * **DSP** - 16x16 mul + 32 bit accumulator
 
-ICE5LP1K-SG48ITR is smaller device (probably design will not fit).
+**ICE5LP1K-SG48ITR** is smaller device (probably design will not fit).
 
 
 SPI interface
