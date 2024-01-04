@@ -24,6 +24,8 @@ struct SimParams {
     double senseAmplitude;
 
     int adcBits;
+    // 1: ADC samples with specified sample rate, N: ADC samples once per N cycles, linearly interpolating values missed cycles
+    int adcInterpolation;
     int averagingPeriods;
 
     // noise in adc output, in LSB (e.g. 0.5 means white noise 1/2 LSB)
@@ -49,6 +51,7 @@ struct SimParams {
                 , sensePhaseShift(-0.0765)
                 , senseAmplitude(0.9)
                 , adcBits(10)
+                , adcInterpolation(1)
                 , averagingPeriods(1)
                 , adcNoise(0)
                 , adcDCOffset(0)
@@ -89,6 +92,7 @@ struct SimParams {
         senseAmplitude = v.senseAmplitude;
 
         adcBits = v.adcBits;
+        adcInterpolation = v.adcInterpolation;
         averagingPeriods = v.averagingPeriods;
         adcNoise = v.adcNoise;
         adcDCOffset = v.adcDCOffset;
@@ -177,6 +181,17 @@ public:
     }
 };
 
+class ADCInterpolationMutator : public SimParamMutator {
+public:
+    ADCInterpolationMutator(SimParams * params, int count = 4) : SimParamMutator(params, "ADCInterpolation", count) {
+    }
+    bool next() override {
+        params.adcInterpolation = 1 + currentStage;
+        setValue(params.adcInterpolation);
+        return SimParamMutator::next();
+    }
+};
+
 class SinValueBitsMutator : public SimParamMutator {
 public:
     SinValueBitsMutator(SimParams * params, int count = 8) : SimParamMutator(params, "SinValueBits", count) {
@@ -255,6 +270,10 @@ struct SimState {
     int64_t sumForPeriodsBase1(int startHalfperiod, int halfPeriodCount);
     int64_t sumForPeriodsBase2(int startHalfperiod, int halfPeriodCount);
     double phaseForPeriods(int startHalfperiod, int halfPeriodCount);
+
+    int adcSensedValueForPhase(uint64_t phase);
+    double adcExactSensedValueForPhase(uint64_t phase);
+    int adcExactToQuantized(double value);
 
     void checkGuards();
 

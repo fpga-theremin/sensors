@@ -168,6 +168,9 @@ void MainWindow::createControls() {
     const int adcValueBits[] = {6, 7, 8, 9, 10, 11, 12, 13, 14, 16, -1000000};
     _adcParamsLayout->addRow(new QLabel("ADC bits"), createIntComboBox(&_simParams.adcBits, adcValueBits));
 
+    const int adcInterpolationRate[] = {1, 2, 3, 4, -1000000};
+    _adcParamsLayout->addRow(new QLabel("ADC interpolation"), createIntComboBox(&_simParams.adcInterpolation, adcInterpolationRate));
+
     const double adcNoise[] = {0.0, 0.1, 0.25, 0.5, 1.0, 2.0, 5.0, 10.0, -1000000};
     _adcParamsLayout->addRow(new QLabel("Noise, LSB"), createDoubleComboBox(&_simParams.adcNoise, adcNoise));
 

@@ -155,6 +155,28 @@ int SimParams::exactBits(double phaseDiff, int fractionCount) {
     return bitCount;
 }
 
+double SimState::adcExactSensedValueForPhase(uint64_t phase) {
+    int adcScale = 1<<(params->adcBits - 1);
+    double exactPhase = 2 * M_PI * phase / params->phaseModule;
+    double exactSense = sin(exactPhase) * params->senseAmplitude;
+    return exactSense * adcScale;
+}
+
+int SimState::adcExactToQuantized(double exactSense) {
+    // apply ADC DC offset
+    double senseWithDCOffset = exactSense + params->adcDCOffset;
+    // apply ADC Noise
+    double noise = 0;
+    double senseWithNoise = senseWithDCOffset + noise;
+    // quantization (rounding to integer)
+    return (int)round(senseWithNoise);
+}
+
+int SimState::adcSensedValueForPhase(uint64_t phase) {
+    double exactSense = adcExactSensedValueForPhase(phase);
+    return adcExactToQuantized(exactSense);
+}
+
 void SimState::simulate(SimParams * newParams) {
     guard1 = 0x11111111;
     guard2 = 0x22222222;
@@ -187,19 +209,28 @@ void SimState::simulate(SimParams * newParams) {
     senseShift &= (params->phaseModule - 1);
     //senseShift -= params->phaseIncrement / 2;
     phase = senseShift;
-    int adcScale = 1<<(params->adcBits - 1);
+    //int adcScale = 1<<(params->adcBits - 1);
     for (int i = 0; i < SP_SIM_MAX_SAMPLES; i++) {
-        double exactPhase = 2 * M_PI * phase / params->phaseModule;
-        double exactSense = sin(exactPhase) * params->senseAmplitude;
-        exactSense *= adcScale;
+        //double exactPhase = 2 * M_PI * phase / params->phaseModule;
+        double exactSense = adcExactSensedValueForPhase(phase);
         senseExact[i] = exactSense;
-        // apply ADC DC offset
-        double senseWithDCOffset = exactSense + params->adcDCOffset;
-        // apply ADC Noise
-        double noise = 0;
-        double senseWithNoise = senseWithDCOffset + noise;
         // quantization (rounding to integer)
-        sense[i] = (int)round(senseWithNoise);
+        sense[i] = adcExactToQuantized(exactSense);
+
+        if (params->adcInterpolation > 1) {
+            int frac = i % params->adcInterpolation;
+            if (frac != 0) {
+                // interpolation is required
+                int64_t prev_phase = phase - params->phaseIncrement * frac;
+                prev_phase = prev_phase & (params->phaseModule - 1);
+                int64_t next_phase = prev_phase + params->phaseIncrement * params->adcInterpolation;
+                next_phase = next_phase & (params->phaseModule - 1);
+                int prev_value = adcSensedValueForPhase(prev_phase);
+                int next_value = adcSensedValueForPhase(next_phase);
+                int this_value = prev_value + (next_value - prev_value) * frac / params->adcInterpolation;
+                sense[i] = adcExactToQuantized(this_value);
+            }
+        }
 
         // multiplied
         senseMulBase1[i] = sense[i] * (int64_t)base1[i];
@@ -423,6 +454,8 @@ void runSimTestSuite(SimParams * params, int variations, int bitFractionCount) {
     avgTest.runTests(results, variations, bitFractionCount);
     ADCBitsMutator adcBitsTest(params);
     adcBitsTest.runTests(results, variations, bitFractionCount);
+//    ADCInterpolationMutator adcInterpolationTest(params);
+//    adcInterpolationTest.runTests(results, variations, bitFractionCount);
     SinValueBitsMutator sinValueBitsTest(params);
     sinValueBitsTest.runTests(results, variations, bitFractionCount);
     SinTableSizeMutator sinTableSizeTest(params);

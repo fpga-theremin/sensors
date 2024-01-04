@@ -16,7 +16,7 @@ Design of FPGA based current sensing theremin sensor with MCU and FPGA compatibl
 Choosing FPGA device
 ====================
 
-Cheap but powerful enough to implement all the features of sensor.
+FPGA device should be cheap but powerful enough to implement all the features of sensor, available in stock.
 
 Current candidates (Lattice iCE40 Ultra family, QFN-48 package, 39 I/O):
 
@@ -83,7 +83,7 @@ Some notes about required registers.
 Flags:
 
     SENSOR_ENABLE   1bit  R/W  0: oscillator stopped, 1: oscillator is working
-    FREQ_OVERRIDE   1bit  R/W  1: use PHASE_INCREMENT_OVERRIDE for DCO, 0: use PLL
+    FREQ_LOCK       1bit  R/W  1: use PHASE_INCREMENT_OVERRIDE for DCO, 0: use PLL
 
 Long registers:
 
@@ -119,4 +119,36 @@ Chaining two sensors using I2S_DO and I2S_DI allows to use only single I2S stere
 See I2S docs for details.
 
 Streaming of sensor values as I2S data is a feasible transport - MCU may receive it as additional audio stream using DMA, and get nice per-sample interpolated values.
+
+Components selection
+====================
+
+* **DAC**
+
+| Device         | Package  | Bits | MHz | Mouser price | Mouser stock | JLCPCB price | JLCPCB stock |
+| -------------- | -------  | ---- | --- | ------------ | ------------ | ------------ | ------------ |
+| AD9748ACPZ     | LFCSP-32 | 8    | 210 | EUR 10.74    | 926          | $7.67        | 41           |
+| AD9704BCPZ     | LFCSP-32 | 8    | 175 | EUR  9.52    | 4728         | $7.94        | 73           |
+| AD9707BCPZ     | LFCSP-32 | 14   | 175 | EUR 19.21    | 734          | $10.23       | 64           |
+| AD9744ACPZRL7  | LFCSP-32 | 14   | 210 | EUR 21.74    | 2759         | $3.9         | 10           |
+| AD9744ARUZRL7  | TSSOP-28 | 14   | 210 | EUR 24.31    | 326          | $6.03        | 115          |
+
+
+* **ADC**
+
+| Device         | Package  | Bits | MHz | Mouser price | Mouser stock | JLCPCB price | JLCPCB stock |
+| -------------- | -------  | ---- | --- | ------------ | ------------ | ------------ | ------------ |
+| AD9283BRSZ-100 | SSOP-20  | 8    | 100 | EUR 15.74    | 645          | $3.9         | 42           |
+| AD9215BRUZ-105 | TSSOP-28 | 10   | 105 | EUR 19.65    | 1695         | $14.08       | 65           |
+| AD9215BCPZ-105 | LFCSP-32 | 10   | 105 | EUR 19.14    | 1035         | $17.76       | 1            |
+
+
+Sensor simulator
+================
+
+I've created an application to simulate sensor and evaluate its precision for different parameters.
+
+It's Qt application, source code is available [here](https://github.com/fpga-theremin/sensors/tree/main/fpga_sensor/simulator/sensor_simulator)
+
+ 
 
