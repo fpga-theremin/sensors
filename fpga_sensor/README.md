@@ -64,10 +64,24 @@ NVCM Programming
 Sensor SPI interface registers
 ==============================
 
-| ------- | ----  | ----  | ----------- |
-| Address | Name  | Size  | Description |
-| ------- | ----  | ----  | ----------- |
-| 0       | State | 8 bit | ----------- |
+| ------- | ----   | ----  | ----------- |
+| Address | Name   | Size  | Description |
+| ------- | ----   | ----  | ----------- |
+| 0       | Status | 8 bit | TODO        |
+
+Some notes about required registers.
+
+Flags:
+
+    SENSOR_ENABLE   1bit  R/W  0: oscillator stopped, 1: oscillator is working
+    FREQ_OVERRIDE   1bit  R/W  1: use PHASE_INCREMENT_OVERRIDE for DCO, 0: use PLL
+
+Long registers:
+
+    PHASE_INCREMENT          32bit R/O  read: current phase increment
+    PHASE_INCREMENT_OVERRIDE 32bit R/W  to allow fixing oscillation frequency
+
+
 
 Sensor stream interface
 =======================
