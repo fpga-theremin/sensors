@@ -1,5 +1,7 @@
-Design of FPGA based theremin sensor with MCU and FPGA compatible interface
-===========================================================================
+Design of FPGA based current sensing theremin sensor with MCU and FPGA compatible interface
+===========================================================================================
+
+![Block Diagram](images/fpga_sensor_block_diagram.png)
 
 * Drive signal is pure sine wave generated with FPGA + DAC [numerically controlled oscillator](https://en.wikipedia.org/wiki/Numerically_controlled_oscillator).
 * Sallen-key filter to convert quantized DAC output into pure sine
