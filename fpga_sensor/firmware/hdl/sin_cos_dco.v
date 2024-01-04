@@ -1,6 +1,7 @@
 module sin_cos_dco
 #(
     parameter PHASE_BITS = 32,
+    parameter PHASE_INCREMENT_BITS = 28,
     parameter SIN_TABLE_DATA_WIDTH = 13,
     parameter SIN_TABLE_ADDR_WIDTH = 12
 )
@@ -13,7 +14,7 @@ module sin_cos_dco
     input wire RESET,
 
     /* new phase increment value */
-    input wire [PHASE_BITS-1:0] PHASE_INCREMENT_IN,
+    input wire [PHASE_INCREMENT_BITS-1:0] PHASE_INCREMENT_IN,
     /* 1 to set new value for phase increment */
     input wire PHASE_INCREMENT_IN_WE,
 
@@ -24,7 +25,7 @@ module sin_cos_dco
 );
 
 /* Store phase increment value */
-reg [PHASE_BITS-1:0] phase_increment;
+reg [PHASE_INCREMENT_BITS-1:0] phase_increment;
 always @(posedge CLK) begin
     if (RESET) begin
         phase_increment <= 0;
@@ -42,6 +43,8 @@ always @(posedge CLK) begin
         phase <= phase + phase_increment;
     end
 end
+
+/* TODO: support different sin table sizes */
 
 sin_cos_table_4096_13bit #(
     .DATA_WIDTH(SIN_TABLE_DATA_WIDTH),
