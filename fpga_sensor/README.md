@@ -41,15 +41,15 @@ SPI slave interface in FPGA will be used for:
 
 SPI slave signals:
 
-* SPI_CLK (SCLK)
-* SPI_SS (CS, slave select, active 0)
-* SPI_SI (MOSI)
-* SPI_SO (MISO)
+* *SPI_CLK* IN: SPI clock input (SCLK)
+* *SPI_SS* IN: slave select, active 0 (CS)
+* *SPI_SI* IN: SPI slave data input (MOSI)
+* *SPI_SO* OUT: SPI slave data output (MISO)
 
 Configuration signals - to be used for programming.
 
-* CRESET_B
-* CDONE
+* *CRESET_B* IN: configuration reset, 0 to start configuration
+* *CDONE*    OUT: configuration done
 
 FPGA configuration modes
 ========================
@@ -66,10 +66,9 @@ NVCM Programming
 Sensor SPI interface registers
 ==============================
 
-| ------- | ----   | ----  | ----------- |
-| Address | Name   | Size  | Description |
-| ------- | ----   | ----  | ----------- |
-| 0       | Status | 8 bit | TODO        |
+| Address | Name   | Size  | Description                             |
+| ------- | ----   | ----  | --------------------------------------- |
+| 0       | Status | 8 bit | TODO                                    |
 
 Some notes about required registers.
 
@@ -100,10 +99,10 @@ Primitive synthesizer might just get wave table entry using phase as table index
 
 Sensor I2S Pins: 
 
-* I2S_BCLK - bit clock
-* I2S_LRCK - left/right channel
-* I2S_DO   - I2S data output from sensor (16/24/32 bits) - left channel value contains measurement from this sensor, right channel value may replicate left channel value from I2S_DI
-* I2S_DI   - I2S data input to sensor - may be used to merge streams from second sensor (left channel) and replicate as right channel in I2S_DO, connect to GND if there is no previous sensor in chain.
+* *I2S_BCLK* IN: bit clock
+* *I2S_LRCK* IN: left/right channel
+* *I2S_DO*   OUT: I2S data output from sensor (16/24/32 bits) - left channel value contains measurement from this sensor, right channel value may replicate left channel value from I2S_DI
+* *I2S_DI*   IN: I2S data input to sensor - may be used to merge streams from second sensor (left channel) and replicate as right channel in I2S_DO, connect to GND if there is no previous sensor in chain.
 
 Chaining two sensors using I2S_DO and I2S_DI allows to use only single I2S stereo channel (DIN) of MCU to receive data streams from both pitch and volume sensors.
 
