@@ -44,13 +44,13 @@ struct SimParams {
 
     int guard1;
     SimParams() : frequency(1012345)
-                , sampleRate(100000000)
+                , sampleRate(40000000)
                 , ncoPhaseBits(32)
                 , ncoValueBits(13)         // actual table size is 1/4 (1024) and 12 bits
                 , ncoSinTableSizeBits(12)  // actual table size is 1/4 (1024) and 12 bits
                 , sensePhaseShift(-0.0765)
                 , senseAmplitude(0.9)
-                , adcBits(10)
+                , adcBits(12)
                 , adcInterpolation(1)
                 , averagingPeriods(1)
                 , adcNoise(0)

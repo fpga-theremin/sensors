@@ -13,6 +13,14 @@ Design of FPGA based current sensing theremin sensor with MCU and FPGA compatibl
 * Flexible external interface of sensor module - pins assignment and behavior can be redefined in FPGA logic.
 * Trying to minimize sensor module cost while getting maximum sensitivity
 
+Sensor simulator
+================
+
+I've created an application to simulate sensor and evaluate its precision for different parameters.
+
+It's Qt application, source code is available [here](https://github.com/fpga-theremin/sensors/tree/main/fpga_sensor/simulator/sensor_simulator)
+
+
 Choosing FPGA device
 ====================
 
@@ -123,6 +131,9 @@ Streaming of sensor values as I2S data is a feasible transport - MCU may receive
 Components selection
 ====================
 
+Trying to find suitable components with optimal performance/price.
+JLCPCB assembly service is planned to be used, so JLCPCB stock and price is important while this selection.
+
 * **DAC**
 
 | Device         | Package  | Bits | MHz | Mouser price | Mouser stock | JLCPCB price | JLCPCB stock |
@@ -133,22 +144,34 @@ Components selection
 | AD9744ACPZRL7  | LFCSP-32 | 14   | 210 | EUR 21.74    | 2759         | $3.9         | 10           |
 | AD9744ARUZRL7  | TSSOP-28 | 14   | 210 | EUR 24.31    | 326          | $6.03        | 115          |
 
+For DAC, it makes sense to choose LFCSP-32 package and design the board to support different compatible DACs.
+
+While AD9744ACPZRL7 is available for extremely cheap price on JLCPCB, use it. If not available, switch to other device like AD9704BCPZ.
+
 
 * **ADC**
 
-| Device         | Package  | Bits | MHz | Mouser price | Mouser stock | JLCPCB price | JLCPCB stock |
-| -------------- | -------  | ---- | --- | ------------ | ------------ | ------------ | ------------ |
-| AD9283BRSZ-100 | SSOP-20  | 8    | 100 | EUR 15.74    | 645          | $3.9         | 42           |
-| AD9215BRUZ-105 | TSSOP-28 | 10   | 105 | EUR 19.65    | 1695         | $14.08       | 65           |
-| AD9215BCPZ-105 | LFCSP-32 | 10   | 105 | EUR 19.14    | 1035         | $17.76       | 1            |
+| Device           | Package  | Bits | MHz | Mouser price | Mouser stock | JLCPCB price | JLCPCB stock |
+| --------------   | -------  | ---- | --- | ------------ | ------------ | ------------ | ------------ |
+| AD9283BRSZ-100   | SSOP-20  | 8    | 100 | EUR 15.74    | 645          | $3.9         | 42           |
+| AD9215BRUZ-105   | TSSOP-28 | 10   | 105 | EUR 19.65    | 1695         | $14.08       | 65           |
+| AD9215BCPZ-105   | LFCSP-32 | 10   | 105 | EUR 19.14    | 1035         | $17.76       | 1            |
+| AD9215BCPZ-65    | LFCSP-32 | 10   |  65 | EUR 14.22    |   53         |              |              |
+| AD9235BRUZRL7-40 | TSSOP-28 | 12   |  40 | EUR 20.60    |   32         | $6.19        | 88           |
+| AD9235BCPZRL7-40 | LFCSP-32 | 12   |  40 | EUR 20.66    |  972         | $7.37        | 183          |
+
+For 100MHz ADC, 8-bit SSOP-20 AD9283BRSZ-100 is probably the best choice - if available on JLCPCB.
+
+If 40MHz is ok, cheap 12-bit ADCs are available on JLCPCB.
+
+For low sample rate ADC, DAC may work on higher frequency, e.g. x2 or x4 (80MHz or 160MHz for 40MHz ADC) to produce cleaner sine wave.
 
 
-Sensor simulator
-================
+Current choice:
 
-I've created an application to simulate sensor and evaluate its precision for different parameters.
+| Component | Device           | Description              | Mouser price | Mouser stock | JLCPCB price | JLCPCB stock |
+| --------- | --------------   | ------------------------ | ------------ | ------------ | ------------ | ------------ |
+| DAC       | AD9744ACPZRL7    | LFCSP-32, 14bit, 210 MHz | EUR 21.74    | 2759         | $3.9         | 10           |
+| ADC       | AD9235BCPZRL7-40 | LFCSP-32, 12bit, 40MHz   | EUR 20.66    |  972         | $7.37        | 183          |
 
-It's Qt application, source code is available [here](https://github.com/fpga-theremin/sensors/tree/main/fpga_sensor/simulator/sensor_simulator)
-
- 
 
