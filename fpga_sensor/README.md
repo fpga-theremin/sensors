@@ -153,12 +153,12 @@ While AD9744ACPZRL7 is available for extremely cheap price on JLCPCB, use it. If
 
 | Device           | Package  | Bits | MHz | Mouser price | Mouser stock | JLCPCB price | JLCPCB stock |
 | --------------   | -------  | ---- | --- | ------------ | ------------ | ------------ | ------------ |
-| AD9283BRSZ-100   | SSOP-20  | 8    | 100 | EUR 15.74    | 645          | $3.9         | 42           |
-| AD9215BRUZ-105   | TSSOP-28 | 10   | 105 | EUR 19.65    | 1695         | $14.08       | 65           |
-| AD9215BCPZ-105   | LFCSP-32 | 10   | 105 | EUR 19.14    | 1035         | $17.76       | 1            |
-| AD9215BCPZ-65    | LFCSP-32 | 10   |  65 | EUR 14.22    |   53         |              |              |
-| AD9235BRUZRL7-40 | TSSOP-28 | 12   |  40 | EUR 20.60    |   32         | $6.19        | 88           |
-| AD9235BCPZRL7-40 | LFCSP-32 | 12   |  40 | EUR 20.66    |  972         | $7.37        | 183          |
+| AD9283BRSZ-100   | SSOP-20  | 8    | 100 | EUR 15.74    |          645 | $3.9         | 42           |
+| AD9215BRUZ-105   | TSSOP-28 | 10   | 105 | EUR 19.65    |         1695 | $14.08       | 65           |
+| AD9215BCPZ-105   | LFCSP-32 | 10   | 105 | EUR 19.14    |         1035 | $17.76       | 1            |
+| AD9215BCPZ-65    | LFCSP-32 | 10   |  65 | EUR 14.22    |           53 |              |              |
+| AD9235BRUZRL7-40 | TSSOP-28 | 12   |  40 | EUR 20.60    |           32 | $6.19        | 88           |
+| AD9235BCPZRL7-40 | LFCSP-32 | 12   |  40 | EUR 20.66    |          972 | $7.37        | 183          |
 
 For 100MHz ADC, 8-bit SSOP-20 AD9283BRSZ-100 is probably the best choice - if available on JLCPCB.
 

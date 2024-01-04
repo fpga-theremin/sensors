@@ -191,8 +191,8 @@ bool SinTable::generateVerilog(const char * filePath) {
     fprintf(f, "/* Latency: 4 CLK cycles                     */\n");
     fprintf(f, "/*********************************************/\n");
     fprintf(f, "module %s #(\n", moduleName);
-    fprintf(f, "    DATA_WIDTH = %d,\n", valueBits);
-    fprintf(f, "    ADDR_WIDTH = %d\n", tableSizeBits);
+    fprintf(f, "    parameter DATA_WIDTH = %d,\n", valueBits);
+    fprintf(f, "    parameter ADDR_WIDTH = %d\n", tableSizeBits);
     fprintf(f, ")\n");
     fprintf(f, "(\n");
     writeSourceCode(f, STANDARD_PARAMS_VERILOG_CODE);
@@ -452,8 +452,8 @@ bool SinTable::generateSinCosVerilog(const char * filePath) {
     fprintf(f, "/* Latency: 4 CLK cycles                     */\n");
     fprintf(f, "/*********************************************/\n");
     fprintf(f, "module %s #(\n", moduleName);
-    fprintf(f, "    DATA_WIDTH = %d,\n", valueBits);
-    fprintf(f, "    ADDR_WIDTH = %d\n", tableSizeBits);
+    fprintf(f, "    parameter DATA_WIDTH = %d,\n", valueBits);
+    fprintf(f, "    parameter ADDR_WIDTH = %d\n", tableSizeBits);
     fprintf(f, ")\n");
     fprintf(f, "(\n");
     writeSourceCode(f, STANDARD_PARAMS_VERILOG_CODE);
