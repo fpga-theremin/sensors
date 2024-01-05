@@ -3,7 +3,9 @@ module sin_cos_dco
     parameter PHASE_BITS = 32,
     parameter PHASE_INCREMENT_BITS = 28,
     parameter SIN_TABLE_DATA_WIDTH = 13,
-    parameter SIN_TABLE_ADDR_WIDTH = 12
+    parameter SIN_TABLE_ADDR_WIDTH = 12,
+    // non-zero values only for using with simulation, to emulate phase shifted ADC output
+    parameter RESET_PHASE_VALUE = 0
 )
 (
     /* input clock                                           */
@@ -43,7 +45,7 @@ end
 reg [PHASE_BITS-1:0] phase;
 always @(posedge CLK) begin
     if (RESET) begin
-        phase <= 0;
+        phase <= RESET_PHASE_VALUE;
     end else if (CE) begin
         phase <= phase + phase_increment;
     end

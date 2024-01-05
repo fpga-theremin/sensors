@@ -5,6 +5,8 @@ module adc_dac_frontend
     parameter PHASE_INCREMENT_BITS = 28,
     parameter PHASE_INCREMENT_FILTER_SHIFT_BITS = 3,
     parameter PHASE_INCREMENT_FILTER_STAGE_COUNT = 2,
+    parameter PHASE_INCREMENT_FEEDBACK_FILTER_SHIFT_BITS = 3,
+    parameter PHASE_INCREMENT_FEEDBACK_FILTER_STAGE_COUNT = 2,
     parameter SIN_TABLE_DATA_WIDTH = 13,
     parameter SIN_TABLE_ADDR_WIDTH = 12,
     parameter ADC_DATA_WIDTH = 12,
@@ -32,7 +34,10 @@ module adc_dac_frontend
     /* filtered smoothly changing mul-acc value for ADC*SIN */
     output wire signed [MUL_ACC_WIDTH-1:0] SIN_MUL_ACC,
     /* filtered smoothly changing mul-acc value for ADC*COS */
-    output wire signed [MUL_ACC_WIDTH-1:0] COS_MUL_ACC
+    output wire signed [MUL_ACC_WIDTH-1:0] COS_MUL_ACC,
+
+    /* current phase increment value - filtered feedback */
+    output wire [PHASE_INCREMENT_BITS-1:0] CURRENT_PHASE_INCREMENT
 );
 
 
@@ -136,9 +141,45 @@ iir_filter_sin_mul_acc_inst
     .CE(CE),
     .RESET(RESET),
 
+    .IN_VALUE(sin_mul_acc_for_last_period),
+    .OUT_VALUE(sin_mul_acc_filtered)
+);
+
+iir_filter
+#(
+    .DATA_BITS(MUL_ACC_WIDTH),
+    .SHIFT_BITS(RESULT_FILTER_SHIFT_BITS),
+    .STAGE_COUNT(RESULT_FILTER_STAGE_COUNT)
+)
+iir_filter_cos_mul_acc_inst
+(
+    .CLK(CLK),
+    .CE(CE),
+    .RESET(RESET),
+
     .IN_VALUE(cos_mul_acc_for_last_period),
     .OUT_VALUE(cos_mul_acc_filtered)
 );
 
+// filter PHASE_INCREMENT_IN to provide smooth frequency changes
+wire [PHASE_INCREMENT_BITS-1:0] phase_inc_feedback_filtered;
+
+iir_filter
+#(
+    .DATA_BITS(PHASE_INCREMENT_BITS),
+    .SHIFT_BITS(PHASE_INCREMENT_FEEDBACK_FILTER_SHIFT_BITS),
+    .STAGE_COUNT(PHASE_INCREMENT_FEEDBACK_FILTER_STAGE_COUNT)
+)
+iir_filter_phase_increment_feedback_inst
+(
+    .CLK(CLK),
+    .CE(CE),
+    .RESET(RESET),
+
+    .IN_VALUE(phase_inc_filtered),
+    .OUT_VALUE(phase_inc_feedback_filtered)
+);
+
+assign CURRENT_PHASE_INCREMENT = phase_inc_feedback_filtered;
 
 endmodule

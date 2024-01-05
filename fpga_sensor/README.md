@@ -13,6 +13,11 @@ Design of FPGA based current sensing theremin sensor with MCU and FPGA compatibl
 * Flexible external interface of sensor module - pins assignment and behavior can be redefined in FPGA logic.
 * Trying to minimize sensor module cost while getting maximum sensitivity
 
+
+
+![Firmware Block Diagram - RF part](images/fpga_sensor_firmware_rf_part_diagram.png)
+
+
 Sensor simulator
 ================
 
