@@ -22,6 +22,9 @@ module sin_cos_dco
     output wire [SIN_TABLE_DATA_WIDTH-1:0] SIN_VALUE,
     /* COS value output */
     output wire [SIN_TABLE_DATA_WIDTH-1:0] COS_VALUE
+
+    //, output wire [PHASE_BITS-1:0] debug_PHASE
+    //, output wire [PHASE_INCREMENT_BITS-1:0] debug_PHASE_INC
 );
 
 /* Store phase increment value */
@@ -34,15 +37,19 @@ always @(posedge CLK) begin
     end
 end
 
+//assign debug_PHASE_INC = phase_increment;
+
 /* Update phase */
 reg [PHASE_BITS-1:0] phase;
 always @(posedge CLK) begin
     if (RESET) begin
         phase <= 0;
-    end else if (CE && PHASE_INCREMENT_IN_WE) begin
+    end else if (CE) begin
         phase <= phase + phase_increment;
     end
 end
+
+//assign debug_PHASE = phase;
 
 /* TODO: support different sin table sizes */
 

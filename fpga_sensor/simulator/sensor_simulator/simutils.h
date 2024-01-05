@@ -52,7 +52,7 @@ struct SimParams {
                 , senseAmplitude(0.9)
                 , adcBits(12)
                 , adcInterpolation(1)
-                , averagingPeriods(1)
+                , averagingPeriods(8)
                 , adcNoise(0)
                 , adcDCOffset(0)
                 , sinTable(ncoSinTableSizeBits, ncoValueBits)
@@ -117,8 +117,8 @@ private:
     double exactBitsPercentMoreOrEqual[32*10];
 public:
     ExactBitStats(int k = 1) : k(k) { clear(); }
-    QString headingString(int minBits = 10, int maxBits = 24);
-    QString toString(int minBits = 10, int maxBits = 24);
+    QString headingString(int minBits = 8, int maxBits = 20);
+    QString toString(int minBits = 8, int maxBits = 20);
     void incrementExactBitsCount(int exactBits) {
         exactBitsCounters[exactBits]++;
     }
@@ -161,7 +161,7 @@ public:
 
 class AveragingMutator : public SimParamMutator {
 public:
-    AveragingMutator(SimParams * params, int count = 5) : SimParamMutator(params, "AvgPeriods", count) {
+    AveragingMutator(SimParams * params, int count = 9) : SimParamMutator(params, "AvgPeriods", count) {
     }
     bool next() override {
         params.averagingPeriods = 1 << currentStage;
@@ -214,6 +214,17 @@ public:
     }
 };
 
+class PhaseBitsMutator : public SimParamMutator {
+public:
+    PhaseBitsMutator(SimParams * params, int count = 10) : SimParamMutator(params, "PhaseBits", count) {
+    }
+    bool next() override {
+        params.ncoPhaseBits = 16 + currentStage;
+        setValue(params.ncoPhaseBits);
+        return SimParamMutator::next();
+    }
+};
+
 class SampleRateMutator : public SimParamMutator {
 public:
     SampleRateMutator(SimParams * params, int count = 9) : SimParamMutator(params, "SampleRate", count) {
@@ -251,8 +262,8 @@ struct SimState {
 
     int guard4;
 
-    int64_t periodSumBase1[SP_SIM_MAX_SAMPLES/3 + 1000];
-    int64_t periodSumBase2[SP_SIM_MAX_SAMPLES/3 + 1000];
+    int64_t periodSumBase1[SP_SIM_MAX_SAMPLES + 1000];
+    int64_t periodSumBase2[SP_SIM_MAX_SAMPLES + 1000];
     int periodCount;
 
     int guard5;

@@ -23,7 +23,7 @@ class MainWindow : public QMainWindow
     QLineEdit * _realFrequency;
 
     QLineEdit * createDoubleValueEditor(double * field, double minValue, double maxValue, int precision);
-    QComboBox * createIntComboBox(int * field, const int * values);
+    QComboBox * createIntComboBox(int * field, const int * values, int multiplier = 1);
     QComboBox * createDoubleComboBox(double * field, const double * values);
     QLineEdit * createReadOnlyEdit();
 

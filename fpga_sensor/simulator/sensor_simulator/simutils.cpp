@@ -28,7 +28,7 @@ double scaleDouble(double value, int bits) {
 //#define DEBUG_SIN_TABLE
 
 QString SimParams::toString() {
-    QString res = QString("SIN:%1bit[%2] ADC:%3MHz/%4bit(%5) freq:%6MHz phase:%7")
+    QString res = QString("SIN:%1bit[%2] ADC:%3MHz/%4bit(%5) avg:%8p freq:%6MHz phase:%7")
             .arg(ncoValueBits)
             .arg(sinTableSize)
             .arg(sampleRate/1000000)
@@ -36,6 +36,7 @@ QString SimParams::toString() {
             .arg(senseAmplitude, 0, 'g')
             .arg(frequency / 1000000.0, 0, 'g', 7)
             .arg(sensePhaseShift, 0, 'g', 7)
+            .arg(averagingPeriods)
             ;
     return res;
 }
@@ -462,4 +463,6 @@ void runSimTestSuite(SimParams * params, int variations, int bitFractionCount) {
     sinTableSizeTest.runTests(results, variations, bitFractionCount);
     SampleRateMutator sampleRateTest(params);
     sampleRateTest.runTests(results, variations, bitFractionCount);
+    PhaseBitsMutator phaseBitsTest(params);
+    phaseBitsTest.runTests(results, variations, bitFractionCount);
 }

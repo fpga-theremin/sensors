@@ -302,8 +302,8 @@ bool SinTable::generateVerilogTestBench(const char * filePath) {
     fprintf(f, "`timescale 1ns / 1ps\n");
     fprintf(f, "module %s_tb ();\n", moduleName);
     fprintf(f, "\n");
-    fprintf(f, "localparam     DATA_WIDTH = %d;\n", valueBits);
-    fprintf(f, "localparam     ADDR_WIDTH = %d;\n", tableSizeBits);
+    fprintf(f, "    localparam     DATA_WIDTH = %d;\n", valueBits);
+    fprintf(f, "    localparam     ADDR_WIDTH = %d;\n", tableSizeBits);
     fprintf(f, "\n");
     fprintf(f, "\n");
     writeSourceCode(f, SIN_TABLE_TB_PARAMS_VERILOG_CODE);
