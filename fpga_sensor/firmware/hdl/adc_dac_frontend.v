@@ -105,7 +105,7 @@ quadrant_mul_acc_inst
     .SIN_VALUE(sin_table_value),
     .COS_VALUE(cos_table_value),
     /* value from ADC */
-    .ADC_VALUE(ADC_VALUE[SIN_TABLE_DATA_WIDTH-1:(SIN_TABLE_DATA_WIDTH-ADC_DATA_WIDTH)]),
+    .ADC_VALUE(ADC_VALUE),
 
     /* 1 if SIN_RESULT and COS_RESULT updated with new value */
     .UPDATED_RESULT(),
