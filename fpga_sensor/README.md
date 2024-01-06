@@ -100,8 +100,12 @@ Flags:
 
 Long registers:
 
+    MIN_PHASE_INCREMENT      32bit R/W  calibration setting, min limit for DPLL working range
+    MAX_PHASE_INCREMENT      32bit R/W  calibration setting, max limit for DPLL working range
+    ZERO_PHASE_OFFSET        24bit R/W  calibration setting, phase offset value for resonance
     PHASE_INCREMENT          32bit R/O  read: current phase increment
     PHASE_INCREMENT_OVERRIDE 32bit R/W  to allow fixing oscillation frequency
+    PHASE_OFFSET             24bit R/W  current phase offset corrected by ZERO_PHASE_OFFSET
 
 
 
