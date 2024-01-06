@@ -1,18 +1,24 @@
+/*
 
+   FPGA based current sensing SDR theremin sensor.
+    
+   High frequency part - pipeline updated for each ADC sample.
+
+ */
 module adc_dac_frontend
 #(
     parameter PHASE_BITS = 32,
     parameter PHASE_INCREMENT_BITS = 28,
-    parameter PHASE_INCREMENT_FILTER_SHIFT_BITS = 3,
+    parameter PHASE_INCREMENT_FILTER_SHIFT_BITS = 4,
     parameter PHASE_INCREMENT_FILTER_STAGE_COUNT = 2,
-    parameter PHASE_INCREMENT_FEEDBACK_FILTER_SHIFT_BITS = 3,
+    parameter PHASE_INCREMENT_FEEDBACK_FILTER_SHIFT_BITS = 4,
     parameter PHASE_INCREMENT_FEEDBACK_FILTER_STAGE_COUNT = 2,
     parameter SIN_TABLE_DATA_WIDTH = 13,
     parameter SIN_TABLE_ADDR_WIDTH = 12,
     parameter ADC_DATA_WIDTH = 12,
     parameter DAC_DATA_WIDTH = 12,
     parameter MUL_ACC_WIDTH = 32,
-    parameter RESULT_FILTER_SHIFT_BITS = 3,
+    parameter RESULT_FILTER_SHIFT_BITS = 4,
     parameter RESULT_FILTER_STAGE_COUNT = 2
 )
 (
@@ -95,13 +101,13 @@ wire signed [MUL_ACC_WIDTH-1:0] sin_mul_acc_for_last_period;
 /* mul-acc value for ADC*COS  */
 wire signed [MUL_ACC_WIDTH-1:0] cos_mul_acc_for_last_period;
 
-quadrant_mul_acc
+quadrature_mul_acc
 #(
     .SIN_TABLE_DATA_WIDTH(SIN_TABLE_DATA_WIDTH),
     .ADC_DATA_WIDTH(ADC_DATA_WIDTH),
     .RESULT_WIDTH(MUL_ACC_WIDTH)
 )
-quadrant_mul_acc_inst
+quadrature_mul_acc_inst
 (
     .CLK(CLK),
     .CE(CE),
