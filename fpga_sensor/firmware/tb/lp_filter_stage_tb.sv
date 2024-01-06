@@ -1,7 +1,7 @@
 module lp_filter_stage_tb();
 
 localparam DATA_BITS = 28;
-localparam SHIFT_BITS = 2;
+localparam SHIFT_BITS = 6;
 
     logic [15:0] cycleCounter = 0;
     logic CLK;
@@ -52,16 +52,19 @@ lp_filter_stage_inst
  
         $display("Starting verification");
     
+        $display("*** Changed targed value to %d", IN_VALUE);
 
         repeat (2000)
             nextCycle();
 
         IN_VALUE = IN_VALUE / 2;
+        $display("*** Changed targed value to %d", IN_VALUE);
 
         repeat (1000)
             nextCycle();
 
         IN_VALUE = IN_VALUE * 2;
+        $display("*** Changed targed value to %d", IN_VALUE);
 
         repeat (1000)
             nextCycle();

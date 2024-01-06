@@ -44,13 +44,13 @@ module adc_dac_frontend
 // filter PHASE_INCREMENT_IN to provide smooth frequency changes
 wire [PHASE_INCREMENT_BITS-1:0] phase_inc_filtered;
 
-iir_filter
+lp_filter
 #(
     .DATA_BITS(PHASE_INCREMENT_BITS),
     .SHIFT_BITS(PHASE_INCREMENT_FILTER_SHIFT_BITS),
     .STAGE_COUNT(PHASE_INCREMENT_FILTER_STAGE_COUNT)
 )
-iir_filter_phase_inc_input_inst
+lp_filter_phase_inc_input_inst
 (
     .CLK(CLK),
     .CE(CE),
@@ -129,13 +129,13 @@ wire signed [MUL_ACC_WIDTH-1:0] cos_mul_acc_filtered;
 assign SIN_MUL_ACC = sin_mul_acc_filtered;
 assign COS_MUL_ACC = cos_mul_acc_filtered;
 
-iir_filter
+lp_filter
 #(
     .DATA_BITS(MUL_ACC_WIDTH),
     .SHIFT_BITS(RESULT_FILTER_SHIFT_BITS),
     .STAGE_COUNT(RESULT_FILTER_STAGE_COUNT)
 )
-iir_filter_sin_mul_acc_inst
+lp_filter_sin_mul_acc_inst
 (
     .CLK(CLK),
     .CE(CE),
@@ -145,13 +145,13 @@ iir_filter_sin_mul_acc_inst
     .OUT_VALUE(sin_mul_acc_filtered)
 );
 
-iir_filter
+lp_filter
 #(
     .DATA_BITS(MUL_ACC_WIDTH),
     .SHIFT_BITS(RESULT_FILTER_SHIFT_BITS),
     .STAGE_COUNT(RESULT_FILTER_STAGE_COUNT)
 )
-iir_filter_cos_mul_acc_inst
+lp_filter_cos_mul_acc_inst
 (
     .CLK(CLK),
     .CE(CE),
@@ -164,13 +164,13 @@ iir_filter_cos_mul_acc_inst
 // filter PHASE_INCREMENT_IN to provide smooth frequency changes
 wire [PHASE_INCREMENT_BITS-1:0] phase_inc_feedback_filtered;
 
-iir_filter
+lp_filter
 #(
     .DATA_BITS(PHASE_INCREMENT_BITS),
     .SHIFT_BITS(PHASE_INCREMENT_FEEDBACK_FILTER_SHIFT_BITS),
     .STAGE_COUNT(PHASE_INCREMENT_FEEDBACK_FILTER_STAGE_COUNT)
 )
-iir_filter_phase_increment_feedback_inst
+lp_filter_phase_increment_feedback_inst
 (
     .CLK(CLK),
     .CE(CE),

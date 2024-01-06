@@ -1,7 +1,7 @@
 module lp_filter_stage
 #(
     parameter DATA_BITS = 28,
-    parameter SHIFT_BITS = 2
+    parameter SHIFT_BITS = 6
 )
 (
     /* input clock                                           */
@@ -26,10 +26,10 @@ always @(posedge CLK) begin
     if (RESET) begin
         value_stage0 <= 0;
     end else if (CE) begin
-        value_stage0 <= value_stage0 + (IN_VALUE - value_stage0[INTERNAL_BITS-1:SHIFT_BITS]);
+        value_stage0 <= value_stage0 + diff;
     end
 end
 
-assign OUT_VALUE = value_stage0;
+assign OUT_VALUE = value_stage0[INTERNAL_BITS-1:SHIFT_BITS];
 
 endmodule
