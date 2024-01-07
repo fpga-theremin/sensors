@@ -64,7 +64,12 @@ module sin_cos_table_4096_13bit #(
     reg cos_need_sign_change_stage2;
      
     always @(posedge CLK)
-        if (CE) begin
+        if (RESET) begin
+            sin_need_sign_change_stage1 <= 0;
+            sin_need_sign_change_stage2 <= 0;
+            cos_need_sign_change_stage1 <= 0;
+            cos_need_sign_change_stage2 <= 0;
+        end else if (CE) begin
             sin_need_sign_change_stage1 <= sin_need_sign_change;
             sin_need_sign_change_stage2 <= sin_need_sign_change_stage1;
             cos_need_sign_change_stage1 <= cos_need_sign_change;
@@ -74,25 +79,33 @@ module sin_cos_table_4096_13bit #(
     /* SIN table: block RAM based ROM - first stage of pipeline */
     reg [DATA_WIDTH-2:0] sin_rddata_stage1;
     always @(posedge CLK)
-        if (CE)
+        if (RESET)
+            sin_rddata_stage1 <= 0;
+        else if (CE)
             sin_rddata_stage1 <= memory[sin_table_entry_index];
      
     /* COS table: block RAM based ROM - first stage of pipeline */
     reg [DATA_WIDTH-2:0] cos_rddata_stage1;
     always @(posedge CLK)
-        if (CE)
+        if (RESET)
+            cos_rddata_stage1 <= 0;
+        else if (CE)
             cos_rddata_stage1 <= memory[cos_table_entry_index];
      
     /* SIN table: block RAM based ROM - second stage of pipeline */
     reg [DATA_WIDTH-2:0] sin_rddata_stage2;
     always @(posedge CLK)
-        if (CE)
+        if (RESET)
+            sin_rddata_stage2 <= 0;
+        else if (CE)
             sin_rddata_stage2 <= sin_rddata_stage1;
      
     /* COS table: block RAM based ROM - second stage of pipeline */
     reg [DATA_WIDTH-2:0] cos_rddata_stage2;
     always @(posedge CLK)
-        if (CE)
+        if (RESET)
+            cos_rddata_stage2 <= 0; 
+        else if (CE)
             cos_rddata_stage2 <= cos_rddata_stage1;
      
     /* SIN: this is output stage register, need sign bit as well */
@@ -114,7 +127,6 @@ module sin_cos_table_4096_13bit #(
     /* propagate value to output */
     assign SIN_VALUE = sin_rddata_stage3;
     assign COS_VALUE = cos_rddata_stage3;
-    
     
 
     /* Initialization of ROM content with first quarter of SINE function */

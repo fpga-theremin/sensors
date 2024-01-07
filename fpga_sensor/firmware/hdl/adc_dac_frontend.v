@@ -44,6 +44,11 @@ module adc_dac_frontend
 
     /* current phase increment value - filtered feedback */
     output wire [PHASE_INCREMENT_BITS-1:0] CURRENT_PHASE_INCREMENT
+
+
+    //, output wire signed [MUL_ACC_WIDTH-1:0] debug_sin_mul_acc_for_last_period
+    //, output wire signed [MUL_ACC_WIDTH-1:0] debug_cos_mul_acc_for_last_period
+
 );
 
 
@@ -100,6 +105,9 @@ assign DAC_VALUE = sin_table_value[SIN_TABLE_DATA_WIDTH-1:(SIN_TABLE_DATA_WIDTH-
 wire signed [MUL_ACC_WIDTH-1:0] sin_mul_acc_for_last_period;
 /* mul-acc value for ADC*COS  */
 wire signed [MUL_ACC_WIDTH-1:0] cos_mul_acc_for_last_period;
+
+//assign debug_sin_mul_acc_for_last_period = sin_mul_acc_for_last_period;
+//assign debug_cos_mul_acc_for_last_period = cos_mul_acc_for_last_period;
 
 quadrature_mul_acc
 #(

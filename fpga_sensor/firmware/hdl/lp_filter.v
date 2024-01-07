@@ -30,11 +30,12 @@ generate
         wire [DATA_BITS-1:0] values [STAGE_COUNT:0];
         assign values[0] = IN_VALUE;
         assign OUT_VALUE = values[STAGE_COUNT];
-        for (i = 0; i < STAGE_COUNT; i = i + 1) 
+        for (i = 0; i < STAGE_COUNT; i = i + 1) begin
             lp_filter_stage #( .DATA_BITS(DATA_BITS), .SHIFT_BITS(SHIFT_BITS) ) lp_filter_stage_inst
             (
               .CLK(CLK), .CE(CE), .RESET(RESET), .IN_VALUE(values[i]), .OUT_VALUE(values[i+1])
             );
+        end
     end else begin
         //$display("invalid stage count %d", STAGE_COUNT);
     end

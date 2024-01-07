@@ -4,16 +4,16 @@ module adc_dac_frontend_tb();
 
 localparam PHASE_BITS = 32;
 localparam PHASE_INCREMENT_BITS = 28;
-localparam PHASE_INCREMENT_FILTER_SHIFT_BITS = 3;
+localparam PHASE_INCREMENT_FILTER_SHIFT_BITS = 4;
 localparam PHASE_INCREMENT_FILTER_STAGE_COUNT = 2;
-localparam PHASE_INCREMENT_FEEDBACK_FILTER_SHIFT_BITS = 3;
+localparam PHASE_INCREMENT_FEEDBACK_FILTER_SHIFT_BITS = 4;
 localparam PHASE_INCREMENT_FEEDBACK_FILTER_STAGE_COUNT = 2;
 localparam SIN_TABLE_DATA_WIDTH = 13;
 localparam SIN_TABLE_ADDR_WIDTH = 12;
 localparam ADC_DATA_WIDTH = 12;
 localparam DAC_DATA_WIDTH = 12;
 localparam MUL_ACC_WIDTH = 32;
-localparam RESULT_FILTER_SHIFT_BITS = 3;
+localparam RESULT_FILTER_SHIFT_BITS = 4;
 localparam RESULT_FILTER_STAGE_COUNT = 2;
 
 
@@ -33,6 +33,8 @@ localparam RESULT_FILTER_STAGE_COUNT = 2;
 
     wire [PHASE_INCREMENT_BITS-1:0] CURRENT_PHASE_INCREMENT;
 
+//wire signed [MUL_ACC_WIDTH-1:0] debug_sin_mul_acc_for_last_period;
+//wire signed [MUL_ACC_WIDTH-1:0] debug_cos_mul_acc_for_last_period;
 
 adc_dac_frontend
 #(
@@ -55,7 +57,7 @@ adc_dac_frontend_inst
     .*
 );
 
-
+wire dummy_bit;
 sin_cos_dco
 #(
     .PHASE_BITS(PHASE_BITS),
@@ -65,15 +67,15 @@ sin_cos_dco
 )
 sin_cos_dco_adc_sim_inst
 (
-    .CLK,
-    .CE,
-    .RESET,
+    .CLK(CLK),
+    .CE(CE),
+    .RESET(RESET),
 
-    .PHASE_INCREMENT_IN,
+    .PHASE_INCREMENT_IN(PHASE_INCREMENT_IN),
     .PHASE_INCREMENT_IN_WE(CE),
 
     /* SIN value output */
-    .SIN_VALUE(ADC_VALUE),
+    .SIN_VALUE( {ADC_VALUE, dummy_bit} ),
     .COS_VALUE()
 );
     
@@ -88,7 +90,8 @@ sin_cos_dco_adc_sim_inst
     task nextCycle();
          begin
              @(posedge CLK) #1 ;
-             $display("    [%d]   nextCycle DAC=%d SIN_ACC=%d COS_ACC=%d  phase_inc=%h", cycleCounter, DAC_VALUE, SIN_MUL_ACC, COS_MUL_ACC, CURRENT_PHASE_INCREMENT);
+             $display("    [%d]   nextCycle DAC=%d ADC=%d SIN_ACC=%d COS_ACC=%d  phase_inc=%h", cycleCounter, DAC_VALUE, ADC_VALUE, SIN_MUL_ACC, COS_MUL_ACC, CURRENT_PHASE_INCREMENT);
+             //$display("    [%d]   nextCycle DAC=%d ADC=%d SIN_ACC=%d COS_ACC=%d  phase_inc=%h    dbg_sin=%d dbg_cos=%d", cycleCounter, DAC_VALUE, ADC_VALUE, SIN_MUL_ACC, COS_MUL_ACC, CURRENT_PHASE_INCREMENT, debug_sin_mul_acc_for_last_period, debug_cos_mul_acc_for_last_period);
          end
     endtask
 
