@@ -1,7 +1,7 @@
 module lp_filter_tb();
 
 localparam DATA_BITS = 28;
-localparam SHIFT_BITS = 5;
+localparam SHIFT_BITS = 4;
 
     logic [15:0] cycleCounter = 0;
     logic CLK;

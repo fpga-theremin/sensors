@@ -1,20 +1,22 @@
 module lp_filter_stage_tb();
 
-localparam DATA_BITS = 28;
-localparam SHIFT_BITS = 6;
+localparam IN_DATA_BITS = 28;
+localparam OUT_DATA_BITS = 30;
+localparam SHIFT_BITS = 5;
 
     logic [15:0] cycleCounter = 0;
     logic CLK;
     logic CE;
     logic RESET;
 
-logic [DATA_BITS-1:0] IN_VALUE;
-wire [DATA_BITS-1:0] OUT_VALUE;
+logic [IN_DATA_BITS-1:0] IN_VALUE;
+wire [OUT_DATA_BITS-1:0] OUT_VALUE;
 
 
 lp_filter_stage
 #(
-    .DATA_BITS(DATA_BITS),
+    .IN_DATA_BITS(IN_DATA_BITS),
+    .OUT_DATA_BITS(OUT_DATA_BITS),
     .SHIFT_BITS(SHIFT_BITS)
 )
 lp_filter_stage_inst
@@ -33,7 +35,7 @@ lp_filter_stage_inst
     task nextCycle();
          begin
              @(posedge CLK) #1 ;
-             $display("    [%d]   nextCycle IN=%d OUT=%d", cycleCounter, IN_VALUE, OUT_VALUE);
+             $display("    [%d]   nextCycle IN=%d OUT=%d    %b    %b", cycleCounter, IN_VALUE, OUT_VALUE, IN_VALUE, OUT_VALUE);
          end
     endtask
 

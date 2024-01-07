@@ -1,4 +1,5 @@
 /*
+   
 */
 
 module lp_filter
@@ -31,7 +32,7 @@ generate
         assign values[0] = IN_VALUE;
         assign OUT_VALUE = values[STAGE_COUNT];
         for (i = 0; i < STAGE_COUNT; i = i + 1) begin
-            lp_filter_stage #( .DATA_BITS(DATA_BITS), .SHIFT_BITS(SHIFT_BITS) ) lp_filter_stage_inst
+            lp_filter_stage #( .IN_DATA_BITS(DATA_BITS), .OUT_DATA_BITS(DATA_BITS), .SHIFT_BITS(SHIFT_BITS) ) lp_filter_stage_inst
             (
               .CLK(CLK), .CE(CE), .RESET(RESET), .IN_VALUE(values[i]), .OUT_VALUE(values[i+1])
             );

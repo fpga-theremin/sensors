@@ -1,7 +1,9 @@
 module lp_filter_stage
 #(
-    parameter DATA_BITS = 28,
-    parameter SHIFT_BITS = 6
+    parameter IN_DATA_BITS = 28,
+    parameter SHIFT_BITS = 6,
+    // should be between IN_DATA_BITS and IN_DATA_BITS+SHIFT_BITS
+    parameter OUT_DATA_BITS = 28
 )
 (
     /* input clock                                           */
@@ -12,12 +14,12 @@ module lp_filter_stage
     input wire RESET,
 
     /* input value */
-    input wire [DATA_BITS-1:0] IN_VALUE,
+    input wire [IN_DATA_BITS-1:0] IN_VALUE,
     /* filtered output value */
-    output wire [DATA_BITS-1:0] OUT_VALUE
+    output wire [OUT_DATA_BITS-1:0] OUT_VALUE
 );
 
-localparam INTERNAL_BITS = DATA_BITS + SHIFT_BITS;
+localparam INTERNAL_BITS = IN_DATA_BITS + SHIFT_BITS;
 
 reg signed [INTERNAL_BITS-1:0] value_stage0;
 wire signed [INTERNAL_BITS:0] diff = IN_VALUE - value_stage0[INTERNAL_BITS-1:SHIFT_BITS];
@@ -30,6 +32,6 @@ always @(posedge CLK) begin
     end
 end
 
-assign OUT_VALUE = value_stage0[INTERNAL_BITS-1:SHIFT_BITS];
+assign OUT_VALUE = value_stage0[INTERNAL_BITS-1:INTERNAL_BITS-OUT_DATA_BITS];
 
 endmodule
