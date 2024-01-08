@@ -9,7 +9,7 @@ module adc_dac_frontend
 #(
     parameter PHASE_BITS = 32,
     parameter PHASE_INCREMENT_BITS = 28,
-    parameter PHASE_INCREMENT_FILTER_SHIFT_BITS = 4,
+    parameter PHASE_INCREMENT_FILTER_SHIFT_BITS = 5,
     parameter PHASE_INCREMENT_FILTER_STAGE_COUNT = 2,
     parameter PHASE_INCREMENT_FEEDBACK_FILTER_SHIFT_BITS = 4,
     parameter PHASE_INCREMENT_FEEDBACK_FILTER_STAGE_COUNT = 2,
@@ -19,9 +19,9 @@ module adc_dac_frontend
     parameter DAC_DATA_WIDTH = 12,
     parameter MUL_ACC_WIDTH = 32,
     // if RESULT_MUL_ACC_WIDTH>MUL_ACC_WIDTH, result LP filter introduces additional bits from averaging
-    parameter RESULT_MUL_ACC_WIDTH = 32,
+    parameter RESULT_MUL_ACC_WIDTH = 36,
     parameter RESULT_FILTER_SHIFT_BITS = 5,
-    parameter RESULT_FILTER_STAGE_COUNT = 2
+    parameter RESULT_FILTER_STAGE_COUNT = 3
 )
 (
     /* input clock                                           */

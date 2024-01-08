@@ -4,8 +4,8 @@ module adc_dac_frontend_tb();
 
 localparam PHASE_BITS = 32;
 localparam PHASE_INCREMENT_BITS = 28;
-localparam PHASE_INCREMENT_FILTER_SHIFT_BITS = 4;
-localparam PHASE_INCREMENT_FILTER_STAGE_COUNT = 0; //2;
+localparam PHASE_INCREMENT_FILTER_SHIFT_BITS = 5;
+localparam PHASE_INCREMENT_FILTER_STAGE_COUNT = 2; //2;
 localparam PHASE_INCREMENT_FEEDBACK_FILTER_SHIFT_BITS = 4;
 localparam PHASE_INCREMENT_FEEDBACK_FILTER_STAGE_COUNT = 2;
 localparam SIN_TABLE_DATA_WIDTH = 13;
@@ -14,8 +14,8 @@ localparam ADC_DATA_WIDTH = 12;
 localparam DAC_DATA_WIDTH = 12;
 localparam MUL_ACC_WIDTH = 32;
 localparam RESULT_MUL_ACC_WIDTH = 36;
-localparam RESULT_FILTER_SHIFT_BITS = 4;
-localparam RESULT_FILTER_STAGE_COUNT = 2;
+localparam RESULT_FILTER_SHIFT_BITS = 5;
+localparam RESULT_FILTER_STAGE_COUNT = 3;
 
 
     logic [15:0] cycleCounter = 0;
@@ -92,7 +92,7 @@ sin_cos_dco_adc_sim_inst
     task nextCycle();
          begin
              @(posedge CLK) #1 ;
-             $display("    [%d]   nextCycle DAC=%d ADC=%d SIN_ACC=%d COS_ACC=%d  phase_inc=%h  atan2=%f", cycleCounter, DAC_VALUE, ADC_VALUE, SIN_MUL_ACC, COS_MUL_ACC, CURRENT_PHASE_INCREMENT, $atan2(COS_MUL_ACC, SIN_MUL_ACC));
+             $display("    [%d]   nextCycle DAC=%d ADC=%d SIN_ACC=%d COS_ACC=%d  phase_inc=%h  atan2/2pi=%f", cycleCounter, DAC_VALUE, ADC_VALUE, SIN_MUL_ACC, COS_MUL_ACC, CURRENT_PHASE_INCREMENT, $atan2(COS_MUL_ACC, SIN_MUL_ACC)/2/3.1415926525);
              //$display("    [%d]   nextCycle DAC=%d ADC=%d SIN_ACC=%d COS_ACC=%d  phase_inc=%h    dbg_sin=%d dbg_cos=%d", cycleCounter, DAC_VALUE, ADC_VALUE, SIN_MUL_ACC, COS_MUL_ACC, CURRENT_PHASE_INCREMENT, debug_sin_mul_acc_for_last_period, debug_cos_mul_acc_for_last_period);
          end
     endtask
