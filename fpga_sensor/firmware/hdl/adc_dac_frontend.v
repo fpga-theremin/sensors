@@ -18,6 +18,8 @@ module adc_dac_frontend
     parameter ADC_DATA_WIDTH = 12,
     parameter DAC_DATA_WIDTH = 12,
     parameter MUL_ACC_WIDTH = 32,
+    // if RESULT_MUL_ACC_WIDTH>MUL_ACC_WIDTH, result LP filter introduces additional bits from averaging
+    parameter RESULT_MUL_ACC_WIDTH = 36,
     parameter RESULT_FILTER_SHIFT_BITS = 4,
     parameter RESULT_FILTER_STAGE_COUNT = 2
 )
@@ -38,9 +40,9 @@ module adc_dac_frontend
     output wire signed [DAC_DATA_WIDTH-1:0] DAC_VALUE,
 
     /* filtered smoothly changing mul-acc value for ADC*SIN */
-    output wire signed [MUL_ACC_WIDTH-1:0] SIN_MUL_ACC,
+    output wire signed [RESULT_MUL_ACC_WIDTH-1:0] SIN_MUL_ACC,
     /* filtered smoothly changing mul-acc value for ADC*COS */
-    output wire signed [MUL_ACC_WIDTH-1:0] COS_MUL_ACC,
+    output wire signed [RESULT_MUL_ACC_WIDTH-1:0] COS_MUL_ACC,
 
     /* current phase increment value - filtered feedback */
     output wire [PHASE_INCREMENT_BITS-1:0] CURRENT_PHASE_INCREMENT
@@ -57,7 +59,8 @@ wire [PHASE_INCREMENT_BITS-1:0] phase_inc_filtered;
 
 lp_filter
 #(
-    .DATA_BITS(PHASE_INCREMENT_BITS),
+    .IN_DATA_BITS(PHASE_INCREMENT_BITS),
+    .OUT_DATA_BITS(PHASE_INCREMENT_BITS),
     .SHIFT_BITS(PHASE_INCREMENT_FILTER_SHIFT_BITS),
     .STAGE_COUNT(PHASE_INCREMENT_FILTER_STAGE_COUNT)
 )
@@ -136,16 +139,17 @@ quadrature_mul_acc_inst
 
 
 /* mul-acc value for ADC*SIN */
-wire signed [MUL_ACC_WIDTH-1:0] sin_mul_acc_filtered;
+wire signed [RESULT_MUL_ACC_WIDTH-1:0] sin_mul_acc_filtered;
 /* mul-acc value for ADC*COS  */
-wire signed [MUL_ACC_WIDTH-1:0] cos_mul_acc_filtered;
+wire signed [RESULT_MUL_ACC_WIDTH-1:0] cos_mul_acc_filtered;
 
 assign SIN_MUL_ACC = sin_mul_acc_filtered;
 assign COS_MUL_ACC = cos_mul_acc_filtered;
 
 lp_filter
 #(
-    .DATA_BITS(MUL_ACC_WIDTH),
+    .IN_DATA_BITS(MUL_ACC_WIDTH),
+    .OUT_DATA_BITS(RESULT_MUL_ACC_WIDTH),
     .SHIFT_BITS(RESULT_FILTER_SHIFT_BITS),
     .STAGE_COUNT(RESULT_FILTER_STAGE_COUNT)
 )
@@ -161,7 +165,8 @@ lp_filter_sin_mul_acc_inst
 
 lp_filter
 #(
-    .DATA_BITS(MUL_ACC_WIDTH),
+    .IN_DATA_BITS(MUL_ACC_WIDTH),
+    .OUT_DATA_BITS(RESULT_MUL_ACC_WIDTH),
     .SHIFT_BITS(RESULT_FILTER_SHIFT_BITS),
     .STAGE_COUNT(RESULT_FILTER_STAGE_COUNT)
 )
@@ -180,7 +185,8 @@ wire [PHASE_INCREMENT_BITS-1:0] phase_inc_feedback_filtered;
 
 lp_filter
 #(
-    .DATA_BITS(PHASE_INCREMENT_BITS),
+    .IN_DATA_BITS(PHASE_INCREMENT_BITS),
+    .OUT_DATA_BITS(PHASE_INCREMENT_BITS),
     .SHIFT_BITS(PHASE_INCREMENT_FEEDBACK_FILTER_SHIFT_BITS),
     .STAGE_COUNT(PHASE_INCREMENT_FEEDBACK_FILTER_STAGE_COUNT)
 )
