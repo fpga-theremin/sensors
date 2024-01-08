@@ -1,9 +1,9 @@
 /*
-    Lowpass filter.
+    Lowpass filter - signed.
     N stages, each stage: v_next = (in - v)>>SHIFT_BITS
 */
 
-module lp_filter
+module lp_filter_signed
 #(
     // input and output data width; internal data width will be OUT_DATA_BITS+SHIFT_BITS
     // in OUT_DATA_BITS > IN_DATA_BITS, additional bits are being introduced on first stage of filter 
@@ -24,9 +24,9 @@ module lp_filter
     input wire RESET,
 
     /* input value */
-    input wire [IN_DATA_BITS-1:0] IN_VALUE,
+    input wire signed [IN_DATA_BITS-1:0] IN_VALUE,
     /* filtered output value */
-    output wire [OUT_DATA_BITS-1:0] OUT_VALUE
+    output wire signed [OUT_DATA_BITS-1:0] OUT_VALUE
 );
 
 genvar i;
@@ -40,12 +40,12 @@ generate
             assign OUT_VALUE = IN_VALUE;
         end
     end else if (STAGE_COUNT > 0) begin
-        wire [OUT_DATA_BITS-1:0] values [STAGE_COUNT:0];
+        wire signed [OUT_DATA_BITS-1:0] values [STAGE_COUNT:0];
         assign values[0] = IN_VALUE;
         assign OUT_VALUE = values[STAGE_COUNT];
         for (i = 0; i < STAGE_COUNT; i = i + 1) begin
             // first filter stage has different input and output widths
-            lp_filter_stage #( .IN_DATA_BITS((i==0)?IN_DATA_BITS:OUT_DATA_BITS), 
+            lp_filter_stage_signed #( .IN_DATA_BITS((i==0)?IN_DATA_BITS:OUT_DATA_BITS), 
                     .OUT_DATA_BITS(OUT_DATA_BITS), .SHIFT_BITS(SHIFT_BITS) ) lp_filter_stage_inst_stage1
             (
               .CLK(CLK), .CE(CE), .RESET(RESET), .IN_VALUE(values[i]), .OUT_VALUE(values[i+1])

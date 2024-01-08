@@ -19,8 +19,8 @@ module adc_dac_frontend
     parameter DAC_DATA_WIDTH = 12,
     parameter MUL_ACC_WIDTH = 32,
     // if RESULT_MUL_ACC_WIDTH>MUL_ACC_WIDTH, result LP filter introduces additional bits from averaging
-    parameter RESULT_MUL_ACC_WIDTH = 36,
-    parameter RESULT_FILTER_SHIFT_BITS = 4,
+    parameter RESULT_MUL_ACC_WIDTH = 32,
+    parameter RESULT_FILTER_SHIFT_BITS = 5,
     parameter RESULT_FILTER_STAGE_COUNT = 2
 )
 (
@@ -48,8 +48,8 @@ module adc_dac_frontend
     output wire [PHASE_INCREMENT_BITS-1:0] CURRENT_PHASE_INCREMENT
 
 
-    //, output wire signed [MUL_ACC_WIDTH-1:0] debug_sin_mul_acc_for_last_period
-    //, output wire signed [MUL_ACC_WIDTH-1:0] debug_cos_mul_acc_for_last_period
+//    , output wire signed [MUL_ACC_WIDTH-1:0] debug_sin_mul_acc_for_last_period
+//    , output wire signed [MUL_ACC_WIDTH-1:0] debug_cos_mul_acc_for_last_period
 
 );
 
@@ -146,7 +146,7 @@ wire signed [RESULT_MUL_ACC_WIDTH-1:0] cos_mul_acc_filtered;
 assign SIN_MUL_ACC = sin_mul_acc_filtered;
 assign COS_MUL_ACC = cos_mul_acc_filtered;
 
-lp_filter
+lp_filter_signed
 #(
     .IN_DATA_BITS(MUL_ACC_WIDTH),
     .OUT_DATA_BITS(RESULT_MUL_ACC_WIDTH),
@@ -163,7 +163,7 @@ lp_filter_sin_mul_acc_inst
     .OUT_VALUE(sin_mul_acc_filtered)
 );
 
-lp_filter
+lp_filter_signed
 #(
     .IN_DATA_BITS(MUL_ACC_WIDTH),
     .OUT_DATA_BITS(RESULT_MUL_ACC_WIDTH),

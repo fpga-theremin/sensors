@@ -1,4 +1,4 @@
-module lp_filter_tb();
+module lp_filter_signed_tb();
 
 localparam IN_DATA_BITS = 32;
 localparam OUT_DATA_BITS = 32;
@@ -9,35 +9,35 @@ localparam SHIFT_BITS = 5;
     logic CE;
     logic RESET;
 
-logic [IN_DATA_BITS-1:0] IN_VALUE;
-wire [OUT_DATA_BITS-1:0] OUT_VALUES[4:0];
+logic signed [IN_DATA_BITS-1:0] IN_VALUE;
+wire signed [OUT_DATA_BITS-1:0] OUT_VALUES[4:0];
 
 
-lp_filter #( .IN_DATA_BITS(IN_DATA_BITS), .OUT_DATA_BITS(OUT_DATA_BITS), .SHIFT_BITS(SHIFT_BITS), .STAGE_COUNT(0) ) lp_filter_0_stages_inst
+lp_filter_signed #( .IN_DATA_BITS(IN_DATA_BITS), .OUT_DATA_BITS(OUT_DATA_BITS), .SHIFT_BITS(SHIFT_BITS), .STAGE_COUNT(0) ) lp_filter_0_stages_inst
 (
     /* input clock                                           */
     .CLK(CLK), .CE(CE), .RESET(RESET), .IN_VALUE(IN_VALUE), .OUT_VALUE(OUT_VALUES[0])
 );
 
-lp_filter #( .IN_DATA_BITS(IN_DATA_BITS), .OUT_DATA_BITS(OUT_DATA_BITS), .SHIFT_BITS(SHIFT_BITS), .STAGE_COUNT(1) ) lp_filter_1_stages_inst
+lp_filter_signed #( .IN_DATA_BITS(IN_DATA_BITS), .OUT_DATA_BITS(OUT_DATA_BITS), .SHIFT_BITS(SHIFT_BITS), .STAGE_COUNT(1) ) lp_filter_1_stages_inst
 (
     /* input clock                                           */
     .CLK(CLK), .CE(CE), .RESET(RESET), .IN_VALUE(IN_VALUE), .OUT_VALUE(OUT_VALUES[1])
 );
 
-lp_filter #( .IN_DATA_BITS(IN_DATA_BITS), .OUT_DATA_BITS(OUT_DATA_BITS), .SHIFT_BITS(SHIFT_BITS), .STAGE_COUNT(2) ) lp_filter_2_stages_inst
+lp_filter_signed #( .IN_DATA_BITS(IN_DATA_BITS), .OUT_DATA_BITS(OUT_DATA_BITS), .SHIFT_BITS(SHIFT_BITS), .STAGE_COUNT(2) ) lp_filter_2_stages_inst
 (
     /* input clock                                           */
     .CLK(CLK), .CE(CE), .RESET(RESET), .IN_VALUE(IN_VALUE), .OUT_VALUE(OUT_VALUES[2])
 );
 
-lp_filter #( .IN_DATA_BITS(IN_DATA_BITS), .OUT_DATA_BITS(OUT_DATA_BITS), .SHIFT_BITS(SHIFT_BITS), .STAGE_COUNT(3) ) lp_filter_3_stages_inst
+lp_filter_signed #( .IN_DATA_BITS(IN_DATA_BITS), .OUT_DATA_BITS(OUT_DATA_BITS), .SHIFT_BITS(SHIFT_BITS), .STAGE_COUNT(3) ) lp_filter_3_stages_inst
 (
     /* input clock                                           */
     .CLK(CLK), .CE(CE), .RESET(RESET), .IN_VALUE(IN_VALUE), .OUT_VALUE(OUT_VALUES[3])
 );
 
-lp_filter #( .IN_DATA_BITS(IN_DATA_BITS), .OUT_DATA_BITS(OUT_DATA_BITS), .SHIFT_BITS(SHIFT_BITS), .STAGE_COUNT(4) ) lp_filter_4_stages_inst
+lp_filter_signed #( .IN_DATA_BITS(IN_DATA_BITS), .OUT_DATA_BITS(OUT_DATA_BITS), .SHIFT_BITS(SHIFT_BITS), .STAGE_COUNT(4) ) lp_filter_4_stages_inst
 (
     /* input clock                                           */
     .CLK(CLK), .CE(CE), .RESET(RESET), .IN_VALUE(IN_VALUE), .OUT_VALUE(OUT_VALUES[4])
@@ -85,6 +85,12 @@ lp_filter #( .IN_DATA_BITS(IN_DATA_BITS), .OUT_DATA_BITS(OUT_DATA_BITS), .SHIFT_
             nextCycle();
 
         IN_VALUE = IN_VALUE * 2;
+        $display("*** Changed targed value to %d", IN_VALUE);
+
+        repeat (1000)
+            nextCycle();
+
+        IN_VALUE = -IN_VALUE * 2;
         $display("*** Changed targed value to %d", IN_VALUE);
 
         repeat (1000)

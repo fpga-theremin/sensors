@@ -44,6 +44,7 @@ quadrature_mul_acc_inst
 
     task checkResult(input signed [RESULT_WIDTH-1:0] expected_sin_value, input signed [RESULT_WIDTH-1:0] expected_cos_value);
          begin
+                 $display("    [%d]        checking expected result for 2 recent z-crossing sin=%d cos=%d", cycleCounter, expected_sin_value, expected_cos_value);
              if (!UPDATED_RESULT) begin
                  $display("    [%d] ERROR: UPDATED_RESULT is expected to be 1 but actual 0", cycleCounter);
                  $finish();

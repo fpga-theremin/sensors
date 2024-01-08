@@ -5,7 +5,7 @@ module adc_dac_frontend_tb();
 localparam PHASE_BITS = 32;
 localparam PHASE_INCREMENT_BITS = 28;
 localparam PHASE_INCREMENT_FILTER_SHIFT_BITS = 4;
-localparam PHASE_INCREMENT_FILTER_STAGE_COUNT = 2;
+localparam PHASE_INCREMENT_FILTER_STAGE_COUNT = 0; //2;
 localparam PHASE_INCREMENT_FEEDBACK_FILTER_SHIFT_BITS = 4;
 localparam PHASE_INCREMENT_FEEDBACK_FILTER_STAGE_COUNT = 2;
 localparam SIN_TABLE_DATA_WIDTH = 13;
@@ -92,7 +92,7 @@ sin_cos_dco_adc_sim_inst
     task nextCycle();
          begin
              @(posedge CLK) #1 ;
-             $display("    [%d]   nextCycle DAC=%d ADC=%d SIN_ACC=%d COS_ACC=%d  phase_inc=%h", cycleCounter, DAC_VALUE, ADC_VALUE, SIN_MUL_ACC, COS_MUL_ACC, CURRENT_PHASE_INCREMENT);
+             $display("    [%d]   nextCycle DAC=%d ADC=%d SIN_ACC=%d COS_ACC=%d  phase_inc=%h  atan2=%f", cycleCounter, DAC_VALUE, ADC_VALUE, SIN_MUL_ACC, COS_MUL_ACC, CURRENT_PHASE_INCREMENT, $atan2(COS_MUL_ACC, SIN_MUL_ACC));
              //$display("    [%d]   nextCycle DAC=%d ADC=%d SIN_ACC=%d COS_ACC=%d  phase_inc=%h    dbg_sin=%d dbg_cos=%d", cycleCounter, DAC_VALUE, ADC_VALUE, SIN_MUL_ACC, COS_MUL_ACC, CURRENT_PHASE_INCREMENT, debug_sin_mul_acc_for_last_period, debug_cos_mul_acc_for_last_period);
          end
     endtask
@@ -119,6 +119,15 @@ sin_cos_dco_adc_sim_inst
         repeat (1000) begin
             nextCycle();
         end
+
+        $display("*** Changing frequency");
+        PHASE_INCREMENT_IN = 100377165; // 1018654.23 Hz signal at 40000000 Hz sample rate
+
+        /* Outputs are delayed by 4 clock cycles */
+        repeat (1000) begin
+            nextCycle();
+        end
+
         $display("Test passed");
         $finish();
     end
