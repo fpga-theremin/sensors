@@ -2,6 +2,48 @@
 #include <QtMath>
 #include <string.h>
 
+void SimClock::add(SimDevice * device) {
+    if (_devicesCount >= _devicesSize) {
+        if (!_devices) {
+            _devicesSize = 16;
+            _devices = new SimDevice *[_devicesSize];
+        } else {
+            int newSize = _devicesSize * 2;
+            SimDevice ** newDevices = new SimDevice *[newSize];
+            for (int i = 0; i < _devicesCount; i++) {
+                newDevices[i] = _devices[i];
+            }
+            delete[] _devices;
+            _devices = newDevices;
+            _devicesSize = newSize;
+        }
+    }
+    _devices[_devicesCount++] = device;
+}
+
+void SimClock::onUpdate() {
+    for (int i = 0; i < _devicesCount; i++) {
+        _devices[i]->onUpdate();
+    }
+}
+
+void SimClock::onClock() {
+    for (int i = 0; i < _devicesCount; i++) {
+        _devices[i]->onClock();
+    }
+}
+
+void SimClock::onReset() {
+    for (int i = 0; i < _devicesCount; i++) {
+        _devices[i]->onReset();
+    }
+}
+
+SimClock::~SimClock() {
+    if (_devices)
+        delete[] _devices;
+}
+
 SinTable::SinTable(int tableSizeBits, int valueBits, double scale, int phaseBits)
     : table(nullptr), phaseBits(phaseBits)
 {

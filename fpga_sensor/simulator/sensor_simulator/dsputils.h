@@ -2,6 +2,7 @@
 #define DSPUTILS_H
 
 #include <stdint.h>
+#include <QDebug>
 
 // sine lookup table, with phase and value quantized according number of bits specified during initialization
 // implementation may use 1/4 of table entries, with flipping and inverting, to get value for any phase
@@ -42,5 +43,213 @@ public:
     bool generateSinCosVerilogTestBench(const char * filePath);
 };
 
+class SimDevice {
+public:
+    SimDevice() {}
+    virtual ~SimDevice() {}
+    // prepare new value
+    virtual void onUpdate() {}
+    // reset
+    virtual void onReset() {}
+    // propagate new value to output
+    virtual void onClock() {}
+};
+
+class SimReg;
+class SimClock {
+protected:
+    SimDevice ** _devices;
+    int _devicesSize;
+    int _devicesCount;
+public:
+    SimClock() : _devices(nullptr), _devicesSize(0), _devicesCount(0) {}
+    virtual ~SimClock();
+    virtual void add(SimDevice * reg);
+    virtual void onUpdate();
+    virtual void onClock();
+    virtual void onReset();
+};
+
+class SimValue : public SimDevice {
+protected:
+    const SimValue * _connectedValue;
+public:
+    SimValue() {}
+    ~SimValue() override {
+    }
+    void connect(SimValue * value) {
+        _connectedValue = value;
+    }
+    // return number of bits in value
+    virtual int bits() const {
+        return 1;
+    }
+    // return true if value is signed
+    virtual bool isSigned() const {
+        return false;
+    }
+    // get input value
+    virtual int64_t peek() const = 0;
+    // get output value (for wire, it's the same as input value)
+    virtual int64_t get() const { return peek(); }
+    // set new value -- when has connected value, use connectedValue.set() instead
+    virtual void set(int64_t value) = 0;
+    // fit value into range, with sign extension if necessary
+    virtual int64_t fixRange(int64_t value) const {
+        return value & 1;
+    }
+    operator int64_t() const {
+        return get();
+    }
+    SimValue & operator =(const SimValue& v) {
+        set(v);
+        return *this;
+    }
+    SimValue & operator =(int64_t v) {
+        set(v);
+        return *this;
+    }
+};
+
+class SimBit : public SimValue {
+protected:
+    uint8_t _value;
+public:
+    SimBit(int64_t initValue = 0) : _value(initValue != 0 ? 1 : 0) {}
+    ~SimBit() override {}
+    // get input value
+    int64_t peek() const override {
+        return (_connectedValue ? _connectedValue->get() : _value) & 1;
+    }
+    // set new value -- when has connected value, use connectedValue.set() instead
+    void set(int64_t value) override {
+        _value = value & 1;
+    }
+    // fit value into range, with sign extension if necessary
+    int64_t fixRange(int64_t value) const override {
+        return value & 1;
+    }
+};
+
+class SimBitReg : public SimBit {
+protected:
+    uint8_t _outValue;
+    uint8_t _resetValue;
+    SimBit _ce;
+    SimBit _reset;
+public:
+    SimBitReg(SimClock& clock, int64_t initValue = 0) : SimBit(initValue), _outValue(initValue), _resetValue(initValue),
+        _ce(1), _reset(0)
+    {
+        clock.add(this);
+    }
+    // access CE input wire
+    SimBit & ce() { return _ce; }
+    // access RESET input wire
+    SimBit & reset() { return _reset; }
+    // return value from register output
+    int64_t get() const override {
+        return fixRange(_outValue);
+    }
+    void onReset() override {
+        _outValue = _resetValue;
+    }
+    // propagate input value to register output
+    void onClock() override {
+        if (_reset.get())
+            _outValue = _resetValue;
+        else
+            _outValue = peek() ? 1 : 0;
+    }
+};
+
+// value with limited range of specified number of bits, signed or unsigned
+// can be directly used as verilog wire
+class SimBus : public SimValue {
+protected:
+    int _bits;
+    bool _signed;
+    int64_t _mask;
+    int64_t _value;
+    SimBus(int bits = 1, bool isSigned = false, int64_t initValue = 0) :
+        SimValue(),
+        _bits(bits), _signed(isSigned),
+        _mask((1ULL<<bits)-1), _value(initValue) {
+    }
+    ~SimBus() override {
+    }
+    // return number of bits in value
+    int bits() const override {
+        return _bits;
+    }
+    // return true if value is signed
+    bool isSigned() const override {
+        return _signed;
+    }
+    // get input value
+    int64_t peek() const override {
+        return fixRange(_connectedValue ? _connectedValue->get() : _value);
+    }
+    // set new value -- when has connected value, use connectedValue.set() instead
+    void set(int64_t value) override {
+        assert(_connectedValue == nullptr);
+        _value = fixRange(value);
+    }
+    // fit value into range, with sign extension if necessary
+    int64_t fixRange(int64_t value) const override {
+        // width mask and sign extension
+        if (_signed) {
+            if (value & ((_mask+1)>>1)) {
+                // negative
+                return value | (~_mask);
+            } else {
+                // positive
+                return value & _mask;
+            }
+        } else {
+            return value & _mask;
+        }
+    }
+};
+
+// Register, updated by clock
+// can be directly used as verilog reg
+class SimReg : public SimBus {
+protected:
+    int64_t _outValue;
+    int64_t _resetValue;
+    SimBit _ce;
+    SimBit _reset;
+public:
+    SimReg(SimClock& clock, int bits = 1, bool isSigned = false, int64_t resetValue=0) :
+        SimBus(bits, isSigned, resetValue),
+        _outValue(resetValue), _resetValue(resetValue), _ce(1), _reset(0) {
+        clock.add(this);
+    }
+    // access CE (clock enable) input wire
+    SimBit & ce() { return _ce; }
+    // access RESET input wire
+    SimBit & reset() { return _reset; }
+    //
+    int64_t get() const override {
+        return fixRange(_outValue);
+    }
+    void onReset() override {
+        _outValue = _resetValue;
+    }
+    void onClock() override {
+        if (_reset.get())
+            _outValue = _resetValue;
+        else if (_ce.get())
+            _outValue = peek();
+    }
+};
+
+/*
+
+  SimReg r(10);
+
+
+ */
 
 #endif // DSPUTILS_H
