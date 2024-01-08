@@ -48,7 +48,7 @@ generate
             lp_filter_stage #( .IN_DATA_BITS((i==0)?IN_DATA_BITS:OUT_DATA_BITS), 
                     .OUT_DATA_BITS(OUT_DATA_BITS), .SHIFT_BITS(SHIFT_BITS) ) lp_filter_stage_inst_stage1
             (
-              .CLK(CLK), .CE(CE), .RESET(RESET), .IN_VALUE(values[i]), .OUT_VALUE(values[i+1])
+              .CLK(CLK), .CE(CE), .RESET(RESET), .IN_VALUE(values[i][((i==0)?IN_DATA_BITS:OUT_DATA_BITS)-1:0]), .OUT_VALUE(values[i+1])
             );
         end
     end else begin

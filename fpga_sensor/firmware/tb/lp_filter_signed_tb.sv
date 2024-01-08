@@ -1,7 +1,7 @@
 module lp_filter_signed_tb();
 
-localparam IN_DATA_BITS = 32;
-localparam OUT_DATA_BITS = 32;
+localparam IN_DATA_BITS = 30;
+localparam OUT_DATA_BITS = 33;
 localparam SHIFT_BITS = 5;
 
     logic [15:0] cycleCounter = 0;
@@ -54,7 +54,7 @@ lp_filter_signed #( .IN_DATA_BITS(IN_DATA_BITS), .OUT_DATA_BITS(OUT_DATA_BITS), 
     task nextCycle();
          begin
              @(posedge CLK) #1 ;
-             $display("    [%d]   nextCycle IN=%d OUT0=%d OUT1=%d OUT2=%d OUT3=%d OUT4=%d", cycleCounter, IN_VALUE, OUT_VALUES[0], OUT_VALUES[1], OUT_VALUES[2], OUT_VALUES[3], OUT_VALUES[4]);
+             $display("    [%d]   nextCycle IN=%d OUT0=%d OUT1=%d OUT2=%d OUT3=%d OUT4=%d   in:%b out:%b", cycleCounter, IN_VALUE, OUT_VALUES[0], OUT_VALUES[1], OUT_VALUES[2], OUT_VALUES[3], OUT_VALUES[4], IN_VALUE, OUT_VALUES[4]);
          end
     endtask
 

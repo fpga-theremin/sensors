@@ -5,7 +5,9 @@ module sin_cos_dco
     parameter SIN_TABLE_DATA_WIDTH = 13,
     parameter SIN_TABLE_ADDR_WIDTH = 12,
     // non-zero values only for using with simulation, to emulate phase shifted ADC output
-    parameter RESET_PHASE_VALUE = 0
+    parameter RESET_PHASE_VALUE = 0,
+    // specify init file to SIN table ROM with
+    parameter SIN_ROM_INIT_FILE = "sin_table_4096_13bit.mem"
 )
 (
     /* input clock                                           */
@@ -52,14 +54,12 @@ always @(posedge CLK) begin
 end
 
 //assign debug_PHASE = phase;
-
-/* TODO: support different sin table sizes */
-
-sin_cos_table_4096_13bit #(
+sin_cos_table #(
     .DATA_WIDTH(SIN_TABLE_DATA_WIDTH),
-    .ADDR_WIDTH(SIN_TABLE_ADDR_WIDTH)
+    .ADDR_WIDTH(SIN_TABLE_ADDR_WIDTH),
+    .INIT_FILE(SIN_ROM_INIT_FILE)
 )
-sin_cos_table_4096_13bit_inst
+sin_cos_table_inst
 (
     /* input clock                                           */
     .CLK(CLK),

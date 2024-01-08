@@ -15,9 +15,16 @@ module adc_dac_frontend
     parameter PHASE_INCREMENT_FEEDBACK_FILTER_STAGE_COUNT = 2,
     parameter SIN_TABLE_DATA_WIDTH = 13,
     parameter SIN_TABLE_ADDR_WIDTH = 12,
+    // specify init file to SIN table ROM with
+    parameter SIN_ROM_INIT_FILE = "sin_table_4096_13bit.mem",
     parameter ADC_DATA_WIDTH = 12,
     parameter DAC_DATA_WIDTH = 12,
     parameter MUL_ACC_WIDTH = 32,
+    // 1 to enable accumulation of values for one ADC period (zero crossing detection)
+    //   in this case set RESULT_WIDTH=32 for iCE40 platform since it has 32-bit accumulator in DSP 
+    // 0 to output multiplicatoin result values directly, without additional accumulation - to let LP filters do averaging
+    //   in this case, set RESULT_WIDTH=SIN_TABLE_DATA_WIDTH+ADC_DATA_WIDTH 
+    parameter PERIOD_ACC_ENABLE = 1,
     // if RESULT_MUL_ACC_WIDTH>MUL_ACC_WIDTH, result LP filter introduces additional bits from averaging
     parameter RESULT_MUL_ACC_WIDTH = 36,
     parameter RESULT_FILTER_SHIFT_BITS = 5,
@@ -83,7 +90,8 @@ sin_cos_dco
     .PHASE_BITS(PHASE_BITS),
     .PHASE_INCREMENT_BITS(PHASE_INCREMENT_BITS),
     .SIN_TABLE_DATA_WIDTH(SIN_TABLE_DATA_WIDTH),
-    .SIN_TABLE_ADDR_WIDTH(SIN_TABLE_ADDR_WIDTH)
+    .SIN_TABLE_ADDR_WIDTH(SIN_TABLE_ADDR_WIDTH),
+    .SIN_ROM_INIT_FILE("sin_table_4096_13bit.mem")
 )
 dco_inst
 (
@@ -116,6 +124,7 @@ quadrature_mul_acc
 #(
     .SIN_TABLE_DATA_WIDTH(SIN_TABLE_DATA_WIDTH),
     .ADC_DATA_WIDTH(ADC_DATA_WIDTH),
+    .PERIOD_ACC_ENABLE(PERIOD_ACC_ENABLE),
     .RESULT_WIDTH(MUL_ACC_WIDTH)
 )
 quadrature_mul_acc_inst

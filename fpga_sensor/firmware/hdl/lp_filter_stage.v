@@ -1,9 +1,9 @@
 module lp_filter_stage
 #(
-    parameter IN_DATA_BITS = 28,
+    parameter IN_DATA_BITS = 30,
     parameter SHIFT_BITS = 6,
     // should be between IN_DATA_BITS and IN_DATA_BITS+SHIFT_BITS
-    parameter OUT_DATA_BITS = 28
+    parameter OUT_DATA_BITS = 33
 )
 (
     /* input clock                                           */

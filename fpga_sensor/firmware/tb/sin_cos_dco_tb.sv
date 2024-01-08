@@ -53,7 +53,7 @@ sin_cos_dco_inst
          begin
              @(posedge CLK) #1 ;
              //$display("    [%d]   nextCycle SIN=%d COS=%d  phase=%h increment=%h", cycleCounter, SIN_VALUE, COS_VALUE, debug_PHASE, debug_PHASE_INC);
-             $display("    [%d]   nextCycle SIN=%d COS=%d  phase=%h increment=%h", cycleCounter, SIN_VALUE, COS_VALUE);
+             $display("    [%d]   nextCycle SIN=%d COS=%d", cycleCounter, SIN_VALUE, COS_VALUE);
          end
     endtask
 

@@ -217,6 +217,30 @@ static void writeSourceCode(FILE * f, const char ** lines, int indent = 1) {
     }
 }
 
+// generate init file for $readmemh
+bool SinTable::generateMemInitFile(const char * filePath) {
+    char fileName[4096];
+    char moduleName[256];
+    sprintf(moduleName, "sin_table_%d_%dbit", tableSize, valueBits);
+    sprintf(fileName, "%s%s.mem", filePath, moduleName);
+    FILE * f = fopen(fileName, "wt");
+    if (!f) {
+        qDebug("Cannot open file %s for writing", fileName);
+        return false;
+    }
+    for (int i = 0; i < tableSize / 4; i++) {
+        if (valueBits > 12) {
+            fprintf(f, "%04x\n", table[i]);
+        } else if (valueBits > 8) {
+            fprintf(f, "%03x\n", table[i]);
+        } else {
+            fprintf(f, "%02x\n", table[i]);
+        }
+    }
+    fclose(f);
+    return true;
+}
+
 // generate verilog source code with table
 bool SinTable::generateVerilog(const char * filePath) {
     char fileName[4096];

@@ -54,7 +54,7 @@ lp_filter #( .IN_DATA_BITS(IN_DATA_BITS), .OUT_DATA_BITS(OUT_DATA_BITS), .SHIFT_
     task nextCycle();
          begin
              @(posedge CLK) #1 ;
-             $display("    [%d]   nextCycle IN=%d OUT0=%d OUT1=%d OUT2=%d OUT3=%d OUT4=%d", cycleCounter, IN_VALUE, OUT_VALUES[0], OUT_VALUES[1], OUT_VALUES[2], OUT_VALUES[3], OUT_VALUES[4]);
+             $display("    [%d]   nextCycle IN=%d OUT0=%d OUT1=%d OUT2=%d OUT3=%d OUT4=%d  in:%b out:%b", cycleCounter, IN_VALUE, OUT_VALUES[0], OUT_VALUES[1], OUT_VALUES[2], OUT_VALUES[3], OUT_VALUES[4], IN_VALUE, OUT_VALUES[4]);
          end
     endtask
 

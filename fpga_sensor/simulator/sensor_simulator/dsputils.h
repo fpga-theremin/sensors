@@ -35,6 +35,8 @@ public:
 
     // generate verilog source code with sine table
     bool generateVerilog(const char * filePath);
+    // generate init file for $readmemh
+    bool generateMemInitFile(const char * filePath);
     // generate verilog source code for verification of sine table
     bool generateVerilogTestBench(const char * filePath);
     // generate verilog source code with sin & cos table

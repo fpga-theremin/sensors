@@ -2,6 +2,12 @@
 module adc_dac_frontend_tb();
 
 
+// 1 to enable accumulation of values for one ADC period (zero crossing detection)
+//   in this case set RESULT_WIDTH=32 for iCE40 platform since it has 32-bit accumulator in DSP 
+// 0 to output multiplicatoin result values directly, without additional accumulation - to let LP filters do averaging
+//   in this case, set RESULT_WIDTH=SIN_TABLE_DATA_WIDTH+ADC_DATA_WIDTH 
+localparam PERIOD_ACC_ENABLE = 0;
+
 localparam PHASE_BITS = 32;
 localparam PHASE_INCREMENT_BITS = 28;
 localparam PHASE_INCREMENT_FILTER_SHIFT_BITS = 5;
@@ -12,11 +18,13 @@ localparam SIN_TABLE_DATA_WIDTH = 13;
 localparam SIN_TABLE_ADDR_WIDTH = 12;
 localparam ADC_DATA_WIDTH = 12;
 localparam DAC_DATA_WIDTH = 12;
-localparam MUL_ACC_WIDTH = 32;
-localparam RESULT_MUL_ACC_WIDTH = 37;
-localparam RESULT_FILTER_SHIFT_BITS = 5;
-localparam RESULT_FILTER_STAGE_COUNT = 3;
 
+localparam MUL_WIDTH = SIN_TABLE_DATA_WIDTH + ADC_DATA_WIDTH;
+localparam MUL_ACC_WIDTH = PERIOD_ACC_ENABLE ? 32 : MUL_WIDTH;
+
+localparam RESULT_FILTER_SHIFT_BITS = 6;
+localparam RESULT_MUL_ACC_WIDTH = MUL_ACC_WIDTH + RESULT_FILTER_SHIFT_BITS;
+localparam RESULT_FILTER_STAGE_COUNT = 4;
 
     logic [15:0] cycleCounter = 0;
     logic CLK;
@@ -49,6 +57,7 @@ adc_dac_frontend
     .SIN_TABLE_ADDR_WIDTH(SIN_TABLE_ADDR_WIDTH),
     .ADC_DATA_WIDTH(ADC_DATA_WIDTH),
     .DAC_DATA_WIDTH(DAC_DATA_WIDTH),
+    .PERIOD_ACC_ENABLE(PERIOD_ACC_ENABLE),
     .MUL_ACC_WIDTH(MUL_ACC_WIDTH),
     .RESULT_MUL_ACC_WIDTH(RESULT_MUL_ACC_WIDTH),
     .RESULT_FILTER_SHIFT_BITS(RESULT_FILTER_SHIFT_BITS),
@@ -140,7 +149,7 @@ sin_cos_dco_adc_sim_inst
         PHASE_INCREMENT_IN = 10135786;
 
         /* Outputs are delayed by 4 clock cycles */
-        repeat (1000) begin
+        repeat (2000) begin
             nextCycle();
         end
 
