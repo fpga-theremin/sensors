@@ -13,7 +13,7 @@ localparam SIN_TABLE_ADDR_WIDTH = 12;
 localparam ADC_DATA_WIDTH = 12;
 localparam DAC_DATA_WIDTH = 12;
 localparam MUL_ACC_WIDTH = 32;
-localparam RESULT_MUL_ACC_WIDTH = 36;
+localparam RESULT_MUL_ACC_WIDTH = 37;
 localparam RESULT_FILTER_SHIFT_BITS = 5;
 localparam RESULT_FILTER_STAGE_COUNT = 3;
 
@@ -122,6 +122,22 @@ sin_cos_dco_adc_sim_inst
 
         $display("*** Changing frequency");
         PHASE_INCREMENT_IN = 100377165; // 1018654.23 Hz signal at 40000000 Hz sample rate
+
+        /* Outputs are delayed by 4 clock cycles */
+        repeat (1000) begin
+            nextCycle();
+        end
+
+        $display("*** Changing frequency to 100KHz");
+        PHASE_INCREMENT_IN = 10035786;
+
+        /* Outputs are delayed by 4 clock cycles */
+        repeat (2000) begin
+            nextCycle();
+        end
+
+        $display("*** Changing frequency to 101KHz");
+        PHASE_INCREMENT_IN = 10135786;
 
         /* Outputs are delayed by 4 clock cycles */
         repeat (1000) begin
