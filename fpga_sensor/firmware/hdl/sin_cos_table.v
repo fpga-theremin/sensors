@@ -33,7 +33,7 @@ module sin_cos_table #(
     
     /* first quarter of table always has 0 in upper bit, so we can store only DATA_WIDTH-1 bits in the table */
     (* ram_style = "block" *)  
-    reg [DATA_WIDTH-2:0] memory[0:MEMSIZE-1];
+    reg [DATA_WIDTH-2:0] memory[MEMSIZE-1:0];
            
     /* store input phase value in register */
     reg [ADDR_WIDTH-1:0] phase_stage0;

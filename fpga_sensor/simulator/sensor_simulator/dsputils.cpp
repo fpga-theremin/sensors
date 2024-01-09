@@ -229,9 +229,9 @@ bool SinTable::generateMemInitFile(const char * filePath) {
         return false;
     }
     for (int i = 0; i < tableSize / 4; i++) {
-        if (valueBits > 12) {
+        if (valueBits-1 > 12) {
             fprintf(f, "%04x\n", table[i]);
-        } else if (valueBits > 8) {
+        } else if (valueBits-1 > 8) {
             fprintf(f, "%03x\n", table[i]);
         } else {
             fprintf(f, "%02x\n", table[i]);

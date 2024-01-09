@@ -6,7 +6,7 @@ module adc_dac_frontend_tb();
 //   in this case set RESULT_WIDTH=32 for iCE40 platform since it has 32-bit accumulator in DSP 
 // 0 to output multiplicatoin result values directly, without additional accumulation - to let LP filters do averaging
 //   in this case, set RESULT_WIDTH=SIN_TABLE_DATA_WIDTH+ADC_DATA_WIDTH 
-localparam PERIOD_ACC_ENABLE = 0;
+localparam PERIOD_ACC_ENABLE = 1;
 
 localparam PHASE_BITS = 32;
 localparam PHASE_INCREMENT_BITS = 28;
