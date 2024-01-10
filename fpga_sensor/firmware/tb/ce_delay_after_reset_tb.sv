@@ -11,7 +11,7 @@ wire ce_out[33];
 
 genvar i;
 generate
-    for (i = 0; i < 32; i++)
+    for (i = 0; i <= 32; i++)
         ce_delay_after_reset #( .DELAY_CYCLES(i) ) ce_delay_after_reset_inst2 ( .CLK(CLK), .CE(CE), .RESET(RESET), .CE_OUT(ce_out[i]) );
 endgenerate
 
@@ -45,6 +45,11 @@ initial begin
     nextCycle();
     CE = 1;
 
+    repeat(40) nextCycle();
+    $display("*** RESET !!!");
+    RESET = 1;
+    nextCycle();
+    RESET = 0;
     repeat(40) nextCycle();
 
     $display("Test passed");

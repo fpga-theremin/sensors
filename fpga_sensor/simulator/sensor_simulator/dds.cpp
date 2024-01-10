@@ -228,6 +228,49 @@ void testDDS2() {
     }
 }
 
+QString formatBin(int n, int bits) {
+    return QString("%1").arg((int)n, (int)3, (int)2, QLatin1Char('0'));
+}
+
+void generateVerilogVectorLengthCases3x3() {
+    qDebug("");
+    for (int y = 0; y < 8; y++) {
+        for (int x = 0; x < 8; x++) {
+            int squareSum = x*x + y*y;
+            int sq = (int)floor(sqrt(squareSum + 0.99999));
+            if (sq > 7)
+                sq = 7;
+            QString line = QString("        6'b%1_%2: amplitude_stage1 <= %3;").arg(formatBin(y, 3)).arg(formatBin(x, 3)).arg(sq);
+            qDebug("%s", line.toUtf8().data());
+        }
+    }
+    qDebug("");
+    for (int scale = 0; scale < 8; scale++) {
+        for (int amp = 0; amp < 8; amp++) {
+            int action = 0;
+            int amp1 = amp == 0 ? 1 : amp;
+            int halfPeriods = (scale + 1) * 2; // for 0, 1, 2: 2, 4, 6, 8...
+            int halfPeriodsInc = halfPeriods + 2;
+            int halfPeriodsDec = halfPeriods - 2;
+            // expected amplitude after increment
+            int ampInc = amp1 * halfPeriodsInc / halfPeriods;
+            // expected amplitude after decrement
+            int ampDec = amp1 * halfPeriodsDec / halfPeriods;
+            if (amp >= 6) {
+                if (scale > 0)
+                    action = 1; // reduce scale
+            } else if (ampInc < 5) {
+                if (scale < 7)
+                    action = 2; // increase scale
+            }
+
+            QString line = QString("        6'b%1_%2: action_stage2 <= %3;").arg(formatBin(scale, 3)).arg(formatBin(amp, 3)).arg(action);
+            qDebug("%s", line.toUtf8().data());
+        }
+    }
+    qDebug("");
+}
+
 void testDDS() {
     SinTable sinTable(10, 12);
     sinTable.generateVerilog("");
@@ -243,4 +286,5 @@ void testDDS() {
 
     testDDS1();
     testDDS2();
+    generateVerilogVectorLengthCases3x3();
 }
