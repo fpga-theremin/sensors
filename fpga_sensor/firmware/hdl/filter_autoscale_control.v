@@ -23,7 +23,10 @@ module filter_autoscale_control
     input wire signed [TOP_DATA_BITS-1:0] TOP_COS,
 
     /* variable delay, (DELAY+1) cycles */
-    output wire [DELAY_BITS-1:0] DELAY
+    output wire [DELAY_BITS-1:0] DELAY,
+    // 1 for one CLK+CE cycle when DELAY output is changed
+    output wire DELAY_UPDATED
+    
 
     , output wire debug_update_stage0
     , output wire debug_update_stage1
@@ -37,18 +40,23 @@ module filter_autoscale_control
 
 // 1 when CE and UPDATE requested, skipped for first 4 cases after reset
 // after update_stage0 set to 1, disable update start for next 4 cycles
-wire update_stage0;
-assign update_stage0 = CE & UPDATE;
-//ce_delay_after_reset #( .DELAY_CYCLES(4) ) ce_protector ( .CLK(CLK), .CE(CE & UPDATE), .RESET(RESET|update_stage0), .CE_OUT(update_stage0) );
+wire update_protected;
+reg update_stage0;
 reg update_stage1;
 reg update_stage2;
 reg update_stage3;
+
+
+//assign update_stage0 = CE & UPDATE;
+ce_delay_after_reset #( .DELAY_CYCLES(4) ) ce_protector ( .CLK(CLK), .CE(CE & UPDATE), .RESET(RESET|update_stage1), .CE_OUT(update_protected) );
 always @(posedge CLK) begin
     if (RESET) begin
+        update_stage0 <= 0;
         update_stage1 <= 0;
         update_stage2 <= 0;
         update_stage3 <= 0;
     end else if (CE) begin
+        update_stage0 <= update_protected;
         update_stage1 <= update_stage0;
         update_stage2 <= update_stage1;
         update_stage3 <= update_stage2;
@@ -63,7 +71,7 @@ always @(posedge CLK) begin
     if (RESET) begin
         abs_sin_stage0 <= 0;
         abs_cos_stage0 <= 0;
-    end else if (update_stage0) begin
+    end else if (update_protected) begin
         abs_sin_stage0 <= (TOP_SIN == {TOP_DATA_BITS{1'b1}}) ? {TOP_DATA_BITS-1{1'b1}}      // min negative - use max positive
                  : TOP_SIN[DELAY_BITS-1]              ? -TOP_SIN                     // change sign if negative is in range
                  :                                       TOP_SIN[TOP_DATA_BITS-2:0]; // positive -- just remove sign bit
@@ -78,7 +86,7 @@ reg [TOP_DATA_BITS-2:0] amplitude_stage1;
 always @(posedge CLK) begin
     if (RESET) begin
         amplitude_stage1 <= 0;
-    end else if (update_stage1 & CE) begin
+    end else if (update_stage0 & CE) begin
         case ({abs_sin_stage0, abs_cos_stage0})
         6'b000_000: amplitude_stage1 <= 0;
         6'b000_001: amplitude_stage1 <= 1;
@@ -158,7 +166,7 @@ reg [1:0] action_stage2;
 always @(posedge CLK) begin
     if (RESET) begin
         action_stage2 <= 0;
-    end else if (update_stage2 & CE) begin
+    end else if (update_stage1 & CE) begin
         case ({scale, amplitude_stage1})
         6'b000_000: action_stage2 <= 2;
         6'b000_001: action_stage2 <= 2;
@@ -231,11 +239,15 @@ end
 always @(posedge CLK) begin
     if (RESET) begin
         scale <= 0;
-    end else if (update_stage3 & CE) begin
-        scale <= 0;
+    end else if (update_stage2 & CE) begin
+        if (action_stage2 == 1)
+            scale <= scale - 1;
+        else if (action_stage2 == 2)
+            scale <= scale + 1;
     end
 end
 
+assign DELAY_UPDATED = update_stage3;
 
 assign debug_update_stage0 = update_stage0;
 assign debug_update_stage1 = update_stage1;

@@ -18,11 +18,11 @@ endgenerate
 
 task nextCycle();
      begin
-         @(posedge CLK) #1 ;
+         @(posedge CLK) #1 CE = ~CE;
          $display("    [%d]   nextCycle CE=%b    ce0=%b ce1=%b ce2=%b ce3=%b ce4=%b ce5=%b ce6=%b ce7=%b ce8=%b ce16=%b ce32=%b", 
               cycleCounter, CE, 
               ce_out[0], ce_out[1], ce_out[2], ce_out[3], ce_out[4], ce_out[5], 
-              ce_out[6], ce_out[7], ce_out[8], ce_out[16], ce_out[32] );
+	              ce_out[6], ce_out[7], ce_out[8], ce_out[16], ce_out[32] );
      end
 endtask
 
