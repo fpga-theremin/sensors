@@ -179,6 +179,8 @@ int SimState::adcSensedValueForPhase(uint64_t phase) {
 }
 
 void SimState::simulate(SimParams * newParams) {
+    edgeArray.clear();
+    periodIndex.clear();
     guard1 = 0x11111111;
     guard2 = 0x22222222;
     guard3 = 0x33333333;
@@ -249,18 +251,20 @@ void SimState::simulate(SimParams * newParams) {
     }
 
     for (int i = 0; i < SP_SIM_MAX_SAMPLES - 1; i++) {
+        // number of half period
+        periodIndex.add(edgeArray.length());
         // check if sign has been changed
         int a = sense[i];
         int b = sense[i+1];
         if ((a ^ b) < 0) {
             // edge detected: make interpolation
-            int c = a;
+            int c = b;
             int64_t mulacc1a = senseMulAcc1[i];
             int64_t mulacc1b = senseMulAcc1[i+1];
             int64_t mulacc2a = senseMulAcc2[i];
             int64_t mulacc2b = senseMulAcc2[i+1];
-            int64_t c1 = mulacc1a;
-            int64_t c2 = mulacc2a;
+            int64_t c1 = mulacc1b;
+            int64_t c2 = mulacc2b;
             for (int bit = 0; bit < params->edgeAccInterpolation; bit++) {
                 c = a + b;
                 c1 = mulacc1a + mulacc1b;
@@ -292,16 +296,15 @@ void SimState::simulate(SimParams * newParams) {
                 }
             }
             // c, c1, c2 are ready, with bits count increased
-            //c = c >> params->edgeAccInterpolation;
-            //c1 = c1 >> params->edgeAccInterpolation;
-            //c2 = c2 >> params->edgeAccInterpolation;
+            c = c >> params->edgeAccInterpolation;
+            c1 = c1 >> params->edgeAccInterpolation;
+            c2 = c2 >> params->edgeAccInterpolation;
             Edge edge;
             edge.adcValue = c;
             edge.mulAcc1 = c1;
             edge.mulAcc2 = c2;
             edgeArray.add(edge);
         }
-        periodIndex.add(edgeArray.length());
     }
     periodCount = edgeArray.length() - 1;
 

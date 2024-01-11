@@ -15,6 +15,9 @@ class PlotWidget : public QWidget
     int _pixelsPerSample;
     int _scrollX;
     QScrollBar * _scrollBar;
+public slots:
+    void zoomIn();
+    void zoomOut();
 public:
     explicit PlotWidget(SimParams * simParams, SimState * simState, QScrollBar * scrollBar, QWidget *parent = nullptr);
 

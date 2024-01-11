@@ -6,12 +6,16 @@
 #include <QMainWindow>
 #include <QBoxLayout>
 #include <QComboBox>
+#include <QAction>
+#include <QMenuBar>
 #include "plotwidget.h"
 
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
 
+    QMenuBar * _menuBar;
+    QAction * _actionToolsRunSimulationBatch;
     SimParams _simParams;
     SimState _simState;
     QBoxLayout * _topLayout;
@@ -28,8 +32,11 @@ class MainWindow : public QMainWindow
     QLineEdit * createReadOnlyEdit();
 
 private:
+    void createMenu();
     void createControls();
     void recalculate();
+public slots:
+    void runSimBatch();
 public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();

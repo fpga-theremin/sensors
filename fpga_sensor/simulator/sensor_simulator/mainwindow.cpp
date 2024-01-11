@@ -11,6 +11,8 @@
 #include <QDoubleValidator>
 #include <QScrollBar>
 
+#include "simbatchdialog.h"
+
 //#define RUN_SIMULATION_AFTER_PARAM_CHANGE
 
 
@@ -217,6 +219,48 @@ void MainWindow::createControls() {
     _topLayout->addStretch(1);
 }
 
+/*
+
+     const QIcon openIcon = QIcon::fromTheme("document-open", QIcon(":/images/open.png"));
+     QAction *openAct = new QAction(openIcon, tr("&Open..."), this);
+     openAct->setShortcuts(QKeySequence::Open);
+     openAct->setStatusTip(tr("Open an existing file"));
+     connect(openAct, &QAction::triggered, this, &MainWindow::open);
+     fileMenu->addAction(openAct);
+     fileToolBar->addAction(openAct);
+
+ */
+
+void MainWindow::runSimBatch() {
+    SimBatchDialog * dialog = new SimBatchDialog(this);
+    dialog->show();
+    dialog->setModal(true);
+    dialog->raise();
+    dialog->activateWindow();
+
+}
+
+void MainWindow::createMenu() {
+    _menuBar = new QMenuBar(this);
+    QMenu * fileMenu = _menuBar->addMenu("&File");
+    QMenu * viewMenu = _menuBar->addMenu("&View");
+    QMenu * toolsMenu = _menuBar->addMenu("Tools");
+    QAction * _actionExit = new QAction("Exit", this);
+    _actionExit->setShortcuts(QKeySequence::Close);
+    _actionToolsRunSimulationBatch = new QAction("Run simulation", this);
+    connect(_actionToolsRunSimulationBatch, &QAction::triggered, this, &MainWindow::runSimBatch);
+    QAction * _actionViewHZoomIn = new QAction("H Zoom In", this);
+    _actionViewHZoomIn->setShortcut(QKeySequence::ZoomIn);
+    connect(_actionViewHZoomIn, &QAction::triggered, _plotWidget, &PlotWidget::zoomIn);
+    QAction * _actionViewHZoomOut = new QAction("H Zoom Out", this);
+    _actionViewHZoomOut->setShortcut(QKeySequence::ZoomOut);
+    connect(_actionViewHZoomOut, &QAction::triggered, _plotWidget, &PlotWidget::zoomOut);
+    fileMenu->addAction(_actionExit);
+    toolsMenu->addAction(_actionToolsRunSimulationBatch);
+    viewMenu->addAction(_actionViewHZoomIn);
+    viewMenu->addAction(_actionViewHZoomOut);
+}
+
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
 {
@@ -243,6 +287,9 @@ MainWindow::MainWindow(QWidget *parent)
 
     _mainWidget->setLayout(_mainLayout);
     setCentralWidget(_mainWidget);
+
+    createMenu();
+    setMenuBar(_menuBar);
 
     _simParams.recalculate();
     _simState.simulate(&_simParams);

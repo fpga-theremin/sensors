@@ -14,6 +14,7 @@ SOURCES += \
     main.cpp \
     mainwindow.cpp \
     plotwidget.cpp \
+    simbatchdialog.cpp \
     simutils.cpp
 
 HEADERS += \
@@ -21,6 +22,7 @@ HEADERS += \
     dsputils.h \
     mainwindow.h \
     plotwidget.h \
+    simbatchdialog.h \
     simutils.h
 
 # Default rules for deployment.

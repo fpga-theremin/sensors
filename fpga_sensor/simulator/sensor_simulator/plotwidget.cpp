@@ -257,6 +257,14 @@ void PlotWidget::paintEvent(QPaintEvent * /* event */)
 
 }
 
+void PlotWidget::zoomIn() {
+    setPixelsPerSample(getPixelsPerSample() + 1);
+}
+
+void PlotWidget::zoomOut() {
+    setPixelsPerSample(getPixelsPerSample() - 1);
+}
+
 void PlotWidget::wheelEvent(QWheelEvent * event) {
     int x = event->position().toPoint().x();
     int y = event->position().toPoint().y();
