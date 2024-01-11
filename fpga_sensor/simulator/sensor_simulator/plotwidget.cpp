@@ -134,18 +134,9 @@ void PlotWidget::paintEvent(QPaintEvent * /* event */)
             int fh = painter.fontMetrics().height();
             painter.setPen(pen);
             int nextPeriod = _simState->periodIndex[x+1];
-//            int64_t sum1 = _simState->periodSumBase1[nextPeriod];
-//            int64_t sum2 = _simState->periodSumBase2[nextPeriod];
-//            double angle = _simParams->phaseByAtan2(sum2, sum1); //- atan2(sum2, sum1) / M_PI / 2;
-//            double err = _simParams->phaseError(angle);
-//            int exactBits = SimParams::exactBits(err);
             double angle = _simState->phaseForPeriods(nextPeriod, 1);
             double err = _simParams->phaseError(angle);
             int exactBits = SimParams::exactBits(err);
-//            s = QString(" %1 / %2")
-//                    .arg(sum1)
-//                    .arg(sum2);
-//            painter.drawText(QPoint(i * xscale + xscale + 5, fh + 4), s);
             s = QString(" 1h: %1 (%2) %3 bits")
                     .arg(angle, 0, 'f', 6)
                     .arg(err, 0, 'f', 6)
@@ -193,7 +184,7 @@ void PlotWidget::paintEvent(QPaintEvent * /* event */)
             angle = _simState->phaseForPeriods(nextPeriod, 16);
             err = _simParams->phaseError(angle);
             exactBits = SimParams::exactBits(err);
-            s = QString(" 4p: %1 (%2) %3 bits %4ns")
+            s = QString(" 8p: %1 (%2) %3 bits %4ns")
                     .arg(angle, 0, 'f', 6)
                     .arg(err, 0, 'f', 6)
                     .arg(exactBits)
@@ -272,7 +263,7 @@ void PlotWidget::wheelEvent(QWheelEvent * event) {
     Qt::KeyboardModifiers keyFlags = event->modifiers();
     QPoint angleDelta = event->angleDelta();
     Qt::ScrollPhase phase = event->phase();
-    qDebug("wheelEvent(x=%d, y=%d, mouse=%x, keymodifiers=%x delta=(%d %d) phase=%d)", x, y, mouseFlags, keyFlags, angleDelta.x(), angleDelta.y(), phase);
+    //qDebug("wheelEvent(x=%d, y=%d, mouse=%x, keymodifiers=%x delta=(%d %d) phase=%d)", x, y, mouseFlags, keyFlags, angleDelta.x(), angleDelta.y(), phase);
 
 
     // vscroll
