@@ -4,6 +4,67 @@
 #include <stdint.h>
 #include <QDebug>
 
+template <typename T> class Array {
+    const T initValue = T();
+    T * _list;
+    int _size;
+    int _count;
+public:
+    void clear() {
+        if (_list)
+            delete[] _list;
+        _list = nullptr;
+        _size = 0;
+        _count = 0;
+    }
+    void resize(int size) {
+        if (size <= 0) {
+            clear();
+        } else if (_size == 0) {
+            // create new list
+            _list = new T[size];
+            for (int i = 0; i < size; i++)
+                _list[i] = initValue;
+            _size = size;
+            _count = 0;
+        } else if (size != _size) {
+            // we have some items in list
+            T * newList = new T[size];
+            // copy existing items to new list
+            for (int i = 0; i < _count && i < _size && i < size; i++) {
+                newList[i] = _list[i];
+            }
+            for (int i = _count; i < _size && i < size; i++) {
+                newList[i] = initValue;
+            }
+            delete [] _list;
+            _list = newList;
+            _size = size;
+            if (_count > _size)
+                _count = size;
+        }
+    }
+    Array() : _list(nullptr), _size(0), _count(0) {}
+    ~Array() {
+        clear();
+    }
+    int size() const { return _size; }
+    int length() const { return _count; }
+    T& operator[] (int index) {
+        Q_ASSERT(index >= 0 && index < _count);
+        return _list[index];
+    }
+    const T& operator[] (int index) const {
+        Q_ASSERT(index >= 0 && index < _count);
+        return _list[index];
+    }
+    void add(const T & item) {
+        if (_count >= _size)
+            resize(_size == 0 ? 32 : _size * 2);
+        _list[_count++] = item;
+    }
+};
+
 // sine lookup table, with phase and value quantized according number of bits specified during initialization
 // implementation may use 1/4 of table entries, with flipping and inverting, to get value for any phase
 class SinTable {

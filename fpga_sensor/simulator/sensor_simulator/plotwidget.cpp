@@ -7,7 +7,7 @@ PlotWidget::PlotWidget(SimParams * simParams, SimState * simState, QScrollBar * 
 {
     _simParams = simParams;
     _simState = simState;
-    _pixelsPerSample = 12;
+    _pixelsPerSample = 32;
     _scrollX = 0;
     _scrollBar = scrollBar;
     connect(_scrollBar, QOverload<int>::of(&QScrollBar::valueChanged),
@@ -20,8 +20,8 @@ void PlotWidget::setPixelsPerSample(int n) {
     _pixelsPerSample = n;
     if (_pixelsPerSample < 3)
         _pixelsPerSample = 3;
-    else if (_pixelsPerSample > 32)
-        _pixelsPerSample = 32;
+    else if (_pixelsPerSample > 48)
+        _pixelsPerSample = 48;
     update();
 }
 
@@ -134,15 +134,18 @@ void PlotWidget::paintEvent(QPaintEvent * /* event */)
             int fh = painter.fontMetrics().height();
             painter.setPen(pen);
             int nextPeriod = _simState->periodIndex[x+1];
-            int64_t sum1 = _simState->periodSumBase1[nextPeriod];
-            int64_t sum2 = _simState->periodSumBase2[nextPeriod];
-            double angle = _simParams->phaseByAtan2(sum2, sum1); //- atan2(sum2, sum1) / M_PI / 2;
+//            int64_t sum1 = _simState->periodSumBase1[nextPeriod];
+//            int64_t sum2 = _simState->periodSumBase2[nextPeriod];
+//            double angle = _simParams->phaseByAtan2(sum2, sum1); //- atan2(sum2, sum1) / M_PI / 2;
+//            double err = _simParams->phaseError(angle);
+//            int exactBits = SimParams::exactBits(err);
+            double angle = _simState->phaseForPeriods(nextPeriod, 1);
             double err = _simParams->phaseError(angle);
             int exactBits = SimParams::exactBits(err);
-            s = QString(" %1 / %2")
-                    .arg(sum1)
-                    .arg(sum2);
-            painter.drawText(QPoint(i * xscale + xscale + 5, fh + 4), s);
+//            s = QString(" %1 / %2")
+//                    .arg(sum1)
+//                    .arg(sum2);
+//            painter.drawText(QPoint(i * xscale + xscale + 5, fh + 4), s);
             s = QString(" 1h: %1 (%2) %3 bits")
                     .arg(angle, 0, 'f', 6)
                     .arg(err, 0, 'f', 6)

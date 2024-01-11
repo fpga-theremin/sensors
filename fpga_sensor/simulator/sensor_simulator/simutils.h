@@ -27,6 +27,7 @@ struct SimParams {
     // 1: ADC samples with specified sample rate, N: ADC samples once per N cycles, linearly interpolating values missed cycles
     int adcInterpolation;
     int averagingPeriods;
+    int edgeAccInterpolation;
 
     // noise in adc output, in LSB (e.g. 0.5 means white noise 1/2 LSB)
     double adcNoise;
@@ -53,6 +54,7 @@ struct SimParams {
                 , adcBits(12)
                 , adcInterpolation(1)
                 , averagingPeriods(8)
+                , edgeAccInterpolation(0)
                 , adcNoise(0)
                 , adcDCOffset(0)
                 , sinTable(ncoSinTableSizeBits, ncoValueBits)
@@ -80,6 +82,7 @@ struct SimParams {
     SimParams(const SimParams & v) {
         *this = v;
     }
+
     SimParams & operator = (const SimParams & v) {
         frequency = v.frequency;
         sampleRate = v.sampleRate;
@@ -94,6 +97,7 @@ struct SimParams {
         adcBits = v.adcBits;
         adcInterpolation = v.adcInterpolation;
         averagingPeriods = v.averagingPeriods;
+        edgeAccInterpolation = v.edgeAccInterpolation;
         adcNoise = v.adcNoise;
         adcDCOffset = v.adcDCOffset;
         realFrequency = v.realFrequency;
@@ -101,7 +105,6 @@ struct SimParams {
         phaseModule = v.phaseModule;
         sinTableSize = v.sinTableSize;
         guard1 = v.guard1;
-        //sinTable = nullptr;
         recalculate();
         return *this;
     }
@@ -238,6 +241,18 @@ public:
 
 void collectSimulationStats(SimParams * newParams, int averagingHalfPeriods, int freqVariations, double freqK, int phaseVariations, double phaseK, ExactBitStats & stats);
 
+
+struct Edge {
+    int adcValue;
+    int64_t mulAcc1;
+    int64_t mulAcc2;
+    Edge() : adcValue(0), mulAcc1(0), mulAcc2(0) {
+
+    }
+};
+
+typedef Array<Edge> EdgeArray;
+
 #define SP_SIM_MAX_SAMPLES 10000
 struct SimState {
     SimParams * params;
@@ -255,15 +270,19 @@ struct SimState {
 
     int64_t senseMulBase1[SP_SIM_MAX_SAMPLES + 1000];
     int64_t senseMulBase2[SP_SIM_MAX_SAMPLES + 1000];
+    int64_t senseMulAcc1[SP_SIM_MAX_SAMPLES + 1000];
+    int64_t senseMulAcc2[SP_SIM_MAX_SAMPLES + 1000];
 
-    int periodIndex[SP_SIM_MAX_SAMPLES + 1000];
+    EdgeArray edgeArray;
+
+    Array<int> periodIndex;
     int avgMulBase1;
     int avgMulBase2;
 
     int guard4;
 
-    int64_t periodSumBase1[SP_SIM_MAX_SAMPLES + 1000];
-    int64_t periodSumBase2[SP_SIM_MAX_SAMPLES + 1000];
+    //int64_t periodSumBase1[SP_SIM_MAX_SAMPLES + 1000];
+    //int64_t periodSumBase2[SP_SIM_MAX_SAMPLES + 1000];
     int periodCount;
 
     int guard5;

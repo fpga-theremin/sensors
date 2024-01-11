@@ -211,6 +211,8 @@ void SimState::simulate(SimParams * newParams) {
     //senseShift -= params->phaseIncrement / 2;
     phase = senseShift;
     //int adcScale = 1<<(params->adcBits - 1);
+    int64_t acc1=0;
+    int64_t acc2=0;
     for (int i = 0; i < SP_SIM_MAX_SAMPLES; i++) {
         //double exactPhase = 2 * M_PI * phase / params->phaseModule;
         double exactSense = adcExactSensedValueForPhase(phase);
@@ -236,11 +238,73 @@ void SimState::simulate(SimParams * newParams) {
         // multiplied
         senseMulBase1[i] = sense[i] * (int64_t)base1[i];
         senseMulBase2[i] = sense[i] * (int64_t)base2[i];
+        acc1 += senseMulBase1[i];
+        acc2 += senseMulBase2[i];
+        senseMulAcc1[i] = acc1;
+        senseMulAcc2[i] = acc2;
 
         // increment phase
         phase += params->phaseIncrement;
         phase = phase & (params->phaseModule - 1);
     }
+
+    for (int i = 0; i < SP_SIM_MAX_SAMPLES - 1; i++) {
+        // check if sign has been changed
+        int a = sense[i];
+        int b = sense[i+1];
+        if ((a ^ b) < 0) {
+            // edge detected: make interpolation
+            int c = a;
+            int64_t mulacc1a = senseMulAcc1[i];
+            int64_t mulacc1b = senseMulAcc1[i+1];
+            int64_t mulacc2a = senseMulAcc2[i];
+            int64_t mulacc2b = senseMulAcc2[i+1];
+            int64_t c1 = mulacc1a;
+            int64_t c2 = mulacc2a;
+            for (int bit = 0; bit < params->edgeAccInterpolation; bit++) {
+                c = a + b;
+                c1 = mulacc1a + mulacc1b;
+                c2 = mulacc2a + mulacc2b;
+                if ((c ^ a) < 0) {
+                    // left half
+                    a = a + a;
+                    b = c;
+                    mulacc1a = mulacc1a + mulacc1a;
+                    mulacc1b = c1;
+                    mulacc2a = mulacc2a + mulacc2a;
+                    mulacc2b = c2;
+                } else if ((c ^ b) < 0) {
+                    // right half
+                    a = c;
+                    b = b + b;
+                    mulacc1a = c1;
+                    mulacc1b = mulacc1b + mulacc1b;
+                    mulacc2a = c2;
+                    mulacc2b = mulacc2b + mulacc2b;
+                } else {
+                    // scale
+                    a = a + a;
+                    b = b + b;
+                    mulacc1a = mulacc1a + mulacc1a;
+                    mulacc1b = mulacc1b + mulacc1b;
+                    mulacc2a = mulacc2a + mulacc2a;
+                    mulacc2b = mulacc2b + mulacc2b;
+                }
+            }
+            // c, c1, c2 are ready, with bits count increased
+            //c = c >> params->edgeAccInterpolation;
+            //c1 = c1 >> params->edgeAccInterpolation;
+            //c2 = c2 >> params->edgeAccInterpolation;
+            Edge edge;
+            edge.adcValue = c;
+            edge.mulAcc1 = c1;
+            edge.mulAcc2 = c2;
+            edgeArray.add(edge);
+        }
+        periodIndex.add(edgeArray.length());
+    }
+    periodCount = edgeArray.length() - 1;
+
 
     checkGuards();
 
@@ -259,41 +323,41 @@ void SimState::simulate(SimParams * newParams) {
     checkGuards();
 
 
-    for (int i = 0; i < SP_SIM_MAX_SAMPLES/10; i++) {
-        periodSumBase1[i] = 0;
-        periodSumBase2[i] = 0;
-    }
+//    for (int i = 0; i < SP_SIM_MAX_SAMPLES/10; i++) {
+//        periodSumBase1[i] = 0;
+//        periodSumBase2[i] = 0;
+//    }
 
     checkGuards();
 
-    periodCount = 0;
-    periodIndex[0] = 0;
-    int64_t sum1 = 0;
-    int64_t sum2 = 0;
-    for (int i = 1; i < SP_SIM_MAX_SAMPLES; i++) {
-        if ( (sense[i] ^ sense[i-1])>>(params->adcBits - 1) ) {
-            // difference in sign bit
-            periodSumBase1[periodCount] = sum1;
-            periodSumBase2[periodCount] = sum2;
-            sum1 = 0;
-            sum2 = 0;
-            periodCount++;
-        }
-        sum1 += senseMulBase1[i];
-        sum2 += senseMulBase2[i];
-        periodIndex[i] = periodCount;
-    }
+//    periodCount = 0;
+//    periodIndex[0] = 0;
+//    int64_t sum1 = 0;
+//    int64_t sum2 = 0;
+//    for (int i = 1; i < SP_SIM_MAX_SAMPLES; i++) {
+//        if ( (sense[i] ^ sense[i-1])>>(params->adcBits - 1) ) {
+//            // difference in sign bit
+//            periodSumBase1[periodCount] = sum1;
+//            periodSumBase2[periodCount] = sum2;
+//            sum1 = 0;
+//            sum2 = 0;
+//            periodCount++;
+//        }
+//        sum1 += senseMulBase1[i];
+//        sum2 += senseMulBase2[i];
+//        periodIndex[i] = periodCount;
+//    }
 
     checkGuards();
 
     // averaging aligned by even period frames
     int avgPeriodsCount = (periodCount - 1) & 0xffffffe;
-    alignedSumBase1 = 0;
-    alignedSumBase2 = 0;
-    for (int i = 1; i <= avgPeriodsCount; i++) {
-        alignedSumBase1 += periodSumBase1[i];
-        alignedSumBase2 += periodSumBase2[i];
-    }
+    alignedSumBase1 = edgeArray[avgPeriodsCount].mulAcc1 - edgeArray[0].mulAcc1;
+    alignedSumBase2 = edgeArray[avgPeriodsCount].mulAcc2 - edgeArray[0].mulAcc2;
+//    for (int i = 1; i <= avgPeriodsCount; i++) {
+//        alignedSumBase1 += periodSumBase1[i];
+//        alignedSumBase2 += periodSumBase2[i];
+//    }
     alignedSensePhaseShift = params->phaseByAtan2(alignedSumBase2, alignedSumBase1);
 
     alignedSensePhaseShiftDiff = params->phaseError(alignedSensePhaseShift);
@@ -426,19 +490,21 @@ void collectSimulationStats(SimParams * newParams, int averagingHalfPeriods, int
 }
 
 int64_t SimState::sumForPeriodsBase1(int startHalfperiod, int halfPeriodCount) {
-    int64_t res = 0;
-    for (int i = 0; i < halfPeriodCount; i++) {
-        res += periodSumBase1[startHalfperiod + i];
-    }
-    return res;
+    return edgeArray[startHalfperiod + halfPeriodCount].mulAcc1 - edgeArray[startHalfperiod].mulAcc1;
+//    int64_t res = 0;
+//    for (int i = 0; i < halfPeriodCount; i++) {
+//        res += periodSumBase1[startHalfperiod + i];
+//    }
+//    return res;
 }
 
 int64_t SimState::sumForPeriodsBase2(int startHalfperiod, int halfPeriodCount) {
-    int64_t res = 0;
-    for (int i = 0; i < halfPeriodCount; i++) {
-        res += periodSumBase2[startHalfperiod + i];
-    }
-    return res;
+    return edgeArray[startHalfperiod + halfPeriodCount].mulAcc2 - edgeArray[startHalfperiod].mulAcc2;
+//    int64_t res = 0;
+//    for (int i = 0; i < halfPeriodCount; i++) {
+//        res += periodSumBase2[startHalfperiod + i];
+//    }
+//    return res;
 }
 
 double SimState::phaseForPeriods(int startHalfperiod, int halfPeriodCount) {

@@ -2,6 +2,10 @@
 
 #include <QApplication>
 
+#ifdef _DEBUG
+//#define ENABLE_UNIT_TESTS
+#endif
+
 #include "dds.h"
 
 int main(int argc, char *argv[])
@@ -15,7 +19,10 @@ int main(int argc, char *argv[])
 //    qDebug("sin table 3, 1024x9bit scaling 9/16");
 //    //8.062/16.0
 //    SinTable sinTable3(10, 9, 8.0/16.0);
+
+#ifdef ENABLE_UNIT_TESTS
     testDDS();
+#endif
 
     QApplication a(argc, argv);
     MainWindow w;

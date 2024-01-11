@@ -11,6 +11,10 @@
 #include <QDoubleValidator>
 #include <QScrollBar>
 
+//#define RUN_SIMULATION_AFTER_PARAM_CHANGE
+
+
+
 #define END_OF_LIST -1000000
 
 void MainWindow::recalculate() {
@@ -35,6 +39,7 @@ void MainWindow::recalculate() {
     txt = QString("%1").arg(_simParams.realFrequency, 0, 'f', 5);
     _realFrequency->setText(txt);
 
+#ifdef RUN_SIMULATION_AFTER_PARAM_CHANGE
     qDebug("================================= PRECISION STATS =================");
     ExactBitStats stats;
     collectSimulationStats(&_simParams, 4, 20, 0.0012345, 20, 0.00156789, stats);
@@ -46,6 +51,7 @@ void MainWindow::recalculate() {
     qDebug("Sim results 10..24: %s", stats.toString().toLocal8Bit().data());
 
     runSimTestSuite(&_simParams, 10);
+#endif
 }
 
 QComboBox * MainWindow::createIntComboBox(int * field, const int * values, int multiplier) {
@@ -183,6 +189,8 @@ void MainWindow::createControls() {
     const int adcAveragingPeriods[] = {1, 2, 4, 8, 16, 32, 64, 128, 256, END_OF_LIST};
     _senseParamsLayout->addRow(new QLabel("Avg periods"), createIntComboBox(&_simParams.averagingPeriods, adcAveragingPeriods));
 
+    const int edgeAccInterpolation[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, END_OF_LIST};
+    _senseParamsLayout->addRow(new QLabel("Edge interp"), createIntComboBox(&_simParams.edgeAccInterpolation, edgeAccInterpolation));
 
     QLineEdit * _edSensePhaseShift = createDoubleValueEditor(&_simParams.sensePhaseShift, -1.0, 1.0, 6);
     //_edFrequency->setMax

@@ -68,6 +68,8 @@ quadrature_mul_acc_simple_inst
     .ADC_ZERO_CROSS(adc_zero_cross)
 );
 
+localparam DELAY_BITS=4;
+
 wire [DELAY_BITS-1:0] delay;
 
 /* mul-acc value for ADC*SIN */
@@ -77,8 +79,8 @@ wire signed [RESULT_WIDTH-1:0] cos_acc_filtered;
 
 moving_avg_filter
 #(
-    .DATA_BITS(RESULT_BITS),
-    .DELAY_BITS(4)
+    .DATA_BITS(RESULT_WIDTH),
+    .DELAY_BITS(DELAY_BITS)
 )
 moving_avg_filter_sin_inst
 (
@@ -93,7 +95,7 @@ moving_avg_filter_sin_inst
 
 moving_avg_filter
 #(
-    .DATA_BITS(RESULT_BITS),
+    .DATA_BITS(RESULT_WIDTH),
     .DELAY_BITS(4)
 )
 moving_avg_filter_cos_inst
@@ -121,8 +123,8 @@ filter_autoscale_control_inst
     .RESET(RESET),
 
     .UPDATE(adc_zero_cross & CE),
-    .TOP_SIN(sin_acc[RESULT_BITS-1:RESULT_BITS-4]),
-    .TOP_COS(cos_acc[RESULT_BITS-1:RESULT_BITS-4]),
+    .TOP_SIN(sin_acc[RESULT_WIDTH-1:RESULT_WIDTH-4]),
+    .TOP_COS(cos_acc[RESULT_WIDTH-1:RESULT_WIDTH-4]),
 
     .DELAY(delay),
     .DELAY_UPDATED()
