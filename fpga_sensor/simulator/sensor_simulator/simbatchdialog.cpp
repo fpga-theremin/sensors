@@ -12,7 +12,8 @@
 SimBatchDialog::SimBatchDialog(QWidget * parent)
     : QDialog(parent)
 {
-    _variations = 50;
+    _freqVariations = 50;
+    _phaseVariations = 50;
     _frequencyStep = 1.00142466;
     _phaseStep = 0.0065441;
 
@@ -23,13 +24,16 @@ SimBatchDialog::SimBatchDialog(QWidget * parent)
     QFormLayout * _simParamsLayout = new QFormLayout();
     _simParamsLayout->setSpacing(10);
     const int variations[] = {10, 20, 30, 40, 50, 100, END_OF_LIST};
-    QComboBox * _cbVariations = createIntComboBox(&_variations, variations, 1);
+    QComboBox * _cbFreqVariations = createIntComboBox(&_freqVariations, variations, 1);
+    QComboBox * _cbPhaseVariations = createIntComboBox(&_phaseVariations, variations, 1);
     //QLineEdit * _edFrequency = createDoubleValueEditor(&_simParams.frequency, 100000, 9000000, 2);
     //_edFrequency->setMax
-    _simParamsLayout->addRow(new QLabel("Frequency and phase variations"), _cbVariations);
+    _simParamsLayout->addRow(new QLabel("Frequency variations"), _cbFreqVariations);
 
     const double freqStep[] = {1.00025294, 1.00142466, 1.0135345, 1.03837645, END_OF_LIST};
     _simParamsLayout->addRow(new QLabel("Frequency step mult"), createDoubleComboBox(&_frequencyStep, freqStep));
+
+    _simParamsLayout->addRow(new QLabel("Phase variations"), _cbPhaseVariations);
 
     const double phaseStep[] = {0.000182734, 0.0024453565, 0.0065441, 0.01134385, END_OF_LIST};
     _simParamsLayout->addRow(new QLabel("Phase step"), createDoubleComboBox(&_phaseStep, phaseStep));
@@ -82,4 +86,9 @@ QComboBox * SimBatchDialog::createDoubleComboBox(double * field, const double * 
         //recalculate();
     });
     return cb;
+}
+
+void SimThread::runSimulation(SimParams * newParams, int freqVariations, double freqStep, int phaseVariations, double phaseStep ) {
+    delete newParams;
+    SimParams params = *newParams;
 }

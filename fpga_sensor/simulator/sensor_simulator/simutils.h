@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <QString>
 #include <QStringList>
+#include <memory>
 
 int quantizeSigned(double value, int bits);
 double quantizeDouble(double value, int bits);
@@ -120,6 +121,10 @@ private:
     double exactBitsPercentMoreOrEqual[32*10];
 public:
     ExactBitStats(int k = 1) : k(k) { clear(); }
+    void init(int bitFractionCount = 1) {
+        k = bitFractionCount;
+        clear();
+    }
     QString headingString(int minBits = 8, int maxBits = 20);
     QString toString(int minBits = 8, int maxBits = 20);
     void incrementExactBitsCount(int exactBits) {
@@ -130,22 +135,88 @@ public:
     int bitFractionCount() const { return k; }
 };
 
+struct SimResultsLine {
+    QString parameterValue;
+    ExactBitStats bitStats;
+    SimResultsLine() {
+    }
+    SimResultsLine(const SimResultsLine & v) {
+        parameterValue = v.parameterValue;
+        bitStats = v.bitStats;
+    }
+    SimResultsLine & operator =(const SimResultsLine & v) {
+        parameterValue = v.parameterValue;
+        bitStats = v.bitStats;
+        return *this;
+    }
+};
+
+struct SimResultsItem {
+    QString name;
+    QString description;
+    Array<SimResultsLine> byParameter;
+    QStringList text;
+    SimResultsItem() {}
+    SimResultsItem(const SimResultsItem& v) {
+        name = v.name;
+        description = v.description;
+        byParameter = v.byParameter;
+        text.append(v.text);
+    }
+    void operator = (const SimResultsItem& v) {
+        name = v.name;
+        description = v.description;
+        byParameter = v.byParameter;
+        text.clear();
+        text.append(v.text);
+    }
+    void clear() {
+        name = "";
+        description = "";
+        byParameter.clear();
+        text.clear();
+    }
+    SimResultsLine & addLine() {
+        SimResultsLine line;
+        byParameter.add(line);
+        return byParameter[byParameter.length()-1];
+    }
+};
+
+struct SimResultsHolder {
+    Array<SimResultsItem> byTest;
+    QStringList text;
+    SimResultsItem * addTest() {
+        SimResultsItem item;
+        byTest.add(item);
+        return &byTest[byTest.length()-1];
+    }
+};
+
+class ProgressListener {
+public:
+    virtual void onProgress(int currentStage, int totalStages, QString msg);
+};
+
 class SimParamMutator {
 protected:
+
     SimParams params;
     int currentStage;
     int stageCount;
     QString heading;
     QString valueString;
+    ProgressListener * progressListener;
     void setValue(int value) {
         valueString = QString(":%1").arg(value);
     }
 public:
-    SimParamMutator(SimParams * params, QString heading, int stages)
+    SimParamMutator(SimParams * params, QString heading, int stages, ProgressListener * progressListener = nullptr)
         : params(*params),
           currentStage(0),
           stageCount(stages),
-          heading(heading)
+          heading(heading),
+          progressListener(progressListener)
     {
 
     }
@@ -159,7 +230,7 @@ public:
         currentStage++;
         return currentStage <= stageCount;
     }
-    void runTests(QStringList & results, int variations = 5, int bitFractionCount = 5);
+    void runTests(SimResultsItem & results, int freqVariations = 5, double freqStep = 1.0014325, int phaseVariations = 5, double phaseStep = 0.0143564, int bitFractionCount = 5);
 };
 
 class AveragingMutator : public SimParamMutator {
@@ -241,6 +312,30 @@ public:
 
 void collectSimulationStats(SimParams * newParams, int averagingHalfPeriods, int freqVariations, double freqK, int phaseVariations, double phaseK, ExactBitStats & stats);
 
+class SimSuite : public ProgressListener {
+protected:
+    ProgressListener * progressListener;
+    QString currentTest;
+    int currentResultIndex;
+    int totalResultsCount;
+    Array<std::unique_ptr<SimParamMutator>> tests;
+public:
+    SimSuite(ProgressListener * progressListener = nullptr) : progressListener(progressListener), currentResultIndex(0), totalResultsCount(0) {
+    }
+    void addTest(SimParamMutator * test) {
+        tests.add(std::unique_ptr<SimParamMutator>(test));
+    }
+    virtual void init() {}
+    virtual void run() {}
+    void onProgress(int currentStage, int totalStages, QString msg) override {
+        currentResultIndex++;
+        if (progressListener != nullptr) {
+            progressListener->onProgress(currentResultIndex, totalResultsCount, currentTest + " " + msg);
+        }
+    }
+};
+
+
 
 struct Edge {
     int adcValue;
@@ -309,6 +404,6 @@ struct SimState {
 
 };
 
-void runSimTestSuite(SimParams * params, int variations=10, int bitFractionCount = 2);
+void runSimTestSuite(SimParams * params, int freqVariations = 5, double freqStep = 1.0014325, int phaseVariations = 5, double phaseStep = 0.0143564, int bitFractionCount = 2);
 
 #endif // SIMUTILS_H

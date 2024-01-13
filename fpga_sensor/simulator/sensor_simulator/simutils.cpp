@@ -434,34 +434,41 @@ void ExactBitStats::updateStats() {
     }
 }
 
-void SimParamMutator::runTests(QStringList & results, int variations, int bitFractionCount) {
+void SimParamMutator::runTests(SimResultsItem & results, int freqVariations, double freqStep, int phaseVariations, double phaseStep, int bitFractionCount) {
     SimState * state = new SimState();
     QString testName = heading + " : " + params.toString();
-    results.append(testName);
+    results.text.append(testName);
+    results.name = testName;
     qDebug(testName.toLocal8Bit().data());
-    results.append(QString());
+    results.text.append(QString());
     qDebug("");
 
     ExactBitStats statsHead(bitFractionCount);
     QString headers = heading + "\t" + statsHead.headingString();
-    results.append(headers);
+    results.text.append(headers);
     qDebug(headers.toLocal8Bit().data());
 
     while (next()) {
-        ExactBitStats stats(bitFractionCount);
-        collectSimulationStats(&params, params.averagingPeriods*2, variations, 0.0012345, variations, 0.00156789, stats);
-        QString res = valueString + "\t" + stats.toString();
-        results.append(res);
+        SimResultsLine & line = results.addLine();
+        line.bitStats.init(bitFractionCount);
+        line.parameterValue = valueString;
+        if (progressListener) {
+            progressListener->onProgress(currentStage, stageCount, valueString);
+        }
+        //ExactBitStats stats(bitFractionCount);
+        collectSimulationStats(&params, params.averagingPeriods*2, freqVariations, freqStep, phaseVariations, phaseStep, line.bitStats);
+        QString res = valueString + "\t" + line.bitStats.toString();
+        results.text.append(res);
         qDebug(res.toLocal8Bit().data());
     }
 
-    results.append(QString());
+    results.text.append(QString());
     qDebug("");
-    results.append(QString());
+    results.text.append(QString());
     qDebug("");
-    results.append(QString());
+    results.text.append(QString());
     qDebug("");
-    results.append(QString());
+    results.text.append(QString());
     qDebug("");
     delete state;
 }
@@ -518,20 +525,41 @@ double SimState::phaseForPeriods(int startHalfperiod, int halfPeriodCount) {
 }
 
 
-void runSimTestSuite(SimParams * params, int variations, int bitFractionCount) {
-    QStringList results;
+void runSimTestSuite(SimParams * params, int freqVariations, double freqStep, int phaseVariations, double phaseStep, int bitFractionCount) {
+    //QStringList results;
+    SimResultsHolder results;
+
+    SimResultsItem * testResults = results.addTest();
     AveragingMutator avgTest(params);
-    avgTest.runTests(results, variations, bitFractionCount);
+    avgTest.runTests(*testResults, freqVariations, freqStep, phaseVariations, phaseStep, bitFractionCount);
+    results.text.append(testResults->text);
+
+    testResults = results.addTest();
     ADCBitsMutator adcBitsTest(params);
-    adcBitsTest.runTests(results, variations, bitFractionCount);
+    adcBitsTest.runTests(*testResults, freqVariations, freqStep, phaseVariations, phaseStep, bitFractionCount);
+    results.text.append(testResults->text);
+
 //    ADCInterpolationMutator adcInterpolationTest(params);
 //    adcInterpolationTest.runTests(results, variations, bitFractionCount);
+
+    testResults = results.addTest();
     SinValueBitsMutator sinValueBitsTest(params);
-    sinValueBitsTest.runTests(results, variations, bitFractionCount);
+    sinValueBitsTest.runTests(*testResults, freqVariations, freqStep, phaseVariations, phaseStep, bitFractionCount);
+    results.text.append(testResults->text);
+
+    testResults = results.addTest();
     SinTableSizeMutator sinTableSizeTest(params);
-    sinTableSizeTest.runTests(results, variations, bitFractionCount);
+    sinTableSizeTest.runTests(*testResults, freqVariations, freqStep, phaseVariations, phaseStep, bitFractionCount);
+    results.text.append(testResults->text);
+
+    testResults = results.addTest();
     SampleRateMutator sampleRateTest(params);
-    sampleRateTest.runTests(results, variations, bitFractionCount);
+    sampleRateTest.runTests(*testResults, freqVariations, freqStep, phaseVariations, phaseStep, bitFractionCount);
+    results.text.append(testResults->text);
+
+    testResults = results.addTest();
     PhaseBitsMutator phaseBitsTest(params);
-    phaseBitsTest.runTests(results, variations, bitFractionCount);
+    phaseBitsTest.runTests(*testResults, freqVariations, freqStep, phaseVariations, phaseStep, bitFractionCount);
+    results.text.append(testResults->text);
+
 }

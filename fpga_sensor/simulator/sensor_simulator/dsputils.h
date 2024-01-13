@@ -17,6 +17,11 @@ public:
         _size = 0;
         _count = 0;
     }
+    void reserve(int size) {
+        if (_size < size) {
+            resize(size);
+        }
+    }
     void resize(int size) {
         if (size <= 0) {
             clear();
@@ -45,6 +50,9 @@ public:
         }
     }
     Array() : _list(nullptr), _size(0), _count(0) {}
+    Array(const Array<T> & v) : _list(nullptr), _size(0), _count(0) {
+        addAll(v);
+    }
     ~Array() {
         clear();
     }
@@ -62,6 +70,16 @@ public:
         if (_count >= _size)
             resize(_size == 0 ? 32 : _size * 2);
         _list[_count++] = item;
+    }
+    void addAll(const Array<T> & v) {
+        reserve(_count + v.length());
+        for (int i = 0; i < v.length(); i++) {
+            add(v[i]);
+        }
+    }
+    void operator = (const Array<T> & v) {
+        clear();
+        addAll(v);
     }
 };
 
