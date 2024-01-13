@@ -306,6 +306,7 @@ void SimState::simulate(SimParams * newParams) {
             edgeArray.add(edge);
         }
     }
+    assert(edgeArray.length() > 100);
     periodCount = edgeArray.length() - 1;
 
 
@@ -484,7 +485,7 @@ void collectSimulationStats(SimParams * newParams, int averagingHalfPeriods, int
             params.sensePhaseShift = phase + phaseK * n2;
             params.recalculate();
             state->simulate(&params);
-            for (int i = 1; i < state->periodCount-2; i++) {
+            for (int i = 1; i < state->periodCount-averagingHalfPeriods-2; i++) {
                 // bottom: avg for 1 period (2 halfperiods)
                 double angle = state->phaseForPeriods(i, averagingHalfPeriods);
                 double err = params.phaseError(angle);
@@ -522,6 +523,32 @@ double SimState::phaseForPeriods(int startHalfperiod, int halfPeriodCount) {
     int64_t sumBase2 = sumForPeriodsBase2(startHalfperiod, halfPeriodCount);
     double angle = params->phaseByAtan2(sumBase2, sumBase1); //- atan2(sum2, sum1) / M_PI / 2;
     return angle;
+}
+
+void SimSuite::run() {
+    totalResultsCount = 0;
+    currentResultIndex = 0;
+    results.clear();
+    for (int i = 0; i < tests.size(); i++) {
+        tests[i]->setParams(&simParams);
+        tests[i]->setProgressListener(this);
+        totalResultsCount += tests[i]->getStageCount();
+    }
+
+    for (int i = 0; i < tests.size(); i++) {
+        SimResultsItem * result = results.addTest();
+        tests[i]->runTests(*result, freqVariations, freqStep, phaseVariations, phaseStep, bitFractionCount);
+    }
+}
+
+FullSimSuite::FullSimSuite(ProgressListener * progressListener) : SimSuite(progressListener) {
+    addTest(new AveragingMutator(&simParams));
+    addTest(new ADCBitsMutator(&simParams));
+    addTest(new SinValueBitsMutator(&simParams));
+    addTest(new SinTableSizeMutator(&simParams));
+    addTest(new SampleRateMutator(&simParams));
+    addTest(new PhaseBitsMutator(&simParams));
+    addTest(new ADCInterpolationMutator(&simParams));
 }
 
 

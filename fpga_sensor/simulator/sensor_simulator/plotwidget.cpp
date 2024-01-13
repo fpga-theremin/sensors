@@ -257,12 +257,12 @@ void PlotWidget::zoomOut() {
 }
 
 void PlotWidget::wheelEvent(QWheelEvent * event) {
-    int x = event->position().toPoint().x();
-    int y = event->position().toPoint().y();
+    //int x = event->position().toPoint().x();
+    //int y = event->position().toPoint().y();
     Qt::MouseButtons mouseFlags = event->buttons();
     Qt::KeyboardModifiers keyFlags = event->modifiers();
     QPoint angleDelta = event->angleDelta();
-    Qt::ScrollPhase phase = event->phase();
+    //Qt::ScrollPhase phase = event->phase();
     //qDebug("wheelEvent(x=%d, y=%d, mouse=%x, keymodifiers=%x delta=(%d %d) phase=%d)", x, y, mouseFlags, keyFlags, angleDelta.x(), angleDelta.y(), phase);
 
 

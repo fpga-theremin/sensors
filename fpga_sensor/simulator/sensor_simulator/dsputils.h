@@ -66,6 +66,11 @@ public:
         Q_ASSERT(index >= 0 && index < _count);
         return _list[index];
     }
+//    void add(const T & item) {
+//        if (_count >= _size)
+//            resize(_size == 0 ? 32 : _size * 2);
+//        _list[_count++] = item;
+//    }
     void add(const T & item) {
         if (_count >= _size)
             resize(_size == 0 ? 32 : _size * 2);

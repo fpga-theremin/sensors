@@ -24,6 +24,9 @@ int main(int argc, char *argv[])
     testDDS();
 #endif
 
+    FullSimSuite suite;
+    suite.run();
+
     QApplication a(argc, argv);
     MainWindow w;
     w.show();

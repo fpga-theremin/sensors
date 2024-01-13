@@ -191,11 +191,15 @@ struct SimResultsHolder {
         byTest.add(item);
         return &byTest[byTest.length()-1];
     }
+    void clear() {
+        byTest.clear();
+        text.clear();
+    }
 };
 
 class ProgressListener {
 public:
-    virtual void onProgress(int currentStage, int totalStages, QString msg);
+    virtual void onProgress(int currentStage, int totalStages, QString msg) = 0;
 };
 
 class SimParamMutator {
@@ -220,6 +224,18 @@ public:
     {
 
     }
+    void setProgressListener(ProgressListener * listener) {
+        this->progressListener = listener;
+    }
+    int getStageCount() {
+        return this->stageCount;
+    }
+    int getCurrentStage() {
+        return this->currentStage;
+    }
+    void setParams(SimParams * params) {
+        this->params = *params;
+    }
     QString toString() { return valueString; }
     QString headingString() { return heading; }
     virtual void reset() {
@@ -230,7 +246,7 @@ public:
         currentStage++;
         return currentStage <= stageCount;
     }
-    void runTests(SimResultsItem & results, int freqVariations = 5, double freqStep = 1.0014325, int phaseVariations = 5, double phaseStep = 0.0143564, int bitFractionCount = 5);
+    void runTests(SimResultsItem & results, int freqVariations = 5, double freqStep = 0.0014325, int phaseVariations = 5, double phaseStep = 0.0143564, int bitFractionCount = 5);
 };
 
 class AveragingMutator : public SimParamMutator {
@@ -314,25 +330,54 @@ void collectSimulationStats(SimParams * newParams, int averagingHalfPeriods, int
 
 class SimSuite : public ProgressListener {
 protected:
+    SimParams simParams;
     ProgressListener * progressListener;
     QString currentTest;
     int currentResultIndex;
     int totalResultsCount;
-    Array<std::unique_ptr<SimParamMutator>> tests;
+    std::vector<std::unique_ptr<SimParamMutator>> tests;
+    int freqVariations;
+    double freqStep;
+    int phaseVariations;
+    double phaseStep;
+    int bitFractionCount;
+    SimResultsHolder results;
 public:
-    SimSuite(ProgressListener * progressListener = nullptr) : progressListener(progressListener), currentResultIndex(0), totalResultsCount(0) {
+    SimSuite(ProgressListener * progressListener = nullptr) : progressListener(progressListener), currentResultIndex(0), totalResultsCount(0),
+        freqVariations(5), freqStep(0.0014325), phaseVariations(5), phaseStep(0.0143564), bitFractionCount(2)
+    {
+    }
+    void setParams(SimParams * params, int freqVariations = 5, double freqStep = 0.0014325, int phaseVariations = 5, double phaseStep = 0.0143564, int bitFractionCount = 2) {
+        simParams = *params;
+        this->freqVariations = freqVariations;
+        this->freqStep = freqStep;
+        this->phaseVariations = phaseVariations;
+        this->phaseStep = phaseStep;
+        this->bitFractionCount = bitFractionCount;
     }
     void addTest(SimParamMutator * test) {
-        tests.add(std::unique_ptr<SimParamMutator>(test));
+        tests.push_back(std::unique_ptr<SimParamMutator>(test));
     }
-    virtual void init() {}
-    virtual void run() {}
+    void runTest(int index, SimResultsItem & results) {
+        if (index >= 0 && index < tests.size()) {
+            tests[index]->runTests(results, freqVariations, freqStep, phaseVariations, phaseStep, bitFractionCount);
+        }
+    }
+    int testCount() {
+        return (int)tests.size();
+    }
+    virtual void run();
     void onProgress(int currentStage, int totalStages, QString msg) override {
         currentResultIndex++;
         if (progressListener != nullptr) {
             progressListener->onProgress(currentResultIndex, totalResultsCount, currentTest + " " + msg);
         }
     }
+};
+
+class FullSimSuite : public SimSuite {
+public:
+    FullSimSuite(ProgressListener * progressListener = nullptr);
 };
 
 
