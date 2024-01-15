@@ -23,6 +23,8 @@ enum SimParameter {
     SIM_PARAM_MAX = SIM_PARAM_SENSE_NOISE
 };
 
+#define SIM_PARAM_ALL ((1<<(SIM_PARAM_MAX+1))-1)
+
 
 int quantizeSigned(double value, int bits);
 double quantizeDouble(double value, int bits);
@@ -71,11 +73,10 @@ struct SimParams {
     int phaseVariations;
     double phaseStep;
     int bitFractionCount;
+    int paramTypeMask;
 
     SinTable sinTable;
-    //int * sinTable; // [SP_MAX_SIN_TABLE_SIZE];
 
-    int guard1;
     SimParams() : sampleRate(40000000)
                 , ncoPhaseBits(32)
                 , ncoValueBits(13)         // actual table size is 1/4 (1024) and 12 bits
@@ -95,8 +96,8 @@ struct SimParams {
                 , phaseVariations(5)
                 , phaseStep(0.0143564)
                 , bitFractionCount(2)
+                , paramTypeMask(SIM_PARAM_ALL)
                 , sinTable(ncoSinTableSizeBits, ncoValueBits)
-                , guard1(0x11111111)
     {
         // recalculate dependent parameters
         recalculate();
@@ -142,12 +143,12 @@ struct SimParams {
         phaseIncrement = v.phaseIncrement;
         phaseModule = v.phaseModule;
         sinTableSize = v.sinTableSize;
-        guard1 = v.guard1;
         freqVariations = v.freqVariations;
         freqStep = v.freqStep;
         phaseVariations = v.phaseVariations;
         phaseStep = v.phaseStep;
         bitFractionCount = v.bitFractionCount;
+        paramTypeMask = v.paramTypeMask;
         recalculate();
         return *this;
     }
@@ -170,6 +171,7 @@ public:
     QString headingString(int minBits = 8, int maxBits = 20);
     QString toString(int minBits = 8, int maxBits = 20);
     double getPercent(int index, int minBits = 8, int maxBits = 20);
+    double getMaxPercent(int minBits = 8, int maxBits = 20);
     void incrementExactBitsCount(int exactBits) {
         exactBitsCounters[exactBits]++;
     }
@@ -197,45 +199,57 @@ struct SimResultsLine {
 struct SimResultsItem {
     QString name;
     QString description;
-    Array<SimResultsLine> byParameter;
+    SimParameter paramType;
+    Array<SimResultsLine> byParameterValue;
     QStringList text;
+    double maxPercent(int minBits = 8, int maxBits = 24);
     SimResultsItem() {}
     SimResultsItem(const SimResultsItem& v) {
         name = v.name;
         description = v.description;
-        byParameter = v.byParameter;
+        byParameterValue = v.byParameterValue;
+        paramType = v.paramType;
         text.append(v.text);
     }
     void operator = (const SimResultsItem& v) {
         name = v.name;
         description = v.description;
-        byParameter = v.byParameter;
+        byParameterValue = v.byParameterValue;
+        paramType = v.paramType;
         text.clear();
         text.append(v.text);
     }
     void clear() {
         name = "";
         description = "";
-        byParameter.clear();
+        byParameterValue.clear();
         text.clear();
     }
     SimResultsLine & addLine() {
         SimResultsLine line;
-        byParameter.add(line);
-        return byParameter[byParameter.length()-1];
+        byParameterValue.add(line);
+        return byParameterValue[byParameterValue.length()-1];
     }
 };
 
 struct SimResultsHolder {
-    Array<SimResultsItem> byTest;
+    Array<SimResultsItem> results;
     QStringList text;
-    SimResultsItem * addTest() {
+    // get results by type, nullptr if not found
+    SimResultsItem * byType(SimParameter paramType) {
+        for (int i = 0; i < results.length(); i++) {
+            if (results[i].paramType == paramType)
+                return &results[i];
+        }
+        return nullptr;
+    }
+    SimResultsItem * addResult() {
         SimResultsItem item;
-        byTest.add(item);
-        return &byTest[byTest.length()-1];
+        results.add(item);
+        return &results[results.length()-1];
     }
     void clear() {
-        byTest.clear();
+        results.clear();
         text.clear();
     }
 };
@@ -443,6 +457,7 @@ public:
     void setParams(SimParams * params) {
         simParams = *params;
     }
+    virtual void addTests() = 0;
     void addTest(SimParamMutator * test) {
         tests.push_back(std::unique_ptr<SimParamMutator>(test));
     }
@@ -466,6 +481,7 @@ public:
 class FullSimSuite : public SimSuite {
 public:
     FullSimSuite(ProgressListener * progressListener = nullptr);
+    void addTests() override;
 };
 
 

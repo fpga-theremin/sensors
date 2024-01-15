@@ -190,8 +190,10 @@ SimBatchDialog::SimBatchDialog(SimParams * params, QWidget * parent)
 
 void SimBatchDialog::updatePlot() {
     if (_simResults) {
-        int index = _cbResultSelection->currentIndex();
-        _plot->setSimResults(&_simResults->byTest[index]);
+        SimParameter type = (SimParameter)_cbResultSelection->currentData().toInt();
+        SimResultsItem * result1 = _simResults->byType(type);
+        if (result1)
+            _plot->setSimResults(result1);
     }
 }
 

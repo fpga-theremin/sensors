@@ -230,22 +230,35 @@ void MainWindow::createControls() {
     QVBoxLayout * resultLayout = new QVBoxLayout();
     resultLayout->setSpacing(15);
     _plot = new SimResultPlot();
+    _plot2 = new SimResultPlot();
     _cbResult = new QComboBox();
+    _cbResult2 = new QComboBox();
     for (int i = SIM_PARAM_MIN; i <= SIM_PARAM_MAX; i++) {
         const SimParameterMetadata * metadata = SimParameterMetadata::get((SimParameter)i);
         _cbResult->addItem(metadata->getName(), QVariant(i));
+        _cbResult2->addItem(metadata->getName(), QVariant(i));
     }
-    _cbResult->setCurrentIndex(0);
+    _cbResult->setCurrentIndex(SIM_PARAM_AVG_PERIODS);
+    _cbResult2->setCurrentIndex(SIM_PARAM_EDGE_SUBSAMPLING_BITS);
     connect(_cbResult, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &MainWindow::plotIndexChanged);
+    connect(_cbResult2, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &MainWindow::plotIndexChanged2);
     resultLayout->addWidget(_cbResult);
     resultLayout->addWidget(_plot);
+    resultLayout->addWidget(_cbResult2);
+    resultLayout->addWidget(_plot2);
     _rightLayout->addItem(resultLayout);
 
     _topLayout->addStretch(1);
 }
 
 void MainWindow::plotIndexChanged(int index) {
-    updatePlot();
+    runBackgroundSim();
+    //updatePlot();
+}
+
+void MainWindow::plotIndexChanged2(int index) {
+    runBackgroundSim();
+    //updatePlot();
 }
 
 void MainWindow::closeEvent(QCloseEvent *event) {
@@ -288,20 +301,26 @@ void MainWindow::createMenu() {
 
 void MainWindow::updatePlot() {
     if (_simResults) {
-        int index = _cbResult->currentIndex();
-        _plot->setSimResults(&_simResults->byTest[index]);
+        SimParameter type = (SimParameter)_cbResult->currentData().toInt();
+        SimResultsItem * result1 = _simResults->byType(type);
+        if (result1)
+            _plot->setSimResults(result1);
+        SimParameter type2 = (SimParameter)_cbResult2->currentData().toInt();
+        SimResultsItem * result2 = _simResults->byType(type2);
+        if (result2)
+            _plot2->setSimResults(result2);
     }
 }
 
 MainWindow::MainWindow(QWidget *parent)
-    : QMainWindow(parent), _running(false), _simResults(nullptr)
+    : QMainWindow(parent), _running(false), _simRestartAfterResults(false), _simResults(nullptr)
 {
     SimParameterMetadata::applyDefaults(&_simParams);
-    _simParams.freqVariations = 3;
-    _simParams.phaseVariations = 3;
-    _simParams.freqStep = 0.00142466;
-    _simParams.phaseStep = 0.0065441;
-    _simParams.bitFractionCount = 2;
+    _simParams.freqVariations = 7;
+    _simParams.phaseVariations = 7;
+    _simParams.freqStep = 0.00142466432;
+    _simParams.phaseStep = 0.0116544187634;
+    _simParams.bitFractionCount = 3;
 
     _layoutSpacing = 10;
 
@@ -363,10 +382,15 @@ MainWindow::MainWindow(QWidget *parent)
 
 void MainWindow::runBackgroundSim() {
     qDebug("MainWindow::runBackgroundSim()");
-    if (_running)
+    if (_running) {
+        _simRestartAfterResults = true;
         return;
+    }
     SimParams * p = new SimParams();
     *p = _simParams;
+    SimParameter type1 = (SimParameter)_cbResult->currentData().toInt();
+    SimParameter type2 = (SimParameter)_cbResult2->currentData().toInt();
+    p->paramTypeMask = (1<<type1) | (1<<type2);
     _running = true;
     emit runSimulation(p);
 }
@@ -379,6 +403,10 @@ void MainWindow::allTestsDone(SimResultsHolder * allResults) {
         delete _simResults;
     _simResults = allResults;
     updatePlot();
+    if (_simRestartAfterResults) {
+        _simRestartAfterResults = false;
+        runBackgroundSim();
+    }
 }
 
 

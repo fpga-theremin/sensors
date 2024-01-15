@@ -42,7 +42,6 @@ QString SimParams::toString() {
 }
 
 void SimParams::recalculate() {
-    Q_ASSERT(guard1 == 0x11111111);
     //qDebug("SimParams::recalculate()");
 //    qDebug("  source:");
 //    qDebug("    frequency:           %.5f", frequency);
@@ -56,19 +55,8 @@ void SimParams::recalculate() {
     phaseModule = ((int64_t)1) << ncoPhaseBits;
     phaseIncrement = (int64_t)round(phaseInc * phaseModule);
     realFrequency = sampleRate / ((double)phaseModule / (double)phaseIncrement);
-//    if (sinTable) {
-//        Q_ASSERT(guard1 == 0x11111111);
-//        //Q_ASSERT(sinTable[sinTableSize] == 0x12345678);
-//    }
     sinTableSize = 1 << ncoSinTableSizeBits;
-//    if (sinTable) {
-//        delete [] sinTable;
-//    }
     sinTable.init(ncoSinTableSizeBits, ncoValueBits, 1.0);
-//    for (int i = 0; i < sinTableSize; i++) {
-//        sinTable[i] = 0;
-//    }
-//    sinTable[sinTableSize] = 0x12345678;
     // correction by half of sin table - calculated phase centered at center of table step, not in beginning
     sinTableSizePhaseCorrection = 0; //1.0 / sinTableSize / 2.0;
 
@@ -96,9 +84,6 @@ void SimParams::recalculate() {
 //               );
 //#endif
 //    }
-
-    Q_ASSERT(guard1 == 0x11111111);
-//    Q_ASSERT(sinTable[sinTableSize] == 0x12345678);
 
     int64_t sinCosProdSum = 0;
     for (int i = 0; i < sinTableSize; i++) {
@@ -147,12 +132,6 @@ int SimParams::exactBits(double phaseDiff, int fractionCount) {
     int bitCount = (int)floor(vlog2*fractionCount);
     if (bitCount >= 32 * fractionCount)
         bitCount = 32 * fractionCount - 1;
-//    while (bitCount < 32) {
-//        v = v * 2;
-//        if (v >= 1.0)
-//            break;
-//        bitCount++;
-//    }
     return bitCount;
 }
 
@@ -402,6 +381,16 @@ QString ExactBitStats::headingString(int minBits, int maxBits) {
     return res;
 }
 
+double ExactBitStats::getMaxPercent(int minBits, int maxBits) {
+    double res = getPercent(minBits*k, minBits, maxBits);
+    for (int i = minBits*k; i<=maxBits*k; i++) {
+        double p = getPercent(i, minBits, maxBits);
+        if (res < p)
+            res = p;
+    }
+    return res;
+}
+
 double ExactBitStats::getPercent(int i, int minBits, int maxBits) {
     double v = exactBitsPercent[i] * k;
     if (i == minBits*k)
@@ -444,19 +433,30 @@ void ExactBitStats::updateStats() {
     }
 }
 
+double SimResultsItem::maxPercent(int minBits, int maxBits) {
+    double res = 0;
+    for (int i = 0; i < byParameterValue.length(); i++) {
+        double p = byParameterValue[i].bitStats.getMaxPercent(minBits, maxBits);
+        if (res < p)
+            res = p;
+    }
+    return res;
+}
+
 void SimParamMutator::runTests(SimResultsItem & results) {
     SimState * state = new SimState();
     QString testName = heading + " : " + params.toString();
     results.text.append(testName);
     results.name = testName;
-    qDebug(testName.toLocal8Bit().data());
+    results.paramType = paramType;
+    //qDebug(testName.toLocal8Bit().data());
     results.text.append(QString());
-    qDebug("");
+    //qDebug("");
 
     ExactBitStats statsHead(params.bitFractionCount);
     QString headers = heading + "\t" + statsHead.headingString();
     results.text.append(headers);
-    qDebug(headers.toLocal8Bit().data());
+    //qDebug(headers.toLocal8Bit().data());
 
     while (next()) {
         SimResultsLine & line = results.addLine();
@@ -469,17 +469,17 @@ void SimParamMutator::runTests(SimResultsItem & results) {
         collectSimulationStats(&params, line.bitStats);
         QString res = valueString + "\t" + line.bitStats.toString();
         results.text.append(res);
-        qDebug(res.toLocal8Bit().data());
+        //qDebug(res.toLocal8Bit().data());
     }
 
     results.text.append(QString());
-    qDebug("");
+    //qDebug("");
     results.text.append(QString());
-    qDebug("");
+    //qDebug("");
     results.text.append(QString());
-    qDebug("");
+    //qDebug("");
     results.text.append(QString());
-    qDebug("");
+    //qDebug("");
     delete state;
 }
 
@@ -523,6 +523,7 @@ double SimState::phaseForPeriods(int startHalfperiod, int halfPeriodCount) {
 }
 
 void SimSuite::run() {
+    addTests();
     totalResultsCount = 0;
     currentResultIndex = 0;
     results.clear();
@@ -534,7 +535,7 @@ void SimSuite::run() {
     }
 
     for (int i = 0; i < tests.size(); i++) {
-        SimResultsItem * result = results.addTest();
+        SimResultsItem * result = results.addResult();
         currentTest = tests[i]->headingString();
         tests[i]->runTests(*result);
         results.text.append(result->text);
@@ -542,8 +543,14 @@ void SimSuite::run() {
 }
 
 FullSimSuite::FullSimSuite(ProgressListener * progressListener) : SimSuite(progressListener) {
-    for (int i = SimParameter::SIM_PARAM_MIN; i <= SimParameter::SIM_PARAM_MAX; i++)
-        addTest(new SimParamMutator(&simParams, (SimParameter)i));
+}
+
+void FullSimSuite::addTests() {
+    for (int i = SimParameter::SIM_PARAM_MIN; i <= SimParameter::SIM_PARAM_MAX; i++) {
+        if (simParams.paramTypeMask & (1 << i)) {
+            addTest(new SimParamMutator(&simParams, (SimParameter)i));
+        }
+    }
 }
 
 

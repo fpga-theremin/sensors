@@ -65,7 +65,14 @@ void SimResultPlot::paintEvent(QPaintEvent * /* event */)
     painter.fillRect(QRect(0, legendy, w, legendh), brushLegend);
 
     painter.fillRect(QRect(0, haxisy, w, 2), brushHaxis);
-    double maxPercent = 46.0;
+    int minbits = 8;
+    int maxbits = 24;
+    int fracbits = (_results.byParameterValue.length() == 0) ? 2 : _results.byParameterValue[0].bitStats.bitFractionCount();
+    int maxPercent = (int)_results.maxPercent(minbits, maxbits);
+    //maxPercent = (maxPercent + 4) / 5 * 5;
+    if (maxPercent < 35)
+        maxPercent = 35;
+    maxPercent += 10;
     double yscalef = (haxisy / maxPercent);
     int yscale = (int)yscalef;
     for (int k = 10; k < maxPercent; k += 10) {
@@ -74,9 +81,6 @@ void SimResultPlot::paintEvent(QPaintEvent * /* event */)
             painter.fillRect(QRect(0, y, w, 1), brushHaxis);
     }
 
-    int minbits = 8;
-    int maxbits = 24;
-    int fracbits = (_results.byParameter.length() == 0) ? 2 : _results.byParameter[0].bitStats.bitFractionCount();
     int bitstep = w / (maxbits - minbits);
     int xwidth = bitstep * (maxbits - minbits);
     int minbitsx = (w - xwidth) / 2;
@@ -97,18 +101,18 @@ void SimResultPlot::paintEvent(QPaintEvent * /* event */)
         painter.drawText(QPoint(5, fh), _results.name);
     painter.drawText(QPoint(5, legendy+legendh*9/10), "Legend:");
 
-    if (_results.byParameter.length() == 0)
+    if (_results.byParameterValue.length() == 0)
         return; // nothing to draw
 
 
-    for (int i = 0; i < _results.byParameter.length(); i++) {
+    for (int i = 0; i < _results.byParameterValue.length(); i++) {
         //
         painter.setPen(_pens[i&15]);
         int pointCount = 0;
         QPoint exactPoints[32*5];
         for (int j = minbits*fracbits; j <= maxbits*fracbits; j++) {
             int x = minbitsx + (j - minbits*fracbits) * bitstep / fracbits;
-            ExactBitStats * stats = &_results.byParameter[i].bitStats;
+            ExactBitStats * stats = &_results.byParameterValue[i].bitStats;
             double v = stats->getPercent(j, minbits, maxbits);
             double nextv = stats->getPercent(j+1, minbits, maxbits);
 
