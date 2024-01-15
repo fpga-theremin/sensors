@@ -15,16 +15,11 @@
 
 //#define RUN_SIMULATION_AFTER_PARAM_CHANGE
 
-
-
-//#define END_OF_LIST -1000000
-
 void MainWindow::recalculate() {
+    qDebug("MainWindow::recalculate()");
     _simParams.recalculate();
     _simState.simulate(&_simParams);
     if (_plotWidget && _plotWidget->isVisible()) {
-
-
         _plotWidget->update();
     }
 
@@ -54,6 +49,7 @@ void MainWindow::recalculate() {
 
     runSimTestSuite(&_simParams, 10);
 #endif
+    runBackgroundSim();
 }
 
 QComboBox * MainWindow::createComboBox(SimParameter param) {
@@ -229,37 +225,36 @@ void MainWindow::createControls() {
 
     QGroupBox * _gbMeasured = new QGroupBox("Measured");
     _gbMeasured->setLayout(_measuredLayout);
-    _topLayout->addWidget(_gbMeasured);
+    _rightLayout->addWidget(_gbMeasured);
 
     QVBoxLayout * resultLayout = new QVBoxLayout();
     resultLayout->setSpacing(15);
     _plot = new SimResultPlot();
     _cbResult = new QComboBox();
-    _cbResult->addItem(QString("Avg Periods"), 0);
-    _cbResult->addItem(QString("ADC Bits"), 1);
-    _cbResult->addItem(QString("SIN Value Bits"), 2);
-    _cbResult->addItem(QString("SIN Table Size"), 3);
-    _cbResult->addItem(QString("Sample Rate"), 4);
-    _cbResult->addItem(QString("Phase Bits"), 5);
-    _cbResult->addItem(QString("ADC Interpolation"), 6);
+    for (int i = SIM_PARAM_MIN; i <= SIM_PARAM_MAX; i++) {
+        const SimParameterMetadata * metadata = SimParameterMetadata::get((SimParameter)i);
+        _cbResult->addItem(metadata->getName(), QVariant(i));
+    }
+    _cbResult->setCurrentIndex(0);
+    connect(_cbResult, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &MainWindow::plotIndexChanged);
     resultLayout->addWidget(_cbResult);
     resultLayout->addWidget(_plot);
-    _topLayout->addItem(resultLayout);
+    _rightLayout->addItem(resultLayout);
 
     _topLayout->addStretch(1);
 }
 
-/*
+void MainWindow::plotIndexChanged(int index) {
+    updatePlot();
+}
 
-     const QIcon openIcon = QIcon::fromTheme("document-open", QIcon(":/images/open.png"));
-     QAction *openAct = new QAction(openIcon, tr("&Open..."), this);
-     openAct->setShortcuts(QKeySequence::Open);
-     openAct->setStatusTip(tr("Open an existing file"));
-     connect(openAct, &QAction::triggered, this, &MainWindow::open);
-     fileMenu->addAction(openAct);
-     fileToolBar->addAction(openAct);
-
- */
+void MainWindow::closeEvent(QCloseEvent *event) {
+    if (!_running) {
+         event->accept();
+    } else {
+         event->ignore();
+    }
+}
 
 void MainWindow::runSimBatch() {
     SimBatchDialog * dialog = new SimBatchDialog(&_simParams, this);
@@ -291,17 +286,47 @@ void MainWindow::createMenu() {
     viewMenu->addAction(_actionViewHZoomOut);
 }
 
+void MainWindow::updatePlot() {
+    if (_simResults) {
+        int index = _cbResult->currentIndex();
+        _plot->setSimResults(&_simResults->byTest[index]);
+    }
+}
+
 MainWindow::MainWindow(QWidget *parent)
-    : QMainWindow(parent)
+    : QMainWindow(parent), _running(false), _simResults(nullptr)
 {
     SimParameterMetadata::applyDefaults(&_simParams);
+    _simParams.freqVariations = 3;
+    _simParams.phaseVariations = 3;
+    _simParams.freqStep = 0.00142466;
+    _simParams.phaseStep = 0.0065441;
+    _simParams.bitFractionCount = 2;
+
+    _layoutSpacing = 10;
+
     setWindowTitle("Theremin Sensor Simulator v0.3");
     QWidget * _mainWidget = new QWidget();
-    QLayout * _mainLayout = new QBoxLayout(QBoxLayout::Direction::TopToBottom);
-    _topLayout = new QBoxLayout(QBoxLayout::Direction::LeftToRight);
-    _topLayout->setSpacing(10);
-    _bottomLayout = new QBoxLayout(QBoxLayout::Direction::TopToBottom);
-    _bottomLayout->setSpacing(10);
+    QVBoxLayout * _mainLayout = new QVBoxLayout();
+    _mainLayout->setSpacing(_layoutSpacing);
+
+    _topLayout = new QHBoxLayout();
+    _topLayout->setSpacing(_layoutSpacing);
+    _bottomLayout = new QVBoxLayout();
+    _bottomLayout->setSpacing(_layoutSpacing);
+
+    QHBoxLayout * _leftRightLayout = new QHBoxLayout();
+    _leftRightLayout->setSpacing(_layoutSpacing*2);
+    _leftLayout = new QVBoxLayout();
+    _leftLayout->setSpacing(_layoutSpacing*2);
+    _rightLayout = new QVBoxLayout();
+    _rightLayout->setSpacing(_layoutSpacing*2);
+    _leftRightLayout->addItem(_leftLayout);
+    _leftRightLayout->addItem(_rightLayout);
+    _leftLayout->addItem(_topLayout);
+    _leftLayout->addItem(_bottomLayout);
+    _mainLayout->addItem(_leftRightLayout);
+
 
     createControls();
 
@@ -313,8 +338,9 @@ MainWindow::MainWindow(QWidget *parent)
     _scrollBar->setRange(0, 100);
     _bottomLayout->addWidget(_scrollBar);
 
-    _mainLayout->addItem(_topLayout);
-    _mainLayout->addItem(_bottomLayout);
+
+
+
 
     _mainWidget->setLayout(_mainLayout);
     setCentralWidget(_mainWidget);
@@ -323,12 +349,45 @@ MainWindow::MainWindow(QWidget *parent)
     setMenuBar(_menuBar);
 
     _simParams.recalculate();
-    _simState.simulate(&_simParams);
+    //_simState.simulate(&_simParams);
+
+    _simThread = new SimThread();
+    _simThread->moveToThread(&_workerThread);
+    connect(&_workerThread, &QThread::finished, _simThread, &QObject::deleteLater);
+    connect(this, &MainWindow::runSimulation, _simThread, &SimThread::runSimulation);
+    connect(_simThread, &SimThread::allTestsDone, this, &MainWindow::allTestsDone);
+    _workerThread.start();
 
     recalculate();
 }
 
+void MainWindow::runBackgroundSim() {
+    qDebug("MainWindow::runBackgroundSim()");
+    if (_running)
+        return;
+    SimParams * p = new SimParams();
+    *p = _simParams;
+    _running = true;
+    emit runSimulation(p);
+}
+
+
+void MainWindow::allTestsDone(SimResultsHolder * allResults) {
+    qDebug("MainWindow::allTestsDone()");
+    _running = false;
+    if (_simResults)
+        delete _simResults;
+    _simResults = allResults;
+    updatePlot();
+}
+
+
 MainWindow::~MainWindow()
 {
+    qDebug("MainWindow::~MainWindow()");
+    _workerThread.quit();
+    _workerThread.wait();
+    if (_simResults)
+        delete _simResults;
 }
 

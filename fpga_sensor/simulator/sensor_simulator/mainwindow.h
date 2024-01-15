@@ -14,6 +14,11 @@
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
+    QThread _workerThread;
+    SimThread * _simThread;
+    bool _running;
+    SimResultsHolder * _simResults;
+    int _layoutSpacing;
 
     QMenuBar * _menuBar;
     QAction * _actionToolsRunSimulationBatch;
@@ -21,6 +26,8 @@ class MainWindow : public QMainWindow
     SimState _simState;
     QBoxLayout * _topLayout;
     QBoxLayout * _bottomLayout;
+    QVBoxLayout * _leftLayout;
+    QVBoxLayout * _rightLayout;
     PlotWidget * _plotWidget;
     QLineEdit * _measuredPhaseShift;
     QLineEdit * _measuredPhaseShiftError;
@@ -39,10 +46,17 @@ private:
     void createMenu();
     void createControls();
     void recalculate();
+    void updatePlot();
+    void runBackgroundSim();
 public slots:
     void runSimBatch();
+    void allTestsDone(SimResultsHolder * allResults);
+    void plotIndexChanged(int index);
 public:
     MainWindow(QWidget *parent = nullptr);
-    ~MainWindow();
+    ~MainWindow() override;
+    void closeEvent(QCloseEvent *event) override;
+signals:
+    void runSimulation(SimParams * params);
 };
 #endif // MAINWINDOW_H

@@ -201,7 +201,6 @@ void SimBatchDialog::plotIndexChanged(int index) {
 
 void SimBatchDialog::closeEvent(QCloseEvent *event) {
     if (!_running) {
-         //writeSettings();
          event->accept();
     } else {
          event->ignore();

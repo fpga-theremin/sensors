@@ -588,11 +588,11 @@ FullSimSuite::FullSimSuite(ProgressListener * progressListener) : SimSuite(progr
 
 #define END_OF_LIST -1000000
 
-static const int sampleRates[] = {200, 150, 125, 105, 100, 80, 65, 40, 25, 20, 10, 4, 3, END_OF_LIST};
+static const int sampleRates[] = {3, 4, 10, 20, 25, 40, 65, 80, 100, 125, 200, END_OF_LIST};
 static const int phaseBits[] = {24, 26, 28, 30, 32, 34, 36, END_OF_LIST};
 static const int ncoValueBits[] = {8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, END_OF_LIST};
-static const int sinTableBits[] = {7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, END_OF_LIST};
-static const int adcValueBits[] = {6, 7, 8, 9, 10, 11, 12, 13, 14, 16, END_OF_LIST};
+static const int sinTableBits[] = {/*7,*/ 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, /* 18,*/ END_OF_LIST};
+static const int adcValueBits[] = {/*6, 7,*/ 8, 9, 10, 11, 12, 13, 14, /*16,*/ END_OF_LIST};
 static const int adcInterpolationRate[] = {1, 2, 3, 4, END_OF_LIST};
 static const double adcNoise[] = {0.0, 0.1, 0.25, 0.5, 1.0, 2.0, 5.0, 10.0, END_OF_LIST};
 static const double adcDCOffset[] = {-10.0, -5.0, -2.5, -1.0, -0.5, 0, 0.5, 1.0, 2.5, 5.0, 10.0, END_OF_LIST};

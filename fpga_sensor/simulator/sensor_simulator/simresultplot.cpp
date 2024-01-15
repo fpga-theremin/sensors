@@ -65,7 +65,7 @@ void SimResultPlot::paintEvent(QPaintEvent * /* event */)
     painter.fillRect(QRect(0, legendy, w, legendh), brushLegend);
 
     painter.fillRect(QRect(0, haxisy, w, 2), brushHaxis);
-    double maxPercent = 36.0;
+    double maxPercent = 46.0;
     double yscalef = (haxisy / maxPercent);
     int yscale = (int)yscalef;
     for (int k = 10; k < maxPercent; k += 10) {
