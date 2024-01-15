@@ -402,6 +402,15 @@ QString ExactBitStats::headingString(int minBits, int maxBits) {
     return res;
 }
 
+double ExactBitStats::getPercent(int i, int minBits, int maxBits) {
+    double v = exactBitsPercent[i] * k;
+    if (i == minBits*k)
+        v = exactBitsPercentLessOrEqual[i] * k;
+    if (i == maxBits*k)
+        v = exactBitsPercentMoreOrEqual[i] * k;
+    return v;
+}
+
 QString ExactBitStats::toString(int minBits, int maxBits) {
     QString res;
     for (int i = minBits*k; i <= maxBits*k; i++) {
@@ -533,54 +542,58 @@ void SimSuite::run() {
 }
 
 FullSimSuite::FullSimSuite(ProgressListener * progressListener) : SimSuite(progressListener) {
-    addTest(new AveragingMutator(&simParams));
-    addTest(new ADCBitsMutator(&simParams));
-    addTest(new SinValueBitsMutator(&simParams));
-    addTest(new SinTableSizeMutator(&simParams));
-    addTest(new SampleRateMutator(&simParams));
-    addTest(new PhaseBitsMutator(&simParams));
-    addTest(new ADCInterpolationMutator(&simParams));
+    addTest(new SimParamMutator(&simParams, SIM_PARAM_AVG_PERIODS));
+    addTest(new SimParamMutator(&simParams, SIM_PARAM_ADC_BITS));
+    addTest(new SimParamMutator(&simParams, SIM_PARAM_SIN_VALUE_BITS));
+    addTest(new SimParamMutator(&simParams, SIM_PARAM_SIN_TABLE_SIZE_BITS));
+    addTest(new SimParamMutator(&simParams, SIM_PARAM_ADC_SAMPLE_RATE));
+    addTest(new SimParamMutator(&simParams, SIM_PARAM_PHASE_BITS));
+    addTest(new SimParamMutator(&simParams, SIM_PARAM_ADC_INTERPOLATION));
+    addTest(new SimParamMutator(&simParams, SIM_PARAM_EDGE_SUBSAMPLING_BITS));
+    addTest(new SimParamMutator(&simParams, SIM_PARAM_SENSE_AMPLITUDE));
+    addTest(new SimParamMutator(&simParams, SIM_PARAM_SENSE_DC_OFFSET));
+    addTest(new SimParamMutator(&simParams, SIM_PARAM_SENSE_NOISE));
 }
 
 
-void runSimTestSuite(SimParams * params) {
-    //QStringList results;
-    SimResultsHolder results;
+//void runSimTestSuite(SimParams * params) {
+//    //QStringList results;
+//    SimResultsHolder results;
 
-    SimResultsItem * testResults = results.addTest();
-    AveragingMutator avgTest(params);
-    avgTest.runTests(*testResults);
-    results.text.append(testResults->text);
+//    SimResultsItem * testResults = results.addTest();
+//    AveragingMutator avgTest(params);
+//    avgTest.runTests(*testResults);
+//    results.text.append(testResults->text);
 
-    testResults = results.addTest();
-    ADCBitsMutator adcBitsTest(params);
-    adcBitsTest.runTests(*testResults);
-    results.text.append(testResults->text);
+//    testResults = results.addTest();
+//    ADCBitsMutator adcBitsTest(params);
+//    adcBitsTest.runTests(*testResults);
+//    results.text.append(testResults->text);
 
-//    ADCInterpolationMutator adcInterpolationTest(params);
-//    adcInterpolationTest.runTests(results, variations, bitFractionCount);
+////    ADCInterpolationMutator adcInterpolationTest(params);
+////    adcInterpolationTest.runTests(results, variations, bitFractionCount);
 
-    testResults = results.addTest();
-    SinValueBitsMutator sinValueBitsTest(params);
-    sinValueBitsTest.runTests(*testResults);
-    results.text.append(testResults->text);
+//    testResults = results.addTest();
+//    SinValueBitsMutator sinValueBitsTest(params);
+//    sinValueBitsTest.runTests(*testResults);
+//    results.text.append(testResults->text);
 
-    testResults = results.addTest();
-    SinTableSizeMutator sinTableSizeTest(params);
-    sinTableSizeTest.runTests(*testResults);
-    results.text.append(testResults->text);
+//    testResults = results.addTest();
+//    SinTableSizeMutator sinTableSizeTest(params);
+//    sinTableSizeTest.runTests(*testResults);
+//    results.text.append(testResults->text);
 
-    testResults = results.addTest();
-    SampleRateMutator sampleRateTest(params);
-    sampleRateTest.runTests(*testResults);
-    results.text.append(testResults->text);
+//    testResults = results.addTest();
+//    SampleRateMutator sampleRateTest(params);
+//    sampleRateTest.runTests(*testResults);
+//    results.text.append(testResults->text);
 
-    testResults = results.addTest();
-    PhaseBitsMutator phaseBitsTest(params);
-    phaseBitsTest.runTests(*testResults);
-    results.text.append(testResults->text);
+//    testResults = results.addTest();
+//    PhaseBitsMutator phaseBitsTest(params);
+//    phaseBitsTest.runTests(*testResults);
+//    results.text.append(testResults->text);
 
-}
+//}
 
 #define END_OF_LIST -1000000
 

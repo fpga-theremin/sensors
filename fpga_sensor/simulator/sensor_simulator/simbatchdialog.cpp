@@ -8,6 +8,8 @@
 #include <QLabel>
 #include <QCloseEvent>
 #include <QSpacerItem>
+#include <QClipboard>
+#include <QGuiApplication>
 
 #define END_OF_LIST -1000000
 
@@ -23,13 +25,21 @@ void SimBatchDialog::startPressed() {
     *p = _params;
     _btnStart->setEnabled(false);
     _btnClose->setEnabled(false);
-    _textEdit->setText(QString("Starting simulation batch.\n" + _params.toString() + "\n"));
+    _btnCopy->setEnabled(false);
+    _textEdit->setPlainText(QString("Starting simulation batch.\n" + _params.toString() + "\n"));
     _running = true;
     emit runSimulation(p);
 }
 
 void SimBatchDialog::closePressed() {
     qDebug("SimBatchDialog::closePressed()");
+    close();
+}
+
+void SimBatchDialog::copyPressed() {
+    qDebug("SimBatchDialog::copyPressed()");
+    QClipboard *clipboard = QGuiApplication::clipboard();
+    clipboard->setText(_textEdit->toPlainText());
 }
 
 //void SimBatchDialog::singleTestDone(std::shared_ptr<SimResultsItem> singleTestResults) {
@@ -39,7 +49,7 @@ void SimBatchDialog::closePressed() {
 void SimBatchDialog::updateProgress(int currentStage, int totalStages, QString msg) {
     qDebug("SimBatchDialog::updateProgress currentStage=%d, totalStages=%d, msg=%s", currentStage, totalStages, msg.toLocal8Bit().data());
     QString state = QString("[%1 / %2] : %3").arg(currentStage).arg(totalStages).arg(msg);
-    _textEdit->append(state);
+    _textEdit->appendPlainText(state);
     _statusLabel->setText(state);
 }
 
@@ -48,13 +58,15 @@ void SimBatchDialog::allTestsDone(SimResultsHolder * allResults) {
     // finalize
     _btnStart->setEnabled(true);
     _btnClose->setEnabled(true);
+    _btnCopy->setEnabled(true);
     _textEdit->clear();
-    _textEdit->setText(allResults->text.join("\n"));
+    _textEdit->setPlainText(allResults->text.join("\n"));
     _statusLabel->setText("Simulation is done");
     _running = false;
     if (_simResults)
         delete _simResults;
     _simResults = allResults;
+    updatePlot();
 }
 
 SimBatchDialog::~SimBatchDialog() {
@@ -70,11 +82,11 @@ SimBatchDialog::SimBatchDialog(SimParams * params, QWidget * parent)
     int spacing = 15;
     _running = false;
     _params = *params;
-    _params.freqVariations = 50;
-    _params.phaseVariations = 50;
+    _params.freqVariations = 10;
+    _params.phaseVariations = 10;
     _params.freqStep = 0.00142466;
     _params.phaseStep = 0.0065441;
-    _params.bitFractionCount = 2;
+    _params.bitFractionCount = 5;
 
     _simThread = new SimThread();
     _simThread->moveToThread(&_workerThread);
@@ -115,7 +127,13 @@ SimBatchDialog::SimBatchDialog(SimParams * params, QWidget * parent)
     rightLayout->addStretch();
 
     resultViewLayout->addWidget(new QLabel("Simulation result"));
-    QComboBox * _cbResultSelection = new QComboBox();
+    _cbResultSelection = new QComboBox();
+    for (int i = SIM_PARAM_MIN; i <= SIM_PARAM_MAX; i++) {
+        const SimParameterMetadata * metadata = SimParameterMetadata::get((SimParameter)i);
+        _cbResultSelection->addItem(metadata->getName(), QVariant(i));
+    }
+    _cbResultSelection->setCurrentIndex(0);
+    connect(_cbResultSelection, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &SimBatchDialog::plotIndexChanged);
     resultViewLayout->addWidget(_cbResultSelection);
 
     //QTextEdit * resultPlot = new QTextEdit(this);
@@ -142,16 +160,23 @@ SimBatchDialog::SimBatchDialog(SimParams * params, QWidget * parent)
 
     _btnStart = new QPushButton("Start");
     connect(_btnStart, &QPushButton::pressed, this, &SimBatchDialog::startPressed);
+    _btnCopy = new QPushButton("Copy");
+    _btnCopy->setEnabled(false);
+    connect(_btnCopy, &QPushButton::pressed, this, &SimBatchDialog::copyPressed);
     _btnClose = new QPushButton("Close");
     connect(_btnClose, &QPushButton::pressed, this, &QDialog::accept);
     buttonsLayout->addWidget(_btnStart);
+    buttonsLayout->addWidget(_btnCopy);
     buttonsLayout->addWidget(_btnClose);
 
 
-    _textEdit = new QTextEdit(this);
+    _textEdit = new QPlainTextEdit(this);
     _textEdit->setMinimumSize(QSize(600, 400));
     _textEdit->setReadOnly(true);
-    _textEdit->setLineWrapMode(QTextEdit::LineWrapMode::NoWrap);
+    _textEdit->setLineWrapMode(QPlainTextEdit::LineWrapMode::NoWrap);
+    _textEdit->setTabChangesFocus(false);
+    _textEdit->setTabStopDistance(100);
+    //_textEdit->setTa
     leftLayout->addWidget(_textEdit);
     _statusBar = new QStatusBar(this);
     layout->addWidget(_statusBar);
@@ -161,6 +186,17 @@ SimBatchDialog::SimBatchDialog(SimParams * params, QWidget * parent)
 
     setLayout(layout);
     setSizeGripEnabled(true);
+}
+
+void SimBatchDialog::updatePlot() {
+    if (_simResults) {
+        int index = _cbResultSelection->currentIndex();
+        _plot->setSimResults(&_simResults->byTest[index]);
+    }
+}
+
+void SimBatchDialog::plotIndexChanged(int index) {
+    updatePlot();
 }
 
 void SimBatchDialog::closeEvent(QCloseEvent *event) {

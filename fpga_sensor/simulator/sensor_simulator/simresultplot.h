@@ -2,6 +2,7 @@
 #define SIMRESULTPLOT_H
 
 #include <QWidget>
+#include <QPen>
 #include "simutils.h"
 
 class SimResultPlot : public QWidget
@@ -9,6 +10,8 @@ class SimResultPlot : public QWidget
     Q_OBJECT
 protected:
     SimResultsItem _results;
+    QPen _pens[16];
+    void initGraphics();
 public:
     explicit SimResultPlot(QWidget *parent = nullptr);
     void setSimResults(SimResultsItem * results);

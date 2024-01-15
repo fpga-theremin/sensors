@@ -169,6 +169,7 @@ public:
     }
     QString headingString(int minBits = 8, int maxBits = 20);
     QString toString(int minBits = 8, int maxBits = 20);
+    double getPercent(int index, int minBits = 8, int maxBits = 20);
     void incrementExactBitsCount(int exactBits) {
         exactBitsCounters[exactBits]++;
     }
@@ -290,20 +291,24 @@ class SimParamMutator {
 protected:
 
     SimParams params;
+    SimParameter paramType;
+    const SimParameterMetadata * metadata;
     int currentStage;
     int stageCount;
     QString heading;
     QString valueString;
     ProgressListener * progressListener;
-    void setValue(int value) {
-        valueString = QString(":%1").arg(value);
-    }
+//    void setValue(int value) {
+//        valueString = QString(":%1").arg(value);
+//    }
 public:
-    SimParamMutator(SimParams * params, QString heading, int stages, ProgressListener * progressListener = nullptr)
+    SimParamMutator(SimParams * params, SimParameter paramType, ProgressListener * progressListener = nullptr)
         : params(*params),
+          paramType(paramType),
+          metadata(SimParameterMetadata::get(paramType)),
           currentStage(0),
-          stageCount(stages),
-          heading(heading),
+          stageCount(metadata->getValueCount()),
+          heading(metadata->getName()),
           progressListener(progressListener)
     {
 
@@ -326,6 +331,11 @@ public:
         currentStage = 0;
     }
     virtual bool next() {
+        if (currentStage >= stageCount) {
+            return false;
+        }
+        metadata->set(&params, metadata->getValue(currentStage));
+        valueString = metadata->getValueLabel(currentStage);
         params.recalculate();
         currentStage++;
         return currentStage <= stageCount;
@@ -333,82 +343,82 @@ public:
     void runTests(SimResultsItem & results);
 };
 
-class AveragingMutator : public SimParamMutator {
-public:
-    AveragingMutator(SimParams * params, int count = 9) : SimParamMutator(params, "AvgPeriods", count) {
-    }
-    bool next() override {
-        params.averagingPeriods = 1 << currentStage;
-        setValue(params.averagingPeriods);
-        return SimParamMutator::next();
-    }
-};
+//class AveragingMutator : public SimParamMutator {
+//public:
+//    AveragingMutator(SimParams * params, int count = 9) : SimParamMutator(params, "AvgPeriods", count) {
+//    }
+//    bool next() override {
+//        params.averagingPeriods = 1 << currentStage;
+//        setValue(params.averagingPeriods);
+//        return SimParamMutator::next();
+//    }
+//};
 
-class ADCBitsMutator : public SimParamMutator {
-public:
-    ADCBitsMutator(SimParams * params, int count = 6) : SimParamMutator(params, "ADCBits", count) {
-    }
-    bool next() override {
-        params.adcBits = 8 + currentStage;
-        setValue(params.adcBits);
-        return SimParamMutator::next();
-    }
-};
+//class ADCBitsMutator : public SimParamMutator {
+//public:
+//    ADCBitsMutator(SimParams * params, int count = 6) : SimParamMutator(params, "ADCBits", count) {
+//    }
+//    bool next() override {
+//        params.adcBits = 8 + currentStage;
+//        setValue(params.adcBits);
+//        return SimParamMutator::next();
+//    }
+//};
 
-class ADCInterpolationMutator : public SimParamMutator {
-public:
-    ADCInterpolationMutator(SimParams * params, int count = 4) : SimParamMutator(params, "ADCInterpolation", count) {
-    }
-    bool next() override {
-        params.adcInterpolation = 1 + currentStage;
-        setValue(params.adcInterpolation);
-        return SimParamMutator::next();
-    }
-};
+//class ADCInterpolationMutator : public SimParamMutator {
+//public:
+//    ADCInterpolationMutator(SimParams * params, int count = 4) : SimParamMutator(params, "ADCInterpolation", count) {
+//    }
+//    bool next() override {
+//        params.adcInterpolation = 1 + currentStage;
+//        setValue(params.adcInterpolation);
+//        return SimParamMutator::next();
+//    }
+//};
 
-class SinValueBitsMutator : public SimParamMutator {
-public:
-    SinValueBitsMutator(SimParams * params, int count = 8) : SimParamMutator(params, "SinValueBits", count) {
-    }
-    bool next() override {
-        params.ncoValueBits = 8 + currentStage;
-        setValue(params.ncoValueBits);
-        return SimParamMutator::next();
-    }
-};
+//class SinValueBitsMutator : public SimParamMutator {
+//public:
+//    SinValueBitsMutator(SimParams * params, int count = 8) : SimParamMutator(params, "SinValueBits", count) {
+//    }
+//    bool next() override {
+//        params.ncoValueBits = 8 + currentStage;
+//        setValue(params.ncoValueBits);
+//        return SimParamMutator::next();
+//    }
+//};
 
-class SinTableSizeMutator : public SimParamMutator {
-public:
-    SinTableSizeMutator(SimParams * params, int count = 8) : SimParamMutator(params, "SinTableSize", count) {
-    }
-    bool next() override {
-        params.ncoSinTableSizeBits = 8 + currentStage;
-        setValue(params.ncoSinTableSizeBits);
-        return SimParamMutator::next();
-    }
-};
+//class SinTableSizeMutator : public SimParamMutator {
+//public:
+//    SinTableSizeMutator(SimParams * params, int count = 8) : SimParamMutator(params, "SinTableSize", count) {
+//    }
+//    bool next() override {
+//        params.ncoSinTableSizeBits = 8 + currentStage;
+//        setValue(params.ncoSinTableSizeBits);
+//        return SimParamMutator::next();
+//    }
+//};
 
-class PhaseBitsMutator : public SimParamMutator {
-public:
-    PhaseBitsMutator(SimParams * params, int count = 10) : SimParamMutator(params, "PhaseBits", count) {
-    }
-    bool next() override {
-        params.ncoPhaseBits = 16 + currentStage;
-        setValue(params.ncoPhaseBits);
-        return SimParamMutator::next();
-    }
-};
+//class PhaseBitsMutator : public SimParamMutator {
+//public:
+//    PhaseBitsMutator(SimParams * params, int count = 10) : SimParamMutator(params, "PhaseBits", count) {
+//    }
+//    bool next() override {
+//        params.ncoPhaseBits = 16 + currentStage;
+//        setValue(params.ncoPhaseBits);
+//        return SimParamMutator::next();
+//    }
+//};
 
-class SampleRateMutator : public SimParamMutator {
-public:
-    SampleRateMutator(SimParams * params, int count = 9) : SimParamMutator(params, "SampleRate", count) {
-    }
-    bool next() override {
-        params.sampleRate = 20000000 + currentStage * 20000000;
-        setValue(params.sampleRate/1000000);
-        return SimParamMutator::next();
-    }
-};
+//class SampleRateMutator : public SimParamMutator {
+//public:
+//    SampleRateMutator(SimParams * params, int count = 9) : SimParamMutator(params, "SampleRate", count) {
+//    }
+//    bool next() override {
+//        params.sampleRate = 20000000 + currentStage * 20000000;
+//        setValue(params.sampleRate/1000000);
+//        return SimParamMutator::next();
+//    }
+//};
 
 void collectSimulationStats(SimParams * newParams, ExactBitStats & stats);
 
@@ -527,7 +537,7 @@ struct SimState {
 
 };
 
-void runSimTestSuite(SimParams * params);
+//void runSimTestSuite(SimParams * params);
 void debugDumpParameterMetadata();
 
 #endif // SIMUTILS_H

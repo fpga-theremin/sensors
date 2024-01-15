@@ -6,6 +6,7 @@
 #include <QComboBox>
 #include <QThread>
 #include <QTextEdit>
+#include <QPlainTextEdit>
 #include <QStatusBar>
 #include <QLabel>
 #include "simutils.h"
@@ -39,7 +40,8 @@ protected:
     bool _running;
     QPushButton * _btnStart;
     QPushButton * _btnClose;
-    QTextEdit * _textEdit;
+    QPushButton * _btnCopy;
+    QPlainTextEdit * _textEdit;
     QStatusBar * _statusBar;
     QLabel * _statusLabel;
     SimResultsHolder * _simResults;
@@ -51,9 +53,12 @@ public:
     SimBatchDialog(SimParams * params, QWidget * parent);
     ~SimBatchDialog() override;
     void closeEvent(QCloseEvent *event) override;
+    void updatePlot();
 public slots:
+    void plotIndexChanged(int index);
     void startPressed();
     void closePressed();
+    void copyPressed();
     //void singleTestDone(std::shared_ptr<SimResultsItem> singleTestResults);
     void allTestsDone(SimResultsHolder * allResults);
     void updateProgress(int currentStage, int totalStages, QString msg);
