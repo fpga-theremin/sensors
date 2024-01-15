@@ -406,8 +406,8 @@ double ExactBitStats::getPercent(int i, int minBits, int maxBits) {
     double v = exactBitsPercent[i] * k;
     if (i == minBits*k)
         v = exactBitsPercentLessOrEqual[i] * k;
-    if (i == maxBits*k)
-        v = exactBitsPercentMoreOrEqual[i] * k;
+    //if (i == maxBits*k)
+    //    v = exactBitsPercentMoreOrEqual[i] * k;
     return v;
 }
 
@@ -542,17 +542,8 @@ void SimSuite::run() {
 }
 
 FullSimSuite::FullSimSuite(ProgressListener * progressListener) : SimSuite(progressListener) {
-    addTest(new SimParamMutator(&simParams, SIM_PARAM_AVG_PERIODS));
-    addTest(new SimParamMutator(&simParams, SIM_PARAM_ADC_BITS));
-    addTest(new SimParamMutator(&simParams, SIM_PARAM_SIN_VALUE_BITS));
-    addTest(new SimParamMutator(&simParams, SIM_PARAM_SIN_TABLE_SIZE_BITS));
-    addTest(new SimParamMutator(&simParams, SIM_PARAM_ADC_SAMPLE_RATE));
-    addTest(new SimParamMutator(&simParams, SIM_PARAM_PHASE_BITS));
-    addTest(new SimParamMutator(&simParams, SIM_PARAM_ADC_INTERPOLATION));
-    addTest(new SimParamMutator(&simParams, SIM_PARAM_EDGE_SUBSAMPLING_BITS));
-    addTest(new SimParamMutator(&simParams, SIM_PARAM_SENSE_AMPLITUDE));
-    addTest(new SimParamMutator(&simParams, SIM_PARAM_SENSE_DC_OFFSET));
-    addTest(new SimParamMutator(&simParams, SIM_PARAM_SENSE_NOISE));
+    for (int i = SimParameter::SIM_PARAM_MIN; i <= SimParameter::SIM_PARAM_MAX; i++)
+        addTest(new SimParamMutator(&simParams, (SimParameter)i));
 }
 
 
@@ -606,7 +597,7 @@ static const int adcInterpolationRate[] = {1, 2, 3, 4, END_OF_LIST};
 static const double adcNoise[] = {0.0, 0.1, 0.25, 0.5, 1.0, 2.0, 5.0, 10.0, END_OF_LIST};
 static const double adcDCOffset[] = {-10.0, -5.0, -2.5, -1.0, -0.5, 0, 0.5, 1.0, 2.5, 5.0, 10.0, END_OF_LIST};
 static const double senseAmplitude[] = {0.1, 0.25, 0.5, 0.8, 0.9, 0.95, 1.0, END_OF_LIST};
-static const int adcAveragingPeriods[] = {1, 2, 4, 8, 16, 32, 64, 128, 256, END_OF_LIST};
+static const int adcAveragingPeriods[] = {1, 2, 4, 8, 16, 32, 64, 128, /*256,*/ END_OF_LIST};
 static const int edgeAccInterpolation[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, END_OF_LIST};
 
 struct SampleRateMetadata : public SimParameterMetadata {

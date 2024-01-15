@@ -50,7 +50,7 @@ QSize PlotWidget::sizeHint() const
 
 QSize PlotWidget::minimumSizeHint() const
 {
-    return QSize(600, 300);
+    return QSize(700, 600);
 }
 
 void PlotWidget::paintEvent(QPaintEvent * /* event */)

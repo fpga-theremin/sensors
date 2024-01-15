@@ -86,7 +86,7 @@ SimBatchDialog::SimBatchDialog(SimParams * params, QWidget * parent)
     _params.phaseVariations = 10;
     _params.freqStep = 0.00142466;
     _params.phaseStep = 0.0065441;
-    _params.bitFractionCount = 5;
+    _params.bitFractionCount = 2;
 
     _simThread = new SimThread();
     _simThread->moveToThread(&_workerThread);

@@ -8,12 +8,12 @@ SimResultPlot::SimResultPlot(QWidget *parent) : QWidget(parent)
 
 QSize SimResultPlot::sizeHint() const
 {
-    return QSize(400, 250);
+    return QSize(800, 550);
 }
 
 QSize SimResultPlot::minimumSizeHint() const
 {
-    return QSize(350, 180);
+    return QSize(550, 380);
 }
 
 
@@ -23,11 +23,11 @@ void SimResultPlot::setSimResults(SimResultsItem * results) {
 }
 
 void SimResultPlot::initGraphics() {
-    int penWidth = 2;
+    int penWidth = 3;
     Qt::PenStyle style = Qt::PenStyle(Qt::SolidLine);
     Qt::PenCapStyle cap = Qt::PenCapStyle(Qt::RoundCap);
     Qt::PenJoinStyle join = Qt::PenJoinStyle(Qt::RoundJoin);
-    _pens[0] = QPen(QColor(128, 192, 64), penWidth, style, cap, join);
+    _pens[0] = QPen(QColor(0, 192, 0), penWidth+2, style, cap, join);
     _pens[1] = QPen(QColor(192, 64, 128), penWidth, style, cap, join);
     _pens[2] = QPen(QColor(64,  64, 192), penWidth, style, cap, join);
     _pens[3] = QPen(QColor(128, 200, 64), penWidth, style, cap, join);
@@ -107,12 +107,13 @@ void SimResultPlot::paintEvent(QPaintEvent * /* event */)
         int pointCount = 0;
         QPoint exactPoints[32*5];
         for (int j = minbits*fracbits; j <= maxbits*fracbits; j++) {
-            int x = minbitsx + (j - minbits*fracbits) * bitstep;
+            int x = minbitsx + (j - minbits*fracbits) * bitstep / fracbits;
             ExactBitStats * stats = &_results.byParameter[i].bitStats;
             double v = stats->getPercent(j, minbits, maxbits);
+            double nextv = stats->getPercent(j+1, minbits, maxbits);
 
-            if (v > 0.0000000001 || pointCount > 0) {
-                int y = haxisy + (int)(v*yscale);
+            if (v > 0.0000000001 || nextv > 0.0000000001 || pointCount > 0) {
+                int y = (int)(v*yscale);
                 QPoint pt = QPoint(x, haxisy - y);
                 exactPoints[pointCount++] = pt;
             }
