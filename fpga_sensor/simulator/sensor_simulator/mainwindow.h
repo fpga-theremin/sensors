@@ -30,8 +30,9 @@ class MainWindow : public QMainWindow
     QComboBox * _cbResult;
 
     QLineEdit * createDoubleValueEditor(double * field, double minValue, double maxValue, int precision);
-    QComboBox * createIntComboBox(int * field, const int * values, int multiplier = 1);
-    QComboBox * createDoubleComboBox(double * field, const double * values);
+    //QComboBox * createIntComboBox(int * field, const int * values, int multiplier = 1);
+    //QComboBox * createDoubleComboBox(double * field, const double * values);
+    QComboBox * createComboBox(SimParameter param);
     QLineEdit * createReadOnlyEdit();
 
 private:

@@ -26,6 +26,7 @@ int main(int argc, char *argv[])
 
 //    FullSimSuite suite;
 //    suite.run();
+    debugDumpParameterMetadata();
 
     QApplication a(argc, argv);
     MainWindow w;

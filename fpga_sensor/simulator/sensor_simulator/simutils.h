@@ -7,39 +7,64 @@
 #include <QStringList>
 #include <memory>
 
+enum SimParameter {
+    SIM_PARAM_MIN = 0,
+    SIM_PARAM_ADC_BITS = SIM_PARAM_MIN,
+    SIM_PARAM_ADC_SAMPLE_RATE,
+    SIM_PARAM_SIN_VALUE_BITS,
+    SIM_PARAM_SIN_TABLE_SIZE_BITS,
+    SIM_PARAM_PHASE_BITS,
+    SIM_PARAM_AVG_PERIODS,
+    SIM_PARAM_ADC_INTERPOLATION,
+    SIM_PARAM_EDGE_SUBSAMPLING_BITS,
+    SIM_PARAM_SENSE_AMPLITUDE,
+    SIM_PARAM_SENSE_DC_OFFSET,
+    SIM_PARAM_SENSE_NOISE,
+    SIM_PARAM_MAX = SIM_PARAM_SENSE_NOISE
+};
+
+
 int quantizeSigned(double value, int bits);
 double quantizeDouble(double value, int bits);
 double scaleDouble(double value, int bits);
 
 #define SP_MAX_SIN_TABLE_SIZE (65536)
 struct SimParams {
-    double frequency;
+    // SIM_PARAM_ADC_SAMPLE_RATE
     int sampleRate;
-    // sin table size bits
+    // SIM_PARAM_PHASE_BITS
     int ncoPhaseBits;
+    // SIM_PARAM_SIN_VALUE_BITS - SIN/COS table resolution
     int ncoValueBits;
+    // SIM_PARAM_SIN_TABLE_SIZE_BITS - SIN/COS table size is (1<<ncoSinTableSizeBits)
     int ncoSinTableSizeBits;
-    double sinTableSizePhaseCorrection;
 
-    double sensePhaseShift;
+    // SIM_PARAM_SENSE_AMPLITUDE
     double senseAmplitude;
 
+    // SIM_PARAM_ADC_BITS
     int adcBits;
-    // 1: ADC samples with specified sample rate, N: ADC samples once per N cycles, linearly interpolating values missed cycles
+    // SIM_PARAM_ADC_INTERPOLATION 1: ADC samples with specified sample rate, N: ADC samples once per N cycles, linearly interpolating values missed cycles
     int adcInterpolation;
+    // SIM_PARAM_AVG_PERIODS
     int averagingPeriods;
+    // SIM_PARAM_EDGE_SUBSAMPLING_BITS
     int edgeAccInterpolation;
 
-    // noise in adc output, in LSB (e.g. 0.5 means white noise 1/2 LSB)
+    // SIM_PARAM_SENSE_NOISE  noise in adc output, in LSB (e.g. 0.5 means white noise 1/2 LSB)
     double adcNoise;
-    // DC offset in adc output, in LSB (e.g. 0.5 means ADC returns + 1/2 LSB)
+    // SIM_PARAM_SENSE_DC_OFFSET DC offset in adc output, in LSB (e.g. 0.5 means ADC returns + 1/2 LSB)
     double adcDCOffset;
 
-    // recalculated
+    double frequency;
+    // recalculated based on precision
     double realFrequency;
     int64_t phaseIncrement;
     int64_t phaseModule; // 1 << ncoPhaseBits
     int sinTableSize;
+    double sinTableSizePhaseCorrection;
+    double sensePhaseShift;
+
 
     int freqVariations;
     double freqStep;
@@ -51,12 +76,10 @@ struct SimParams {
     //int * sinTable; // [SP_MAX_SIN_TABLE_SIZE];
 
     int guard1;
-    SimParams() : frequency(1012345)
-                , sampleRate(40000000)
+    SimParams() : sampleRate(40000000)
                 , ncoPhaseBits(32)
                 , ncoValueBits(13)         // actual table size is 1/4 (1024) and 12 bits
                 , ncoSinTableSizeBits(12)  // actual table size is 1/4 (1024) and 12 bits
-                , sensePhaseShift(-0.0765)
                 , senseAmplitude(0.9)
                 , adcBits(12)
                 , adcInterpolation(1)
@@ -64,6 +87,9 @@ struct SimParams {
                 , edgeAccInterpolation(0)
                 , adcNoise(0)
                 , adcDCOffset(0)
+                , frequency(1012345)
+                , sinTableSizePhaseCorrection(0)
+                , sensePhaseShift(-0.0765)
                 , freqVariations(5)
                 , freqStep(0.0014325)
                 , phaseVariations(5)
@@ -216,6 +242,48 @@ struct SimResultsHolder {
 class ProgressListener {
 public:
     virtual void onProgress(int currentStage, int totalStages, QString msg) = 0;
+};
+
+struct SimParameterMetadata {
+protected:
+    SimParameter param;
+    QString name;
+    Array<QString> valueLabels;
+    Array<QVariant> values;
+    int defaultValueIndex;
+    SimParameterMetadata(SimParameter param, QString name, const int * intValues, int defaultValue, int multiplier = 1);
+    SimParameterMetadata(SimParameter param, QString name, const double * doubleValues, double defaultValue);
+public:
+    SimParameter getType() const { return param; }
+    QString getName() const { return name; }
+    // possible parameter values for simulation
+    int getValueCount() const { return values.length(); }
+    QString getValueLabel(int valueIndex) const {
+        assert(valueIndex >= 0 && valueIndex < values.length());
+        return valueLabels[valueIndex];
+    }
+    QVariant getValue(int valueIndex) const {
+        assert(valueIndex >= 0 && valueIndex < values.length());
+        return values[valueIndex];
+    }
+    virtual int getInt(const SimParams * params) const = 0;
+    virtual double getDouble(const SimParams * params) const = 0;
+    virtual void setInt(SimParams * params, int value) const = 0;
+    virtual void setDouble(SimParams * params, double value) const = 0;
+    virtual void set(SimParams * params, QVariant value) const = 0;
+
+    double getDouble(int index) const { return getValue(index).toDouble(); }
+    int getValueInt(int index) const { return getValue(index).toInt(); }
+    double getValueDouble(int index) const { return getValue(index).toDouble(); }
+    QVariant getDefaultValue() const { return values[defaultValueIndex]; }
+    int getDefaultValueInt() const { return values[defaultValueIndex].toInt(); }
+    double getDefaultValueDouble() const { return values[defaultValueIndex].toDouble(); }
+    int getDefaultValueIndex() const { return defaultValueIndex; }
+    virtual void setParamByIndex(SimParams * params, int index) = 0;
+    // get metadata for parameter type
+    static const SimParameterMetadata * get(SimParameter simParameter);
+    static void applyDefaults(SimParams * params);
+
 };
 
 class SimParamMutator {
@@ -460,5 +528,6 @@ struct SimState {
 };
 
 void runSimTestSuite(SimParams * params);
+void debugDumpParameterMetadata();
 
 #endif // SIMUTILS_H

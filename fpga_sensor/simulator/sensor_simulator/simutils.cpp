@@ -581,3 +581,251 @@ void runSimTestSuite(SimParams * params) {
     results.text.append(testResults->text);
 
 }
+
+#define END_OF_LIST -1000000
+
+static const int sampleRates[] = {200, 150, 125, 105, 100, 80, 65, 40, 25, 20, 10, 4, 3, END_OF_LIST};
+static const int phaseBits[] = {24, 26, 28, 30, 32, 34, 36, END_OF_LIST};
+static const int ncoValueBits[] = {8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, END_OF_LIST};
+static const int sinTableBits[] = {7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, END_OF_LIST};
+static const int adcValueBits[] = {6, 7, 8, 9, 10, 11, 12, 13, 14, 16, END_OF_LIST};
+static const int adcInterpolationRate[] = {1, 2, 3, 4, END_OF_LIST};
+static const double adcNoise[] = {0.0, 0.1, 0.25, 0.5, 1.0, 2.0, 5.0, 10.0, END_OF_LIST};
+static const double adcDCOffset[] = {-10.0, -5.0, -2.5, -1.0, -0.5, 0, 0.5, 1.0, 2.5, 5.0, 10.0, END_OF_LIST};
+static const double senseAmplitude[] = {0.1, 0.25, 0.5, 0.8, 0.9, 0.95, 1.0, END_OF_LIST};
+static const int adcAveragingPeriods[] = {1, 2, 4, 8, 16, 32, 64, 128, 256, END_OF_LIST};
+static const int edgeAccInterpolation[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, END_OF_LIST};
+
+struct SampleRateMetadata : public SimParameterMetadata {
+public:
+    SampleRateMetadata() : SimParameterMetadata(SIM_PARAM_ADC_SAMPLE_RATE, QString("SampleRate"), sampleRates, 40, 1000000) {}
+    void setParamByIndex(SimParams * params, int index) override {
+        params->sampleRate = getValue(index).toInt();
+    }
+    int getInt(const SimParams * params) const override { return params->sampleRate; }
+    double getDouble(const SimParams * params) const override { return params->sampleRate; }
+    void setInt(SimParams * params, int value) const override { params->sampleRate = value; }
+    void setDouble(SimParams * params, double value) const override { params->sampleRate = value; }
+    void set(SimParams * params, QVariant value) const override { params->sampleRate = value.toInt(); }
+};
+SampleRateMetadata SAMPLE_RATE_PARAMETER_METADATA;
+
+struct ADCBitsMetadata : public SimParameterMetadata {
+public:
+    ADCBitsMetadata() : SimParameterMetadata(SIM_PARAM_ADC_SAMPLE_RATE, QString("ADCBits"), adcValueBits, 12) {}
+    void setParamByIndex(SimParams * params, int index) override {
+        params->adcBits = getValue(index).toInt();
+    }
+    int getInt(const SimParams * params) const override { return params->adcBits; }
+    double getDouble(const SimParams * params) const override { return params->adcBits; }
+    void setInt(SimParams * params, int value) const override { params->adcBits = value; }
+    void setDouble(SimParams * params, double value) const override { params->adcBits = value; }
+    void set(SimParams * params, QVariant value) const override { params->adcBits = value.toInt(); }
+};
+ADCBitsMetadata ADC_BITS_PARAMETER_METADATA;
+
+struct AvgPeriodsMetadata : public SimParameterMetadata {
+public:
+    AvgPeriodsMetadata() : SimParameterMetadata(SIM_PARAM_AVG_PERIODS, QString("AvgPeriods"), adcAveragingPeriods, 8) {}
+    void setParamByIndex(SimParams * params, int index) override {
+        params->averagingPeriods = getValue(index).toInt();
+    }
+    int getInt(const SimParams * params) const override { return params->averagingPeriods; }
+    double getDouble(const SimParams * params) const override { return params->averagingPeriods; }
+    void setInt(SimParams * params, int value) const override { params->averagingPeriods = value; }
+    void setDouble(SimParams * params, double value) const override { params->averagingPeriods = value; }
+    void set(SimParams * params, QVariant value) const override { params->averagingPeriods = value.toInt(); }
+};
+AvgPeriodsMetadata AVG_PERIODS_PARAMETER_METADATA;
+
+struct AdcInterpolationMetadata : public SimParameterMetadata {
+public:
+    AdcInterpolationMetadata() : SimParameterMetadata(SIM_PARAM_ADC_INTERPOLATION, QString("ADCInterpolation"), adcInterpolationRate, 1) {}
+    void setParamByIndex(SimParams * params, int index) override {
+        params->adcInterpolation = getValue(index).toInt();
+    }
+    int getInt(const SimParams * params) const override { return params->adcInterpolation; }
+    double getDouble(const SimParams * params) const override { return params->adcInterpolation; }
+    void setInt(SimParams * params, int value) const override { params->adcInterpolation = value; }
+    void setDouble(SimParams * params, double value) const override { params->adcInterpolation = value; }
+    void set(SimParams * params, QVariant value) const override { params->adcInterpolation = value.toInt(); }
+};
+AdcInterpolationMetadata ADC_INTERPOLATION_PARAMETER_METADATA;
+
+struct SinValueBitsMetadata : public SimParameterMetadata {
+public:
+    SinValueBitsMetadata() : SimParameterMetadata(SIM_PARAM_SIN_VALUE_BITS, QString("SinValueBits"), ncoValueBits, 13) {}
+    void setParamByIndex(SimParams * params, int index) override {
+        params->ncoValueBits = getValue(index).toInt();
+    }
+    int getInt(const SimParams * params) const override { return params->ncoValueBits; }
+    double getDouble(const SimParams * params) const override { return params->ncoValueBits; }
+    void setInt(SimParams * params, int value) const override { params->ncoValueBits = value; }
+    void setDouble(SimParams * params, double value) const override { params->ncoValueBits = value; }
+    void set(SimParams * params, QVariant value) const override { params->ncoValueBits = value.toInt(); }
+};
+SinValueBitsMetadata SIN_VALUE_BITS_PARAMETER_METADATA;
+
+struct SinTableSizeBitsMetadata : public SimParameterMetadata {
+public:
+    SinTableSizeBitsMetadata() : SimParameterMetadata(SIM_PARAM_SIN_TABLE_SIZE_BITS, QString("SinTableSizeBits"), sinTableBits, 12) {}
+    void setParamByIndex(SimParams * params, int index) override {
+        params->ncoSinTableSizeBits = getValue(index).toInt();
+    }
+    int getInt(const SimParams * params) const override { return params->ncoSinTableSizeBits; }
+    double getDouble(const SimParams * params) const override { return params->ncoSinTableSizeBits; }
+    void setInt(SimParams * params, int value) const override { params->ncoSinTableSizeBits = value; }
+    void setDouble(SimParams * params, double value) const override { params->ncoSinTableSizeBits = value; }
+    void set(SimParams * params, QVariant value) const override { params->ncoSinTableSizeBits = value.toInt(); }
+};
+SinTableSizeBitsMetadata SIN_TABLE_SIZE_BITS_PARAMETER_METADATA;
+
+struct PhaseBitsMetadata : public SimParameterMetadata {
+public:
+    PhaseBitsMetadata() : SimParameterMetadata(SIM_PARAM_PHASE_BITS, QString("PhaseBits"), phaseBits, 32) {}
+    void setParamByIndex(SimParams * params, int index) override {
+        params->ncoPhaseBits = getValue(index).toInt();
+    }
+    int getInt(const SimParams * params) const override { return params->ncoPhaseBits; }
+    double getDouble(const SimParams * params) const override { return params->ncoPhaseBits; }
+    void setInt(SimParams * params, int value) const override { params->ncoPhaseBits = value; }
+    void setDouble(SimParams * params, double value) const override { params->ncoPhaseBits = value; }
+    void set(SimParams * params, QVariant value) const override { params->ncoPhaseBits = value.toInt(); }
+};
+PhaseBitsMetadata PHASE_BITS_PARAMETER_METADATA;
+
+struct EdgeSubsamplingBitsMetadata : public SimParameterMetadata {
+public:
+    EdgeSubsamplingBitsMetadata() : SimParameterMetadata(SIM_PARAM_EDGE_SUBSAMPLING_BITS, QString("EdgeSubsamplingBits"), edgeAccInterpolation, 4) {}
+    void setParamByIndex(SimParams * params, int index) override {
+        params->edgeAccInterpolation = getValue(index).toInt();
+    }
+    int getInt(const SimParams * params) const override { return params->edgeAccInterpolation; }
+    double getDouble(const SimParams * params) const override { return params->edgeAccInterpolation; }
+    void setInt(SimParams * params, int value) const override { params->edgeAccInterpolation = value; }
+    void setDouble(SimParams * params, double value) const override { params->edgeAccInterpolation = value; }
+    void set(SimParams * params, QVariant value) const override { params->edgeAccInterpolation = value.toInt(); }
+};
+EdgeSubsamplingBitsMetadata EDGE_SUBSAMPLING_BITS_PARAMETER_METADATA;
+
+struct SenseAmplitudeMetadata : public SimParameterMetadata {
+public:
+    SenseAmplitudeMetadata() : SimParameterMetadata(SIM_PARAM_SENSE_AMPLITUDE, QString("SenseAmplitude"), senseAmplitude, 0.9) {}
+    void setParamByIndex(SimParams * params, int index) override {
+        params->senseAmplitude = getValue(index).toDouble();
+    }
+    int getInt(const SimParams * params) const override { return params->senseAmplitude; }
+    double getDouble(const SimParams * params) const override { return params->senseAmplitude; }
+    void setInt(SimParams * params, int value) const override { params->senseAmplitude = value; }
+    void setDouble(SimParams * params, double value) const override { params->senseAmplitude = value; }
+    void set(SimParams * params, QVariant value) const override { params->senseAmplitude = value.toDouble(); }
+};
+SenseAmplitudeMetadata SENSE_AMPLITUDE_PARAMETER_METADATA;
+
+struct SenseDCOffsetMetadata : public SimParameterMetadata {
+public:
+    SenseDCOffsetMetadata() : SimParameterMetadata(SIM_PARAM_SENSE_DC_OFFSET, QString("SenseDCOffset"), adcDCOffset, 0) {}
+    void setParamByIndex(SimParams * params, int index) override {
+        params->adcDCOffset = getValue(index).toDouble();
+    }
+    int getInt(const SimParams * params) const override { return params->adcDCOffset; }
+    double getDouble(const SimParams * params) const override { return params->adcDCOffset; }
+    void setInt(SimParams * params, int value) const override { params->adcDCOffset = value; }
+    void setDouble(SimParams * params, double value) const override { params->adcDCOffset = value; }
+    void set(SimParams * params, QVariant value) const override { params->adcDCOffset = value.toDouble(); }
+};
+SenseDCOffsetMetadata SENSE_DC_OFFSET_PARAMETER_METADATA;
+
+struct SenseNoiseMetadata : public SimParameterMetadata {
+public:
+    SenseNoiseMetadata() : SimParameterMetadata(SIM_PARAM_SENSE_NOISE, QString("SenseNoise"), adcNoise, 0) {}
+    void setParamByIndex(SimParams * params, int index) override {
+        params->adcNoise = getValue(index).toDouble();
+    }
+    int getInt(const SimParams * params) const override { return params->adcNoise; }
+    double getDouble(const SimParams * params) const override { return params->adcNoise; }
+    void setInt(SimParams * params, int value) const override { params->adcNoise = value; }
+    void setDouble(SimParams * params, double value) const override { params->adcNoise = value; }
+    void set(SimParams * params, QVariant value) const override { params->adcNoise = value.toDouble(); }
+};
+SenseNoiseMetadata SENSE_NOISE_PARAMETER_METADATA;
+
+void SimParameterMetadata::applyDefaults(SimParams * params) {
+    for (int i = SIM_PARAM_MIN; i <= SIM_PARAM_MAX; i++) {
+        SimParameter param = (SimParameter)i;
+        const SimParameterMetadata * metadata = SimParameterMetadata::get(param);
+        metadata->set(params, metadata->getDefaultValue());
+    }
+}
+
+const SimParameterMetadata * SimParameterMetadata::get(SimParameter index) {
+    switch(index) {
+    case SIM_PARAM_ADC_BITS: return &ADC_BITS_PARAMETER_METADATA;
+    case SIM_PARAM_ADC_SAMPLE_RATE: return &SAMPLE_RATE_PARAMETER_METADATA;
+    case SIM_PARAM_SIN_VALUE_BITS: return &SIN_VALUE_BITS_PARAMETER_METADATA;
+    case SIM_PARAM_SIN_TABLE_SIZE_BITS: return &SIN_TABLE_SIZE_BITS_PARAMETER_METADATA;
+    case SIM_PARAM_PHASE_BITS: return &PHASE_BITS_PARAMETER_METADATA;
+    case SIM_PARAM_AVG_PERIODS: return &AVG_PERIODS_PARAMETER_METADATA;
+    case SIM_PARAM_ADC_INTERPOLATION: return &ADC_INTERPOLATION_PARAMETER_METADATA;
+    case SIM_PARAM_EDGE_SUBSAMPLING_BITS: return &EDGE_SUBSAMPLING_BITS_PARAMETER_METADATA;
+    case SIM_PARAM_SENSE_AMPLITUDE: return &SENSE_AMPLITUDE_PARAMETER_METADATA;
+    case SIM_PARAM_SENSE_DC_OFFSET: return &SENSE_DC_OFFSET_PARAMETER_METADATA;
+    case SIM_PARAM_SENSE_NOISE: return &SENSE_NOISE_PARAMETER_METADATA;
+
+    default:
+        assert(false);
+        return nullptr;
+    }
+}
+
+void debugDumpParameterMetadata() {
+    SimParams params;
+    for (int i = SIM_PARAM_MIN; i <= SIM_PARAM_MAX; i++) {
+        SimParameter param = (SimParameter)i;
+        const SimParameterMetadata * metadata = SimParameterMetadata::get(param);
+        qDebug("%d: %s  defaultValueIndex=%d   defaultValueInt=%d  defaultValueDouble=%f   currentValueInt=%d  currentValueDouble=%f", i, metadata->getName().toLocal8Bit().data(), metadata->getDefaultValueIndex(), metadata->getDefaultValueInt(), metadata->getDefaultValueDouble(), metadata->getInt(&params), metadata->getDouble(&params) );
+        for (int j = 0; j < metadata->getValueCount(); j++) {
+            qDebug("    value[%d]: %s   intValue=%d doubleValue=%f", j, metadata->getValueLabel(j).toLocal8Bit().data(), metadata->getValue(j).toInt(), metadata->getValue(j).toDouble());
+        }
+        metadata->set(&params, 1.2345 + i*10000);
+    }
+    qDebug("After setting to i*10000");
+    for (int i = SIM_PARAM_MIN; i <= SIM_PARAM_MAX; i++) {
+        SimParameter param = (SimParameter)i;
+        const SimParameterMetadata * metadata = SimParameterMetadata::get(param);
+        qDebug("%d: %s  defaultValueIndex=%d   defaultValueInt=%d  defaultValueDouble=%f   currentValueInt=%d  currentValueDouble=%f", i, metadata->getName().toLocal8Bit().data(), metadata->getDefaultValueIndex(), metadata->getDefaultValueInt(), metadata->getDefaultValueDouble(), metadata->getInt(&params), metadata->getDouble(&params) );
+    }
+    SimParameterMetadata::applyDefaults(&params);
+    qDebug("After apply defaults");
+    for (int i = SIM_PARAM_MIN; i <= SIM_PARAM_MAX; i++) {
+        SimParameter param = (SimParameter)i;
+        const SimParameterMetadata * metadata = SimParameterMetadata::get(param);
+        qDebug("%d: %s  defaultValueIndex=%d   defaultValueInt=%d  defaultValueDouble=%f   currentValueInt=%d  currentValueDouble=%f", i, metadata->getName().toLocal8Bit().data(), metadata->getDefaultValueIndex(), metadata->getDefaultValueInt(), metadata->getDefaultValueDouble(), metadata->getInt(&params), metadata->getDouble(&params) );
+    }
+}
+
+SimParameterMetadata::SimParameterMetadata(SimParameter param, QString name, const int * intValues, int defaultValue, int multiplier)
+    : param(param), name(name), defaultValueIndex(0)
+{
+    for (int i = 0; intValues[i] != END_OF_LIST; i++) {
+        valueLabels.add(QString("%1").arg(intValues[i]));
+        int v = intValues[i] * multiplier;
+        if (intValues[i] == defaultValue) {
+            defaultValueIndex = i;
+        }
+        values.add(QVariant(v));
+    }
+}
+
+SimParameterMetadata::SimParameterMetadata(SimParameter param, QString name, const double * doubleValues, double defaultValue)
+    : param(param), name(name), defaultValueIndex(0)
+{
+    for (int i = 0; doubleValues[i] < END_OF_LIST-0.00001 || doubleValues[i] > END_OF_LIST+0.00001; i++) {
+        valueLabels.add(QString("%1").arg(doubleValues[i]));
+        double v = doubleValues[i];
+        if (v >= defaultValue - 0.0000001 && v <= defaultValue + 0.0000001) {
+            defaultValueIndex = i;
+        }
+        values.add(QVariant(v));
+    }
+}
