@@ -41,6 +41,12 @@ struct SimParams {
     int64_t phaseModule; // 1 << ncoPhaseBits
     int sinTableSize;
 
+    int freqVariations;
+    double freqStep;
+    int phaseVariations;
+    double phaseStep;
+    int bitFractionCount;
+
     SinTable sinTable;
     //int * sinTable; // [SP_MAX_SIN_TABLE_SIZE];
 
@@ -58,6 +64,11 @@ struct SimParams {
                 , edgeAccInterpolation(0)
                 , adcNoise(0)
                 , adcDCOffset(0)
+                , freqVariations(5)
+                , freqStep(0.0014325)
+                , phaseVariations(5)
+                , phaseStep(0.0143564)
+                , bitFractionCount(2)
                 , sinTable(ncoSinTableSizeBits, ncoValueBits)
                 , guard1(0x11111111)
     {
@@ -106,6 +117,11 @@ struct SimParams {
         phaseModule = v.phaseModule;
         sinTableSize = v.sinTableSize;
         guard1 = v.guard1;
+        freqVariations = v.freqVariations;
+        freqStep = v.freqStep;
+        phaseVariations = v.phaseVariations;
+        phaseStep = v.phaseStep;
+        bitFractionCount = v.bitFractionCount;
         recalculate();
         return *this;
     }
@@ -246,7 +262,7 @@ public:
         currentStage++;
         return currentStage <= stageCount;
     }
-    void runTests(SimResultsItem & results, int freqVariations = 5, double freqStep = 0.0014325, int phaseVariations = 5, double phaseStep = 0.0143564, int bitFractionCount = 5);
+    void runTests(SimResultsItem & results);
 };
 
 class AveragingMutator : public SimParamMutator {
@@ -326,7 +342,7 @@ public:
     }
 };
 
-void collectSimulationStats(SimParams * newParams, int averagingHalfPeriods, int freqVariations, double freqK, int phaseVariations, double phaseK, ExactBitStats & stats);
+void collectSimulationStats(SimParams * newParams, ExactBitStats & stats);
 
 class SimSuite : public ProgressListener {
 protected:
@@ -336,31 +352,25 @@ protected:
     int currentResultIndex;
     int totalResultsCount;
     std::vector<std::unique_ptr<SimParamMutator>> tests;
-    int freqVariations;
-    double freqStep;
-    int phaseVariations;
-    double phaseStep;
-    int bitFractionCount;
     SimResultsHolder results;
 public:
-    SimSuite(ProgressListener * progressListener = nullptr) : progressListener(progressListener), currentResultIndex(0), totalResultsCount(0),
-        freqVariations(5), freqStep(0.0014325), phaseVariations(5), phaseStep(0.0143564), bitFractionCount(2)
+    SimSuite(ProgressListener * progressListener = nullptr) : progressListener(progressListener), currentResultIndex(0), totalResultsCount(0)
     {
     }
-    void setParams(SimParams * params, int freqVariations = 5, double freqStep = 0.0014325, int phaseVariations = 5, double phaseStep = 0.0143564, int bitFractionCount = 2) {
+    SimResultsHolder * cloneResults() {
+        SimResultsHolder * res = new SimResultsHolder();
+        *res = results;
+        return res;
+    }
+    void setParams(SimParams * params) {
         simParams = *params;
-        this->freqVariations = freqVariations;
-        this->freqStep = freqStep;
-        this->phaseVariations = phaseVariations;
-        this->phaseStep = phaseStep;
-        this->bitFractionCount = bitFractionCount;
     }
     void addTest(SimParamMutator * test) {
         tests.push_back(std::unique_ptr<SimParamMutator>(test));
     }
     void runTest(int index, SimResultsItem & results) {
         if (index >= 0 && index < tests.size()) {
-            tests[index]->runTests(results, freqVariations, freqStep, phaseVariations, phaseStep, bitFractionCount);
+            tests[index]->runTests(results);
         }
     }
     int testCount() {
@@ -449,6 +459,6 @@ struct SimState {
 
 };
 
-void runSimTestSuite(SimParams * params, int freqVariations = 5, double freqStep = 1.0014325, int phaseVariations = 5, double phaseStep = 0.0143564, int bitFractionCount = 2);
+void runSimTestSuite(SimParams * params);
 
 #endif // SIMUTILS_H

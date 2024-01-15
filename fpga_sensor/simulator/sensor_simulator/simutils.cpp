@@ -435,7 +435,7 @@ void ExactBitStats::updateStats() {
     }
 }
 
-void SimParamMutator::runTests(SimResultsItem & results, int freqVariations, double freqStep, int phaseVariations, double phaseStep, int bitFractionCount) {
+void SimParamMutator::runTests(SimResultsItem & results) {
     SimState * state = new SimState();
     QString testName = heading + " : " + params.toString();
     results.text.append(testName);
@@ -444,20 +444,20 @@ void SimParamMutator::runTests(SimResultsItem & results, int freqVariations, dou
     results.text.append(QString());
     qDebug("");
 
-    ExactBitStats statsHead(bitFractionCount);
+    ExactBitStats statsHead(params.bitFractionCount);
     QString headers = heading + "\t" + statsHead.headingString();
     results.text.append(headers);
     qDebug(headers.toLocal8Bit().data());
 
     while (next()) {
         SimResultsLine & line = results.addLine();
-        line.bitStats.init(bitFractionCount);
+        line.bitStats.init(params.bitFractionCount);
         line.parameterValue = valueString;
         if (progressListener) {
             progressListener->onProgress(currentStage, stageCount, valueString);
         }
         //ExactBitStats stats(bitFractionCount);
-        collectSimulationStats(&params, params.averagingPeriods*2, freqVariations, freqStep, phaseVariations, phaseStep, line.bitStats);
+        collectSimulationStats(&params, line.bitStats);
         QString res = valueString + "\t" + line.bitStats.toString();
         results.text.append(res);
         qDebug(res.toLocal8Bit().data());
@@ -474,24 +474,22 @@ void SimParamMutator::runTests(SimResultsItem & results, int freqVariations, dou
     delete state;
 }
 
-void collectSimulationStats(SimParams * newParams, int averagingHalfPeriods, int freqVariations, double freqK, int phaseVariations, double phaseK, ExactBitStats & stats) {
+void collectSimulationStats(SimParams * newParams, ExactBitStats & stats) {
     SimState * state = new SimState();
     SimParams params = *newParams;
     double frequency = params.frequency;
     double phase = params.sensePhaseShift;
-    for (int n1 = -freqVariations/2; n1 <= freqVariations; n1++) {
-        params.frequency = frequency * (1.0 + freqK * n1);
-        for (int n2 = -phaseVariations/2; n2 <= phaseVariations; n2++) {
-            params.sensePhaseShift = phase + phaseK * n2;
+    for (int n1 = -params.freqVariations/2; n1 <= params.freqVariations / 2; n1++) {
+        params.frequency = frequency * (1.0 + params.freqStep * n1);
+        for (int n2 = -params.phaseVariations/2; n2 <= params.phaseVariations / 2; n2++) {
+            params.sensePhaseShift = phase + params.freqStep * n2;
             params.recalculate();
             state->simulate(&params);
-            for (int i = 1; i < state->periodCount-averagingHalfPeriods-2; i++) {
+            for (int i = 1; i < state->periodCount - params.averagingPeriods*2 -2; i++) {
                 // bottom: avg for 1 period (2 halfperiods)
-                double angle = state->phaseForPeriods(i, averagingHalfPeriods);
+                double angle = state->phaseForPeriods(i, params.averagingPeriods*2);
                 double err = params.phaseError(angle);
                 int exactBits = SimParams::exactBits(err, stats.bitFractionCount());
-//                if (exactBits > 31)
-//                    exactBits = 31;
                 stats.incrementExactBitsCount(exactBits);
             }
         }
@@ -502,20 +500,10 @@ void collectSimulationStats(SimParams * newParams, int averagingHalfPeriods, int
 
 int64_t SimState::sumForPeriodsBase1(int startHalfperiod, int halfPeriodCount) {
     return edgeArray[startHalfperiod + halfPeriodCount].mulAcc1 - edgeArray[startHalfperiod].mulAcc1;
-//    int64_t res = 0;
-//    for (int i = 0; i < halfPeriodCount; i++) {
-//        res += periodSumBase1[startHalfperiod + i];
-//    }
-//    return res;
 }
 
 int64_t SimState::sumForPeriodsBase2(int startHalfperiod, int halfPeriodCount) {
     return edgeArray[startHalfperiod + halfPeriodCount].mulAcc2 - edgeArray[startHalfperiod].mulAcc2;
-//    int64_t res = 0;
-//    for (int i = 0; i < halfPeriodCount; i++) {
-//        res += periodSumBase2[startHalfperiod + i];
-//    }
-//    return res;
 }
 
 double SimState::phaseForPeriods(int startHalfperiod, int halfPeriodCount) {
@@ -529,6 +517,7 @@ void SimSuite::run() {
     totalResultsCount = 0;
     currentResultIndex = 0;
     results.clear();
+
     for (int i = 0; i < tests.size(); i++) {
         tests[i]->setParams(&simParams);
         tests[i]->setProgressListener(this);
@@ -537,7 +526,9 @@ void SimSuite::run() {
 
     for (int i = 0; i < tests.size(); i++) {
         SimResultsItem * result = results.addTest();
-        tests[i]->runTests(*result, freqVariations, freqStep, phaseVariations, phaseStep, bitFractionCount);
+        currentTest = tests[i]->headingString();
+        tests[i]->runTests(*result);
+        results.text.append(result->text);
     }
 }
 
@@ -552,18 +543,18 @@ FullSimSuite::FullSimSuite(ProgressListener * progressListener) : SimSuite(progr
 }
 
 
-void runSimTestSuite(SimParams * params, int freqVariations, double freqStep, int phaseVariations, double phaseStep, int bitFractionCount) {
+void runSimTestSuite(SimParams * params) {
     //QStringList results;
     SimResultsHolder results;
 
     SimResultsItem * testResults = results.addTest();
     AveragingMutator avgTest(params);
-    avgTest.runTests(*testResults, freqVariations, freqStep, phaseVariations, phaseStep, bitFractionCount);
+    avgTest.runTests(*testResults);
     results.text.append(testResults->text);
 
     testResults = results.addTest();
     ADCBitsMutator adcBitsTest(params);
-    adcBitsTest.runTests(*testResults, freqVariations, freqStep, phaseVariations, phaseStep, bitFractionCount);
+    adcBitsTest.runTests(*testResults);
     results.text.append(testResults->text);
 
 //    ADCInterpolationMutator adcInterpolationTest(params);
@@ -571,22 +562,22 @@ void runSimTestSuite(SimParams * params, int freqVariations, double freqStep, in
 
     testResults = results.addTest();
     SinValueBitsMutator sinValueBitsTest(params);
-    sinValueBitsTest.runTests(*testResults, freqVariations, freqStep, phaseVariations, phaseStep, bitFractionCount);
+    sinValueBitsTest.runTests(*testResults);
     results.text.append(testResults->text);
 
     testResults = results.addTest();
     SinTableSizeMutator sinTableSizeTest(params);
-    sinTableSizeTest.runTests(*testResults, freqVariations, freqStep, phaseVariations, phaseStep, bitFractionCount);
+    sinTableSizeTest.runTests(*testResults);
     results.text.append(testResults->text);
 
     testResults = results.addTest();
     SampleRateMutator sampleRateTest(params);
-    sampleRateTest.runTests(*testResults, freqVariations, freqStep, phaseVariations, phaseStep, bitFractionCount);
+    sampleRateTest.runTests(*testResults);
     results.text.append(testResults->text);
 
     testResults = results.addTest();
     PhaseBitsMutator phaseBitsTest(params);
-    phaseBitsTest.runTests(*testResults, freqVariations, freqStep, phaseVariations, phaseStep, bitFractionCount);
+    phaseBitsTest.runTests(*testResults);
     results.text.append(testResults->text);
 
 }

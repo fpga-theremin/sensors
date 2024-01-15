@@ -9,6 +9,7 @@
 #include <QAction>
 #include <QMenuBar>
 #include "plotwidget.h"
+#include "simbatchdialog.h"
 
 class MainWindow : public QMainWindow
 {
@@ -25,6 +26,8 @@ class MainWindow : public QMainWindow
     QLineEdit * _measuredPhaseShiftError;
     QLineEdit * _measuredPhaseExactBits;
     QLineEdit * _realFrequency;
+    SimResultPlot * _plot;
+    QComboBox * _cbResult;
 
     QLineEdit * createDoubleValueEditor(double * field, double minValue, double maxValue, int precision);
     QComboBox * createIntComboBox(int * field, const int * values, int multiplier = 1);

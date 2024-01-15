@@ -6,52 +6,170 @@
 #include <QPushButton>
 #include <QStatusBar>
 #include <QLabel>
+#include <QCloseEvent>
+#include <QSpacerItem>
 
 #define END_OF_LIST -1000000
 
-SimBatchDialog::SimBatchDialog(QWidget * parent)
-    : QDialog(parent)
+//void SimBatchDialog::runSimulation(std::unique_ptr<SimParams> params) {
+
+//}
+
+void SimBatchDialog::startPressed() {
+    qDebug("SimBatchDialog::startPressed()");
+    if (_running)
+        return;
+    SimParams * p = new SimParams();
+    *p = _params;
+    _btnStart->setEnabled(false);
+    _btnClose->setEnabled(false);
+    _textEdit->setText(QString("Starting simulation batch.\n" + _params.toString() + "\n"));
+    _running = true;
+    emit runSimulation(p);
+}
+
+void SimBatchDialog::closePressed() {
+    qDebug("SimBatchDialog::closePressed()");
+}
+
+//void SimBatchDialog::singleTestDone(std::shared_ptr<SimResultsItem> singleTestResults) {
+
+//}
+
+void SimBatchDialog::updateProgress(int currentStage, int totalStages, QString msg) {
+    qDebug("SimBatchDialog::updateProgress currentStage=%d, totalStages=%d, msg=%s", currentStage, totalStages, msg.toLocal8Bit().data());
+    QString state = QString("[%1 / %2] : %3").arg(currentStage).arg(totalStages).arg(msg);
+    _textEdit->append(state);
+    _statusLabel->setText(state);
+}
+
+void SimBatchDialog::allTestsDone(SimResultsHolder * allResults) {
+    qDebug("SimBatchDialog::allTestsDone()");
+    // finalize
+    _btnStart->setEnabled(true);
+    _btnClose->setEnabled(true);
+    _textEdit->clear();
+    _textEdit->setText(allResults->text.join("\n"));
+    _statusLabel->setText("Simulation is done");
+    _running = false;
+    if (_simResults)
+        delete _simResults;
+    _simResults = allResults;
+}
+
+SimBatchDialog::~SimBatchDialog() {
+    _workerThread.quit();
+    _workerThread.wait();
+    if (_simResults)
+        delete _simResults;
+}
+
+SimBatchDialog::SimBatchDialog(SimParams * params, QWidget * parent)
+    : QDialog(parent), _simResults(nullptr)
 {
-    _freqVariations = 50;
-    _phaseVariations = 50;
-    _frequencyStep = 1.00142466;
-    _phaseStep = 0.0065441;
+    int spacing = 15;
+    _running = false;
+    _params = *params;
+    _params.freqVariations = 50;
+    _params.phaseVariations = 50;
+    _params.freqStep = 0.00142466;
+    _params.phaseStep = 0.0065441;
+    _params.bitFractionCount = 2;
+
+    _simThread = new SimThread();
+    _simThread->moveToThread(&_workerThread);
+    connect(&_workerThread, &QThread::finished, _simThread, &QObject::deleteLater);
+    connect(this, &SimBatchDialog::runSimulation, _simThread, &SimThread::runSimulation);
+    connect(_simThread, &SimThread::allTestsDone, this, &SimBatchDialog::allTestsDone);
+    connect(_simThread, &SimThread::updateProgress, this, &SimBatchDialog::updateProgress);
+    //connect(worker, &Worker::resultReady, this, &Controller::handleResults);
+    _workerThread.start();
+
+
 
     setWindowTitle("Run simulation batch");
     QLayout * layout = new QVBoxLayout();
-    QLayout * top = new QHBoxLayout();
+    // label on the top
+    layout->addWidget(new QLabel(params->toString()));
+    layout->setSpacing(spacing);
+
+    QHBoxLayout * leftRightLayout = new QHBoxLayout();
+    QVBoxLayout * leftLayout = new QVBoxLayout();
+    QVBoxLayout * rightLayout = new QVBoxLayout();
+    leftRightLayout->setSpacing(spacing);
+    leftLayout->setSpacing(spacing);
+    rightLayout->setSpacing(spacing);
+    leftRightLayout->addItem(leftLayout);
+    leftRightLayout->addItem(rightLayout);
+    layout->addItem(leftRightLayout);
 
     QFormLayout * _simParamsLayout = new QFormLayout();
+    QVBoxLayout * resultViewLayout = new QVBoxLayout();
+    QHBoxLayout * buttonsLayout = new QHBoxLayout();
+    _simParamsLayout->setSpacing(spacing);
+    buttonsLayout->setSpacing(spacing);
+    resultViewLayout->setSpacing(spacing);
+    rightLayout->addItem(_simParamsLayout);
+    rightLayout->addItem(buttonsLayout);
+    rightLayout->addItem(resultViewLayout);
+    rightLayout->addStretch();
+
+    resultViewLayout->addWidget(new QLabel("Simulation result"));
+    QComboBox * _cbResultSelection = new QComboBox();
+    resultViewLayout->addWidget(_cbResultSelection);
+
+    //QTextEdit * resultPlot = new QTextEdit(this);
+    _plot = new SimResultPlot();
+    //_plot->setMinimumSize(QSize(600, 400));
+    resultViewLayout->addWidget(_plot);
+
+
     _simParamsLayout->setSpacing(10);
     const int variations[] = {10, 20, 30, 40, 50, 100, END_OF_LIST};
-    QComboBox * _cbFreqVariations = createIntComboBox(&_freqVariations, variations, 1);
-    QComboBox * _cbPhaseVariations = createIntComboBox(&_phaseVariations, variations, 1);
+    QComboBox * _cbFreqVariations = createIntComboBox(&_params.freqVariations, variations, 1);
+    QComboBox * _cbPhaseVariations = createIntComboBox(&_params.phaseVariations, variations, 1);
     //QLineEdit * _edFrequency = createDoubleValueEditor(&_simParams.frequency, 100000, 9000000, 2);
     //_edFrequency->setMax
     _simParamsLayout->addRow(new QLabel("Frequency variations"), _cbFreqVariations);
 
-    const double freqStep[] = {1.00025294, 1.00142466, 1.0135345, 1.03837645, END_OF_LIST};
-    _simParamsLayout->addRow(new QLabel("Frequency step mult"), createDoubleComboBox(&_frequencyStep, freqStep));
+    const double freqStep[] = {0.00025294, 0.00142466, 0.0135345, 0.03837645, END_OF_LIST};
+    _simParamsLayout->addRow(new QLabel("Frequency step mult"), createDoubleComboBox(&_params.freqStep, freqStep));
 
     _simParamsLayout->addRow(new QLabel("Phase variations"), _cbPhaseVariations);
 
     const double phaseStep[] = {0.000182734, 0.0024453565, 0.0065441, 0.01134385, END_OF_LIST};
-    _simParamsLayout->addRow(new QLabel("Phase step"), createDoubleComboBox(&_phaseStep, phaseStep));
-    top->addItem(_simParamsLayout);
+    _simParamsLayout->addRow(new QLabel("Phase step"), createDoubleComboBox(&_params.phaseStep, phaseStep));
 
-    QPushButton * btnStart = new QPushButton("Start");
-    QPushButton * btnClose = new QPushButton("Close");
-    top->addWidget(btnStart);
-    top->addWidget(btnClose);
-    layout->addItem(top);
-    QTextEdit * textEdit = new QTextEdit(this);
-    textEdit->setMinimumSize(QSize(600, 400));
-    layout->addWidget(textEdit);
-    QStatusBar * statusBar = new QStatusBar(this);
-    layout->addWidget(statusBar);
+    _btnStart = new QPushButton("Start");
+    connect(_btnStart, &QPushButton::pressed, this, &SimBatchDialog::startPressed);
+    _btnClose = new QPushButton("Close");
+    connect(_btnClose, &QPushButton::pressed, this, &QDialog::accept);
+    buttonsLayout->addWidget(_btnStart);
+    buttonsLayout->addWidget(_btnClose);
+
+
+    _textEdit = new QTextEdit(this);
+    _textEdit->setMinimumSize(QSize(600, 400));
+    _textEdit->setReadOnly(true);
+    _textEdit->setLineWrapMode(QTextEdit::LineWrapMode::NoWrap);
+    leftLayout->addWidget(_textEdit);
+    _statusBar = new QStatusBar(this);
+    layout->addWidget(_statusBar);
+
+    _statusLabel = new QLabel("Press Start to execute simulation suite", this);
+    _statusBar->addWidget(_statusLabel);
+
     setLayout(layout);
-    QLabel * statusLabel = new QLabel("Press Start to execute simulation suite", this);
-    statusBar->addWidget(statusLabel);
+    setSizeGripEnabled(true);
+}
+
+void SimBatchDialog::closeEvent(QCloseEvent *event) {
+    if (!_running) {
+         //writeSettings();
+         event->accept();
+    } else {
+         event->ignore();
+    }
 }
 
 QComboBox * SimBatchDialog::createIntComboBox(int * field, const int * values, int multiplier) {
@@ -88,7 +206,19 @@ QComboBox * SimBatchDialog::createDoubleComboBox(double * field, const double * 
     return cb;
 }
 
-void SimThread::runSimulation(SimParams * newParams, int freqVariations, double freqStep, int phaseVariations, double phaseStep ) {
-    delete newParams;
+void SimThread::onProgress(int currentStage, int totalStages, QString msg) {
+    qDebug("SimThread::onProgress");
+    emit updateProgress(currentStage, totalStages, msg);
+}
+
+void SimThread::runSimulation(SimParams * newParams) {
+    qDebug("SimThread::runSimulation");
     SimParams params = *newParams;
+    delete newParams;
+    FullSimSuite suite(this);
+    suite.setParams(&params);
+    suite.run();
+    SimResultsHolder * results = suite.cloneResults();
+    qDebug("SimThread::runSimulation : emitting allTestsDone");
+    emit allTestsDone(results);
 }

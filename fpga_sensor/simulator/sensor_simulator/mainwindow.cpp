@@ -216,6 +216,14 @@ void MainWindow::createControls() {
     _gbMeasured->setLayout(_measuredLayout);
     _topLayout->addWidget(_gbMeasured);
 
+    QVBoxLayout * resultLayout = new QVBoxLayout();
+    resultLayout->setSpacing(15);
+    _plot = new SimResultPlot();
+    _cbResult = new QComboBox();
+    resultLayout->addWidget(_cbResult);
+    resultLayout->addWidget(_plot);
+    _topLayout->addItem(resultLayout);
+
     _topLayout->addStretch(1);
 }
 
@@ -232,7 +240,7 @@ void MainWindow::createControls() {
  */
 
 void MainWindow::runSimBatch() {
-    SimBatchDialog * dialog = new SimBatchDialog(this);
+    SimBatchDialog * dialog = new SimBatchDialog(&_simParams, this);
     dialog->show();
     dialog->setModal(true);
     dialog->raise();

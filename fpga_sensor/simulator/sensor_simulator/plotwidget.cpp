@@ -45,7 +45,7 @@ int PlotWidget::getScrollPercent() {
 
 QSize PlotWidget::sizeHint() const
 {
-    return QSize(1200, 800);
+    return QSize(900, 800);
 }
 
 QSize PlotWidget::minimumSizeHint() const
