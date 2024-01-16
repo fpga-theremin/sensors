@@ -325,7 +325,6 @@ protected:
 //    void setValue(int value) {
 //        valueString = QString(":%1").arg(value);
 //    }
-public:
     SimParamMutator(SimParams * params, SimParameter paramType, ProgressListener * progressListener = nullptr)
         : params(*params),
           paramType(paramType),
@@ -337,6 +336,10 @@ public:
     {
 
     }
+public:
+    // factory method
+    static SimParamMutator * create(SimParams * params, SimParameter paramType);
+
     void setProgressListener(ProgressListener * listener) {
         this->progressListener = listener;
     }

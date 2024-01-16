@@ -2,6 +2,21 @@
 #include <QtMath>
 #include <QDebug>
 
+#define END_OF_LIST -1000000
+
+static const int sampleRates[] = {3, 4, 10, 20, 25, 40, 65, 80, 100, 125, 200, END_OF_LIST};
+static const int phaseBits[] = {24, 26, 28, 30, 32, 34, 36, END_OF_LIST};
+static const int ncoValueBits[] = {8, 9, 10, 11, 12, 13, 14, 15, 16, 17, /* 18,*/ END_OF_LIST};
+static const int sinTableBits[] = {/*7,*/ 8, 9, 10, 11, 12, 13, 14, 15, 16, /* 17, 18,*/ END_OF_LIST};
+static const int adcValueBits[] = {/*6, 7,*/ 8, 9, 10, 11, 12, 13, 14, /*16,*/ END_OF_LIST};
+static const int adcInterpolationRate[] = {1, 2, 3, 4, END_OF_LIST};
+static const double adcNoise[] = {0.0, 0.1, 0.25, 0.5, 1.0, 2.0, 5.0, 10.0, END_OF_LIST};
+static const double adcDCOffset[] = {-10.0, -5.0, -2.5, -1.0, -0.5, 0, 0.5, 1.0, 2.5, 5.0, 10.0, END_OF_LIST};
+static const double senseAmplitude[] = {0.1, 0.25, 0.5, 0.8, 0.9, 0.95, 1.0, END_OF_LIST};
+static const int adcAveragingPeriods[] = {1, 2, 4, 8, 16, 32, 64, 128, /*256,*/ END_OF_LIST};
+static const int edgeAccInterpolation[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, END_OF_LIST};
+
+
 int quantizeSigned(double value, int bits) {
     // 1.0 will become maxAmpliture, -1.0 -- -maxAmplitude
     int maxAmplitude = (1 << (bits-1)) - 1;
@@ -393,8 +408,8 @@ double ExactBitStats::getMaxPercent(int minBits, int maxBits) {
 
 double ExactBitStats::getPercent(int i, int minBits, int maxBits) {
     double v = exactBitsPercent[i] * k;
-    if (i == minBits*k)
-        v = exactBitsPercentLessOrEqual[i] * k;
+    //if (i == minBits*k)
+    //    v = exactBitsPercentLessOrEqual[i] * k;
     //if (i == maxBits*k)
     //    v = exactBitsPercentMoreOrEqual[i] * k;
     return v;
@@ -441,6 +456,32 @@ double SimResultsItem::maxPercent(int minBits, int maxBits) {
             res = p;
     }
     return res;
+}
+
+class ADCInterpolationMutator : public SimParamMutator {
+protected:
+    int originalSampleRate;
+    //int originalADCInterpolation;
+public:
+    ADCInterpolationMutator(SimParams * params, SimParameter paramType) : SimParamMutator(params, paramType) {
+        originalSampleRate = params->sampleRate;
+        //originalADCInterpolation = params->adcInterpolation;
+    }
+    virtual bool next() {
+        bool res = SimParamMutator::next();
+        if (!res)
+            return res;
+        // increase sample rate for interpolation
+        params.sampleRate = originalSampleRate * params.adcInterpolation;
+        params.recalculate();
+        return res;
+    }
+};
+
+SimParamMutator * SimParamMutator::create(SimParams * params, SimParameter paramType) {
+    if (paramType == SIM_PARAM_ADC_INTERPOLATION)
+        return new ADCInterpolationMutator(params, paramType);
+    return new SimParamMutator(params, paramType);
 }
 
 void SimParamMutator::runTests(SimResultsItem & results) {
@@ -556,64 +597,11 @@ FullSimSuite::FullSimSuite(ProgressListener * progressListener) : SimSuite(progr
 void FullSimSuite::addTests() {
     for (int i = SimParameter::SIM_PARAM_MIN; i <= SimParameter::SIM_PARAM_MAX; i++) {
         if (simParams.paramTypeMask & (1 << i)) {
-            addTest(new SimParamMutator(&simParams, (SimParameter)i));
+            addTest(SimParamMutator::create(&simParams, (SimParameter)i));
         }
     }
 }
 
-
-//void runSimTestSuite(SimParams * params) {
-//    //QStringList results;
-//    SimResultsHolder results;
-
-//    SimResultsItem * testResults = results.addTest();
-//    AveragingMutator avgTest(params);
-//    avgTest.runTests(*testResults);
-//    results.text.append(testResults->text);
-
-//    testResults = results.addTest();
-//    ADCBitsMutator adcBitsTest(params);
-//    adcBitsTest.runTests(*testResults);
-//    results.text.append(testResults->text);
-
-////    ADCInterpolationMutator adcInterpolationTest(params);
-////    adcInterpolationTest.runTests(results, variations, bitFractionCount);
-
-//    testResults = results.addTest();
-//    SinValueBitsMutator sinValueBitsTest(params);
-//    sinValueBitsTest.runTests(*testResults);
-//    results.text.append(testResults->text);
-
-//    testResults = results.addTest();
-//    SinTableSizeMutator sinTableSizeTest(params);
-//    sinTableSizeTest.runTests(*testResults);
-//    results.text.append(testResults->text);
-
-//    testResults = results.addTest();
-//    SampleRateMutator sampleRateTest(params);
-//    sampleRateTest.runTests(*testResults);
-//    results.text.append(testResults->text);
-
-//    testResults = results.addTest();
-//    PhaseBitsMutator phaseBitsTest(params);
-//    phaseBitsTest.runTests(*testResults);
-//    results.text.append(testResults->text);
-
-//}
-
-#define END_OF_LIST -1000000
-
-static const int sampleRates[] = {3, 4, 10, 20, 25, 40, 65, 80, 100, 125, 200, END_OF_LIST};
-static const int phaseBits[] = {24, 26, 28, 30, 32, 34, 36, END_OF_LIST};
-static const int ncoValueBits[] = {8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, END_OF_LIST};
-static const int sinTableBits[] = {/*7,*/ 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, /* 18,*/ END_OF_LIST};
-static const int adcValueBits[] = {/*6, 7,*/ 8, 9, 10, 11, 12, 13, 14, /*16,*/ END_OF_LIST};
-static const int adcInterpolationRate[] = {1, 2, 3, 4, END_OF_LIST};
-static const double adcNoise[] = {0.0, 0.1, 0.25, 0.5, 1.0, 2.0, 5.0, 10.0, END_OF_LIST};
-static const double adcDCOffset[] = {-10.0, -5.0, -2.5, -1.0, -0.5, 0, 0.5, 1.0, 2.5, 5.0, 10.0, END_OF_LIST};
-static const double senseAmplitude[] = {0.1, 0.25, 0.5, 0.8, 0.9, 0.95, 1.0, END_OF_LIST};
-static const int adcAveragingPeriods[] = {1, 2, 4, 8, 16, 32, 64, 128, /*256,*/ END_OF_LIST};
-static const int edgeAccInterpolation[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, END_OF_LIST};
 
 struct SampleRateMetadata : public SimParameterMetadata {
 public:
