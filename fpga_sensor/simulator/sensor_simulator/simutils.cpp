@@ -361,7 +361,7 @@ void SimState::checkGuards() {
     Q_ASSERT(guard6 == 0x66666666);
 }
 void ExactBitStats::clear() {
-    for (int i = 0; i < 32*k; i++) {
+    for (int i = 0; i < 32*10; i++) {
         exactBitsCounters[i] = 0;
         exactBitsPercent[i] = 0;
         exactBitsPercentLessOrEqual[i] = 0;
@@ -449,6 +449,9 @@ void SimParamMutator::runTests(SimResultsItem & results) {
     results.text.append(testName);
     results.name = testName;
     results.paramType = paramType;
+    const SimParameterMetadata * metadata = SimParameterMetadata::get(paramType);
+    results.originalValueIndex = metadata->getIndex(&params);
+    //qDebug("SimParamMutator::runTests  %s  originalParamValue=%f", heading.toLocal8Bit().data(), originalParamValue);
     //qDebug(testName.toLocal8Bit().data());
     results.text.append(QString());
     //qDebug("");
@@ -462,6 +465,7 @@ void SimParamMutator::runTests(SimResultsItem & results) {
         SimResultsLine & line = results.addLine();
         line.bitStats.init(params.bitFractionCount);
         line.parameterValue = valueString;
+
         if (progressListener) {
             progressListener->onProgress(currentStage, stageCount, valueString);
         }
@@ -469,8 +473,11 @@ void SimParamMutator::runTests(SimResultsItem & results) {
         collectSimulationStats(&params, line.bitStats);
         QString res = valueString + "\t" + line.bitStats.toString();
         results.text.append(res);
+        results.dataPoints += line.bitStats.getTotalCount();
         //qDebug(res.toLocal8Bit().data());
     }
+
+    //qDebug("dataPoints = %d", results.dataPoints);
 
     results.text.append(QString());
     //qDebug("");
@@ -707,7 +714,7 @@ PhaseBitsMetadata PHASE_BITS_PARAMETER_METADATA;
 
 struct EdgeSubsamplingBitsMetadata : public SimParameterMetadata {
 public:
-    EdgeSubsamplingBitsMetadata() : SimParameterMetadata(SIM_PARAM_EDGE_SUBSAMPLING_BITS, QString("EdgeSubsamplingBits"), edgeAccInterpolation, 4) {}
+    EdgeSubsamplingBitsMetadata() : SimParameterMetadata(SIM_PARAM_EDGE_SUBSAMPLING_BITS, QString("EdgeInterpolationBits"), edgeAccInterpolation, 4) {}
     void setParamByIndex(SimParams * params, int index) override {
         params->edgeAccInterpolation = getValue(index).toInt();
     }
@@ -760,6 +767,17 @@ public:
     void set(SimParams * params, QVariant value) const override { params->adcNoise = value.toDouble(); }
 };
 SenseNoiseMetadata SENSE_NOISE_PARAMETER_METADATA;
+
+int SimParameterMetadata::getIndex(const SimParams * params) const {
+    double v = getDouble(params);
+    for (int i = 0; i < values.length(); i++) {
+        double a = getDouble(i);
+        if (v >= a-0.000001 && v <= a+0.0000001) {
+            return i;
+        }
+    }
+    return 0;
+}
 
 void SimParameterMetadata::applyDefaults(SimParams * params) {
     for (int i = SIM_PARAM_MIN; i <= SIM_PARAM_MAX; i++) {

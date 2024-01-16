@@ -196,14 +196,11 @@ void MainWindow::createControls() {
     QFormLayout * _senseParamsLayout = new QFormLayout();
     _senseParamsLayout->setSpacing(10);
 
-    //const double senseAmplitude[] = {0.1, 0.25, 0.5, 0.8, 0.9, 0.95, 1.0, END_OF_LIST};
     _senseParamsLayout->addRow(new QLabel("Amplitude"), createComboBox(SIM_PARAM_SENSE_AMPLITUDE));
 
-    //const int adcAveragingPeriods[] = {1, 2, 4, 8, 16, 32, 64, 128, 256, END_OF_LIST};
     _senseParamsLayout->addRow(new QLabel("Avg periods"), createComboBox(SIM_PARAM_AVG_PERIODS));
 
-    //const int edgeAccInterpolation[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, END_OF_LIST};
-    _senseParamsLayout->addRow(new QLabel("Edge interp"), createComboBox(SIM_PARAM_ADC_INTERPOLATION));
+    _senseParamsLayout->addRow(new QLabel("Edge interp"), createComboBox(SIM_PARAM_EDGE_SUBSAMPLING_BITS));
 
     QLineEdit * _edSensePhaseShift = createDoubleValueEditor(&_simParams.sensePhaseShift, -1.0, 1.0, 6);
     //_edFrequency->setMax

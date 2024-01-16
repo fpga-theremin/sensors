@@ -106,8 +106,9 @@ void SimResultPlot::paintEvent(QPaintEvent * /* event */)
 
 
     for (int i = 0; i < _results.byParameterValue.length(); i++) {
-        //
-        painter.setPen(_pens[i&15]);
+        //bool isCurrent = (i == _results.originalValueIndex);
+        int penIndex = (i - _results.originalValueIndex) & 15;
+        painter.setPen(_pens[penIndex]);
         int pointCount = 0;
         QPoint exactPoints[32*5];
         for (int j = minbits*fracbits; j <= maxbits*fracbits; j++) {

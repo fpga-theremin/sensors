@@ -178,6 +178,7 @@ public:
     void clear();
     void updateStats();
     int bitFractionCount() const { return k; }
+    int getTotalCount() const { return totalCount; }
 };
 
 struct SimResultsLine {
@@ -201,14 +202,18 @@ struct SimResultsItem {
     QString description;
     SimParameter paramType;
     Array<SimResultsLine> byParameterValue;
+    int originalValueIndex;
+    int dataPoints;
     QStringList text;
     double maxPercent(int minBits = 8, int maxBits = 24);
-    SimResultsItem() {}
+    SimResultsItem() : originalValueIndex(0), dataPoints(0) {}
     SimResultsItem(const SimResultsItem& v) {
         name = v.name;
         description = v.description;
         byParameterValue = v.byParameterValue;
         paramType = v.paramType;
+        originalValueIndex = v.originalValueIndex;
+        dataPoints = v.dataPoints;
         text.append(v.text);
     }
     void operator = (const SimResultsItem& v) {
@@ -216,6 +221,8 @@ struct SimResultsItem {
         description = v.description;
         byParameterValue = v.byParameterValue;
         paramType = v.paramType;
+        originalValueIndex = v.originalValueIndex;
+        dataPoints = v.dataPoints;
         text.clear();
         text.append(v.text);
     }
@@ -223,6 +230,7 @@ struct SimResultsItem {
         name = "";
         description = "";
         byParameterValue.clear();
+        dataPoints = 0;
         text.clear();
     }
     SimResultsLine & addLine() {
@@ -281,6 +289,7 @@ public:
         assert(valueIndex >= 0 && valueIndex < values.length());
         return values[valueIndex];
     }
+    int getIndex(const SimParams * params) const;
     virtual int getInt(const SimParams * params) const = 0;
     virtual double getDouble(const SimParams * params) const = 0;
     virtual void setInt(SimParams * params, int value) const = 0;
@@ -311,6 +320,7 @@ protected:
     int stageCount;
     QString heading;
     QString valueString;
+    QVariant value;
     ProgressListener * progressListener;
 //    void setValue(int value) {
 //        valueString = QString(":%1").arg(value);
@@ -348,7 +358,8 @@ public:
         if (currentStage >= stageCount) {
             return false;
         }
-        metadata->set(&params, metadata->getValue(currentStage));
+        value = metadata->getValue(currentStage);
+        metadata->set(&params, value);
         valueString = metadata->getValueLabel(currentStage);
         params.recalculate();
         currentStage++;
