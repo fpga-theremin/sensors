@@ -447,7 +447,8 @@ void SimParamMutator::runTests(SimResultsItem & results) {
     SimState * state = new SimState();
     QString testName = heading + " : " + params.toString();
     results.text.append(testName);
-    results.name = testName;
+    results.name = heading;
+    results.description = testName;
     results.paramType = paramType;
     const SimParameterMetadata * metadata = SimParameterMetadata::get(paramType);
     results.originalValueIndex = metadata->getIndex(&params);

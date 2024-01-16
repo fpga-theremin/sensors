@@ -10,6 +10,7 @@ class SimResultPlot : public QWidget
     Q_OBJECT
 protected:
     SimResultsItem _results;
+    QColor _colors[16];
     QPen _pens[16];
     void initGraphics();
 public:

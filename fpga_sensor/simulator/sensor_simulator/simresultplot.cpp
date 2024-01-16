@@ -1,5 +1,7 @@
 #include "simresultplot.h"
 #include <QPainter>
+#include <QGuiApplication>
+#include <QScreen>
 
 SimResultPlot::SimResultPlot(QWidget *parent) : QWidget(parent)
 {
@@ -22,27 +24,51 @@ void SimResultPlot::setSimResults(SimResultsItem * results) {
     update();
 }
 
+bool isHighDPI() {
+    QList<QScreen*> screens = QGuiApplication::screens();
+    if (screens.length() > 0) {
+        double pixelRatio = screens.first()->devicePixelRatio();
+        qDebug("Screens: %d  screen[0] pixelRatio=%f",  screens.length(), pixelRatio);
+        return pixelRatio > 160;
+    } else {
+        qDebug("Cannot get screens - unknown dpi");
+        return false;
+    }
+}
+
 void SimResultPlot::initGraphics() {
-    int penWidth = 3;
+    bool hdpi = true; //isHighDPI();
+    int penWidth = hdpi ? 5 : 3;
     Qt::PenStyle style = Qt::PenStyle(Qt::SolidLine);
     Qt::PenCapStyle cap = Qt::PenCapStyle(Qt::RoundCap);
     Qt::PenJoinStyle join = Qt::PenJoinStyle(Qt::RoundJoin);
-    _pens[0] = QPen(QColor(0, 192, 0), penWidth+2, style, cap, join);
-    _pens[1] = QPen(QColor(192, 64, 128), penWidth, style, cap, join);
-    _pens[2] = QPen(QColor(64,  64, 192), penWidth, style, cap, join);
-    _pens[3] = QPen(QColor(128, 200, 64), penWidth, style, cap, join);
-    _pens[4] = QPen(QColor(64,  192, 128), penWidth, style, cap, join);
-    _pens[5] = QPen(QColor(128, 192, 64), penWidth, style, cap, join);
-    _pens[6] = QPen(QColor(128, 192, 64), penWidth, style, cap, join);
-    _pens[7] = QPen(QColor(128, 192, 64), penWidth, style, cap, join);
-    _pens[8] = QPen(QColor(128, 192, 64), penWidth, style, cap, join);
-    _pens[9] = QPen(QColor(128, 192, 64), penWidth, style, cap, join);
-    _pens[10] = QPen(QColor(128, 192, 64), penWidth, style, cap, join);
-    _pens[11] = QPen(QColor(128, 192, 64), penWidth, style, cap, join);
-    _pens[12] = QPen(QColor(128, 192, 64), penWidth, style, cap, join);
-    _pens[13] = QPen(QColor(128, 192, 64), penWidth, style, cap, join);
-    _pens[14] = QPen(QColor(128, 192, 64), penWidth, style, cap, join);
-    _pens[15] = QPen(QColor(128, 192, 64), penWidth, style, cap, join);
+    int c0 = 0;
+    int c1 = 64;
+    int c2 = 128;
+    int c3 = 140;
+    int c4 = 192;
+    int c5 = 224;
+    int c6 = 240;
+    int c7 = 255;
+    _colors[0] = QColor(c0, c4, c0); // current
+    _colors[1] = QColor(c1, c1, c6); // +1
+    _colors[2] = QColor(c4, c1, c2); // +2
+    _colors[3] = QColor(c0, c3, c2); // +3
+    _colors[4] = QColor(c2, c1, c3); // +4
+    _colors[5] = QColor(c4, c1, c0); // +5
+    _colors[6] = QColor(c2, c4, c2); // +6
+    _colors[7] = QColor(c0, c2, c3); // +7
+    _colors[8] = QColor(c2, c1, c4); // +8
+    _colors[9]  = QColor(c4, c2, c1); // -7
+    _colors[10] = QColor(c3, c1, c1); // -6
+    _colors[11] = QColor(c1, c3, c1); // -5
+    _colors[12] = QColor(c3, c1, c5); // -4
+    _colors[13] = QColor(c5, c3, c1); // -3
+    _colors[14] = QColor(c1, c3, c4); // -2
+    _colors[15] = QColor(c4, c0, c0); // -1
+    _pens[0] = QPen(_colors[0], penWidth+(hdpi ? 4 : 2), style, cap, join);
+    for (int i = 1; i < 16; i++)
+        _pens[i] = QPen(_colors[i], penWidth, style, cap, join);
 }
 
 void SimResultPlot::paintEvent(QPaintEvent * /* event */)
@@ -52,17 +78,16 @@ void SimResultPlot::paintEvent(QPaintEvent * /* event */)
     QPainter painter(this);
     QBrush brush(QColor(255, 255, 250));
     QBrush brushLegend(QColor(240, 240, 237));
+    QBrush brushCurrentValue(QColor(224, 255, 224));
+
     QBrush brushHaxis(QColor(212, 212, 212));
     QBrush brushVaxis(QColor(224, 224, 224));
     QBrush brushVaxisEven(QColor(200, 212, 200));
     painter.setBrush(brush);
     painter.fillRect(QRect(0, 0, w, h), brush);
     int fh = painter.fontMetrics().height();
-    int legendh = fh * 120/100;
-    int legendy = h - legendh;
     int haxish = fh * 130/100;
-    int haxisy = h - legendh - haxish;
-    painter.fillRect(QRect(0, legendy, w, legendh), brushLegend);
+    int haxisy = h - fh/4 - haxish;
 
     painter.fillRect(QRect(0, haxisy, w, 2), brushHaxis);
     int minbits = 8;
@@ -97,13 +122,39 @@ void SimResultPlot::paintEvent(QPaintEvent * /* event */)
         }
     }
 
-    if (_results.name.length()>0)
-        painter.drawText(QPoint(5, fh), _results.name);
-    painter.drawText(QPoint(5, legendy+legendh*9/10), "Legend:");
+    int legendx0 = 10;
+    int legendy0 = fh/4;
+    if (_results.name.length()>0) {
+        painter.drawText(QPoint(legendx0, legendy0+fh), _results.name);
+        int namew = painter.fontMetrics().horizontalAdvance(_results.name);
+        legendx0 += namew + fh;
+    }
 
     if (_results.byParameterValue.length() == 0)
         return; // nothing to draw
 
+    int legendx = legendx0;
+    int legendy = legendy0;
+    int underlineOffset = fh + fh/4 + 3;
+    for (int i = 0; i < _results.byParameterValue.length(); i++) {
+        QString param = _results.byParameterValue[i].parameterValue;
+        int paramw = painter.fontMetrics().horizontalAdvance(param);
+        if (legendx + paramw + fh/4 > w && legendx > legendx0) {
+            legendx = legendx0;
+            legendy += fh + fh/2;
+        }
+        int penIndex = (i - _results.originalValueIndex) & 15;
+        bool isCurrent = (i == _results.originalValueIndex);
+        if (isCurrent) {
+            painter.fillRect(QRect(legendx-fh/4, legendy - fh/5, paramw+fh/4+fh/4, fh+fh/5+fh/5), brushCurrentValue);
+        }
+        painter.setPen(_pens[penIndex]);
+        painter.drawText(QPoint(legendx, legendy+fh), param);
+        painter.drawLine(QPoint(legendx-fh/4, legendy+underlineOffset), QPoint(legendx+paramw+fh/4, legendy+underlineOffset));
+        legendx += paramw + fh;
+    }
+
+    //int
 
     for (int i = 0; i < _results.byParameterValue.length(); i++) {
         //bool isCurrent = (i == _results.originalValueIndex);
