@@ -7,6 +7,8 @@
 
 static const int sampleRates[] = {3, 4, 10, 20, 25, 40, 65, 80, 100, 125, 200, END_OF_LIST};
 static const int phaseBits[] = {24, 26, 28, 30, 32, 34, 36, END_OF_LIST};
+static const int lpFilterStages[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, END_OF_LIST};
+static const int lpFilterShiftBits[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, END_OF_LIST};
 static const int mulDropBits[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, END_OF_LIST};
 static const int accDropBits[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 14, 16, 18, END_OF_LIST};
 static const int ncoValueBits[] = {8, 9, 10, 11, 12, 13, 14, 15, 16, 17, /* 18,*/ END_OF_LIST};
@@ -16,7 +18,7 @@ static const int adcInterpolationRate[] = {1, 2, 3, 4, END_OF_LIST};
 static const double adcNoise[] = {0.0, 0.1, 0.25, 0.5, 1.0, 2.0, 5.0, 10.0, END_OF_LIST};
 static const double adcDCOffset[] = {-10.0, -5.0, -2.5, -1.0, -0.5, 0, 0.5, 1.0, 2.5, 5.0, 10.0, END_OF_LIST};
 static const double senseAmplitude[] = {0.1, 0.25, 0.5, 0.8, 0.9, 0.95, 1.0, END_OF_LIST};
-static const int adcAveragingPeriods[] = {1, 2, 4, 8, 16, 32, 64, 128, /*256,*/ END_OF_LIST};
+static const int adcAveragingPeriods[] = {0, 1, 2, 4, 8, 16, 32, 64, 128, /*256,*/ END_OF_LIST};
 static const int edgeAccInterpolation[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, END_OF_LIST};
 
 
@@ -160,6 +162,35 @@ double SimState::adcExactSensedValueForPhase(uint64_t phase) {
     return exactSense * adcScale;
 }
 
+int LowPassFilter::stepResponseTime(int value, int limit) {
+    reset(0);
+    int maxCycles = 1000000;
+    for (int i = 0; i < maxCycles; i++) {
+        int64_t v = tick(value);
+        if (v > limit) {
+            return i;
+        }
+    }
+    return maxCycles;
+}
+
+double SimState::getMovingAverageLatency() {
+    if (!movingAvgEnabled)
+        return 0;
+    double onePeriodMicros = 1000000.0 / params->frequency;
+    double latencyMicros = onePeriodMicros * params->averagingPeriods / 2;
+    return latencyMicros;
+}
+
+double SimState::getLpFilterLatency() {
+    LowPassFilter filter(params->lpFilterStages, params->lpFilterShiftBits);
+    int value = 100000000;
+    int limit = value / 2;
+    int responseCycles = filter.stepResponseTime(value, limit);
+    double clockPeriod = 1000000.0 / params->sampleRate;
+    return responseCycles * clockPeriod;
+}
+
 int SimState::adcExactToQuantized(double exactSense) {
     // apply ADC DC offset
     double senseWithDCOffset = exactSense + params->adcDCOffset;
@@ -187,9 +218,20 @@ void SimState::simulate(SimParams * newParams) {
     sense.init(params->simMaxSamples, 0); //[SP_SIM_MAX_SAMPLES + 1000];
     senseMulBase1.init(params->simMaxSamples, 0); //[SP_SIM_MAX_SAMPLES + 1000];
     senseMulBase2.init(params->simMaxSamples, 0); //[SP_SIM_MAX_SAMPLES + 1000];
+
+    // movingAverage filter
+    movingAvgEnabled = (params->averagingPeriods > 0);
+    movingAvgFirstSample = 0;
     senseMulAcc1.init(params->simMaxSamples, 0); //[SP_SIM_MAX_SAMPLES + 1000];
     senseMulAcc2.init(params->simMaxSamples, 0); //[SP_SIM_MAX_SAMPLES + 1000];
+    movingAvgOut1.init(params->simMaxSamples, 0);
+    movingAvgOut2.init(params->simMaxSamples, 0);
 
+    // LP IIR filter
+    lpFilterEnabled = params->lpFilterShiftBits && params->lpFilterStages;
+    lpFilterFirstSample = 0;
+    lpFilterOut1.init(params->simMaxSamples, 0);
+    lpFilterOut2.init(params->simMaxSamples, 0);
 
     // phase for base1
     int64_t phase = 0;
@@ -248,6 +290,11 @@ void SimState::simulate(SimParams * newParams) {
         phase = phase & (params->phaseModule - 1);
     }
 
+    int64_t movingAvg1 = 0;
+    int64_t movingAvg2 = 0;
+    int movingAvgHalfPeriods = params->averagingPeriods*2;
+    if (movingAvgHalfPeriods < 1)
+        movingAvgHalfPeriods = 1; // even if disabled, perform averaging for half period
     for (int i = 0; i < params->simMaxSamples - 1; i++) {
         // number of half period
         periodIndex.add(edgeArray.length());
@@ -301,12 +348,34 @@ void SimState::simulate(SimParams * newParams) {
             edge.adcValue = c;
             edge.mulAcc1 = c1;
             edge.mulAcc2 = c2;
+            edge.sampleIndex = i;
             edgeArray.add(edge);
+            int lastEdge = edgeArray.length() - 1;
+            int startEdge = lastEdge - movingAvgHalfPeriods;
+            if (startEdge >= 0) {
+                movingAvg1 = edgeArray[lastEdge].mulAcc1 - edgeArray[startEdge].mulAcc1;
+                movingAvg2 = edgeArray[lastEdge].mulAcc2 - edgeArray[startEdge].mulAcc2;
+                if (startEdge == 0) {
+                    movingAvgFirstSample = i;
+                }
+            }
         }
+        movingAvgOut1[i] = movingAvg1;
+        movingAvgOut2[i] = movingAvg2;
     }
     assert(edgeArray.length() > 100);
     periodCount = edgeArray.length() - 1;
 
+    // LP filter
+    LowPassFilter lpFilter1(params->lpFilterStages, params->lpFilterShiftBits, 0);
+    LowPassFilter lpFilter2(params->lpFilterStages, params->lpFilterShiftBits, 0);
+    Array<int64_t> * lpFilterInput1 = movingAvgEnabled ? &movingAvgOut1 : &senseMulBase1;
+    Array<int64_t> * lpFilterInput2 = movingAvgEnabled ? &movingAvgOut2 : &senseMulBase2;
+    for (int i = 0; i < params->simMaxSamples - 1; i++) {
+        lpFilterOut1[i] = lpFilter1.tick((*lpFilterInput1)[i]);
+        lpFilterOut2[i] = lpFilter2.tick((*lpFilterInput2)[i]);
+    }
+    lpFilterFirstSample = lpFilterEnabled ? ((1<<params->lpFilterShiftBits) * params->lpFilterStages) : movingAvgFirstSample;
 
     //int avgMulBase1;
     //int avgMulBase2;
@@ -495,6 +564,22 @@ void SimParamMutator::runTests(SimResultsItem & results) {
     delete state;
 }
 
+void SimState::collectStats(ExactBitStats & stats) {
+    int startSample = movingAvgFirstSample + lpFilterFirstSample*2 + 2000;
+//    if (startSample < lpFilterFirstSample)
+//        startSample = lpFilterFirstSample;
+    int step = 10;
+    for (int i = startSample; i < params->simMaxSamples; i+=step) {
+        int64_t sumBase1 = lpFilterOut1[i];
+        int64_t sumBase2 = lpFilterOut2[i];
+        double angle = params->phaseByAtan2(sumBase2, sumBase1); //- atan2(sum2, sum1) / M_PI / 2;
+        double err = params->phaseError(angle);
+        int exactBits = SimParams::exactBits(err, stats.bitFractionCount());
+        stats.incrementExactBitsCount(exactBits);
+    }
+}
+
+
 void collectSimulationStats(SimParams * newParams, ExactBitStats & stats) {
     SimState * state = new SimState();
     SimParams params = *newParams;
@@ -506,6 +591,9 @@ void collectSimulationStats(SimParams * newParams, ExactBitStats & stats) {
             params.sensePhaseShift = phase + params.freqStep * n2;
             params.recalculate();
             state->simulate(&params);
+
+            state->collectStats(stats);
+#if 0
             for (int i = 1; i < state->periodCount - params.averagingPeriods*2 -2; i++) {
                 // bottom: avg for 1 period (2 halfperiods)
                 double angle = state->phaseForPeriods(i, params.averagingPeriods*2);
@@ -513,6 +601,7 @@ void collectSimulationStats(SimParams * newParams, ExactBitStats & stats) {
                 int exactBits = SimParams::exactBits(err, stats.bitFractionCount());
                 stats.incrementExactBitsCount(exactBits);
             }
+#endif
         }
     }
     stats.updatePercents();
@@ -736,7 +825,7 @@ MulDropBitsMetadata MUL_DROP_BITS_PARAMETER_METADATA;
 
 struct AccDropBitsMetadata : public SimParameterMetadata {
 public:
-    AccDropBitsMetadata() : SimParameterMetadata(SIM_PARAM_MUL_DROP_BITS, QString("AccDropBits"), accDropBits, 4) {}
+    AccDropBitsMetadata() : SimParameterMetadata(SIM_PARAM_ACC_DROP_BITS, QString("AccDropBits"), accDropBits, 4) {}
     void setParamByIndex(SimParams * params, int index) override {
         params->accDropBits = getValue(index).toInt();
     }
@@ -747,6 +836,34 @@ public:
     void set(SimParams * params, QVariant value) const override { params->accDropBits = value.toInt(); }
 };
 AccDropBitsMetadata ACC_DROP_BITS_PARAMETER_METADATA;
+
+struct LpFilterShiftBitsMetadata : public SimParameterMetadata {
+public:
+    LpFilterShiftBitsMetadata() : SimParameterMetadata(SIM_PARAM_LP_FILTER_SHIFT_BITS, QString("LpFltShiftBits"), lpFilterShiftBits, 8) {}
+    void setParamByIndex(SimParams * params, int index) override {
+        params->lpFilterShiftBits = getValue(index).toInt();
+    }
+    int getInt(const SimParams * params) const override { return params->lpFilterShiftBits; }
+    double getDouble(const SimParams * params) const override { return params->lpFilterShiftBits; }
+    void setInt(SimParams * params, int value) const override { params->lpFilterShiftBits = value; }
+    void setDouble(SimParams * params, double value) const override { params->lpFilterShiftBits = value; }
+    void set(SimParams * params, QVariant value) const override { params->lpFilterShiftBits = value.toInt(); }
+};
+LpFilterShiftBitsMetadata LP_FILTER_SHIFT_BITS_PARAMETER_METADATA;
+
+struct LpFilterStagesMetadata : public SimParameterMetadata {
+public:
+    LpFilterStagesMetadata() : SimParameterMetadata(SIM_PARAM_LP_FILTER_STAGES, QString("LpFltStages"), lpFilterStages, 2) {}
+    void setParamByIndex(SimParams * params, int index) override {
+        params->lpFilterStages = getValue(index).toInt();
+    }
+    int getInt(const SimParams * params) const override { return params->lpFilterStages; }
+    double getDouble(const SimParams * params) const override { return params->lpFilterStages; }
+    void setInt(SimParams * params, int value) const override { params->lpFilterStages = value; }
+    void setDouble(SimParams * params, double value) const override { params->lpFilterStages = value; }
+    void set(SimParams * params, QVariant value) const override { params->lpFilterStages = value.toInt(); }
+};
+LpFilterStagesMetadata LP_FILTER_STAGES_PARAMETER_METADATA;
 
 
 int SimParameterMetadata::getIndex(const SimParams * params) const {
@@ -783,6 +900,8 @@ const SimParameterMetadata * SimParameterMetadata::get(SimParameter index) {
     case SIM_PARAM_SENSE_NOISE: return &SENSE_NOISE_PARAMETER_METADATA;
     case SIM_PARAM_MUL_DROP_BITS: return &MUL_DROP_BITS_PARAMETER_METADATA;
     case SIM_PARAM_ACC_DROP_BITS: return &ACC_DROP_BITS_PARAMETER_METADATA;
+    case SIM_PARAM_LP_FILTER_STAGES: return &LP_FILTER_STAGES_PARAMETER_METADATA;
+    case SIM_PARAM_LP_FILTER_SHIFT_BITS: return &LP_FILTER_SHIFT_BITS_PARAMETER_METADATA;
     default:
         assert(false);
         return nullptr;

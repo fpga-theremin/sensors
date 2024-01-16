@@ -36,6 +36,11 @@ void MainWindow::recalculate() {
     txt = QString("%1").arg(_simParams.realFrequency, 0, 'f', 5);
     _realFrequency->setText(txt);
 
+    _lpFilterState->setText(_simState.lpFilterEnabled ? "Enabled" : "Disabled");
+    _movingAvgFilterState->setText(_simState.movingAvgEnabled ? "Enabled" : "Disabled");
+    _lpFilterLatency->setText(_simState.lpFilterEnabled ? (QString("%1us").arg(_simState.getLpFilterLatency(), 0, 'g', 4)) : "0us");
+    _movingAvgFilterLatency->setText(_simState.movingAvgEnabled ? (QString("%1us").arg(_simState.getMovingAverageLatency(), 0, 'g', 4)) : "0us");
+
 #ifdef RUN_SIMULATION_AFTER_PARAM_CHANGE
     qDebug("================================= PRECISION STATS =================");
     ExactBitStats stats;
@@ -67,46 +72,12 @@ QComboBox * MainWindow::createComboBox(SimParameter param) {
     return cb;
 }
 
-//QComboBox * MainWindow::createIntComboBox(int * field, const int * values, int multiplier) {
-//    QComboBox * cb = new QComboBox();
-//    int defIndex = 0;
-//    for (int i = 0; values[i] != END_OF_LIST; i++) {
-//        int value = values[i];
-//        if (value*multiplier == *field)
-//            defIndex = i;
-//        cb->addItem(QString("%1").arg(value), value);
-//    }
-//    cb->setCurrentIndex(defIndex);
-//    connect(cb, QOverload<int>::of(&QComboBox::currentIndexChanged),
-//        [=](int index){ *field = cb->currentData().toInt() * multiplier;
-//        recalculate();
-//    });
-//    return cb;
-//}
-
 QLineEdit * MainWindow::createReadOnlyEdit() {
     QLineEdit * edit = new QLineEdit();
     edit->setReadOnly(true);
     edit->setDisabled(true);
     return edit;
 }
-
-//QComboBox * MainWindow::createDoubleComboBox(double * field, const double * values) {
-//    QComboBox * cb = new QComboBox();
-//    int defIndex = 0;
-//    for (int i = 0; values[i] > END_OF_LIST; i++) {
-//        double value = values[i];
-//        if ((value >= *field - 0.0000000001) && (value <= *field + 0.0000000001))
-//            defIndex = i;
-//        cb->addItem(QString("%1").arg(value), value);
-//    }
-//    cb->setCurrentIndex(defIndex);
-//    connect(cb, QOverload<int>::of(&QComboBox::currentIndexChanged),
-//        [=](int index){ *field = cb->currentData().toDouble();
-//        recalculate();
-//    });
-//    return cb;
-//}
 
 QLineEdit * MainWindow::createDoubleValueEditor(double * field, double minValue, double maxValue, int precision) {
     QString text = QString("%1").arg(*field, 0, 'f', precision);
@@ -174,23 +145,37 @@ void MainWindow::createControls() {
     QFormLayout * _adcParamsLayout = new QFormLayout();
     _adcParamsLayout->setSpacing(10);
 
-    //const int adcValueBits[] = {6, 7, 8, 9, 10, 11, 12, 13, 14, 16, END_OF_LIST};
     _adcParamsLayout->addRow(new QLabel("ADC bits"), createComboBox(SIM_PARAM_ADC_BITS));
-
-    //const int adcInterpolationRate[] = {1, 2, 3, 4, END_OF_LIST};
     _adcParamsLayout->addRow(new QLabel("ADC interpolation"), createComboBox(SIM_PARAM_ADC_INTERPOLATION));
-
-    //const double adcNoise[] = {0.0, 0.1, 0.25, 0.5, 1.0, 2.0, 5.0, 10.0, END_OF_LIST};
     _adcParamsLayout->addRow(new QLabel("Noise, LSB"), createComboBox(SIM_PARAM_SENSE_NOISE));
-
-    //const double adcDCOffset[] = {-10.0, -5.0, -2.5, -1.0, -0.5, 0, 0.5, 1.0, 2.5, 5.0, 10.0, END_OF_LIST};
     _adcParamsLayout->addRow(new QLabel("DC offset, LSB"), createComboBox(SIM_PARAM_SENSE_DC_OFFSET));
 
-    QGroupBox * _gbAdc = new QGroupBox("ADC");
-    _gbAdc->setLayout(_adcParamsLayout);
-    _topLayout->addWidget(_gbAdc);
 
 
+    // LP Filter
+    QFormLayout * _lpFilterParamsLayout = new QFormLayout();
+    _lpFilterParamsLayout->setSpacing(10);
+
+    _lpFilterState = new QLabel("unknown");
+    _lpFilterLatency = new QLabel("unknown");
+
+    _lpFilterParamsLayout->addRow(new QLabel("LP Filt Shift"), createComboBox(SIM_PARAM_LP_FILTER_SHIFT_BITS));
+    _lpFilterParamsLayout->addRow(new QLabel("LP Filt Stages"), createComboBox(SIM_PARAM_LP_FILTER_STAGES));
+    _lpFilterParamsLayout->addRow(new QLabel("State"), _lpFilterState);
+    _lpFilterParamsLayout->addRow(new QLabel("Latency"), _lpFilterLatency);
+
+    // Moving Avg Filter
+    QFormLayout * _movingAvgFilterParamsLayout = new QFormLayout();
+    _movingAvgFilterParamsLayout->setSpacing(10);
+
+    _movingAvgFilterState = new QLabel("unknown");
+    _movingAvgFilterLatency = new QLabel("unknown");
+
+    _movingAvgFilterParamsLayout->addRow(new QLabel("Avg periods"), createComboBox(SIM_PARAM_AVG_PERIODS));
+    _movingAvgFilterParamsLayout->addRow(new QLabel("Acc drop bits"), createComboBox(SIM_PARAM_ACC_DROP_BITS));
+    _movingAvgFilterParamsLayout->addRow(new QLabel("Edge interp"), createComboBox(SIM_PARAM_EDGE_SUBSAMPLING_BITS));
+    _movingAvgFilterParamsLayout->addRow(new QLabel("State"), _movingAvgFilterState);
+    _movingAvgFilterParamsLayout->addRow(new QLabel("Latency"), _movingAvgFilterLatency);
 
     // Sense
     QFormLayout * _senseParamsLayout = new QFormLayout();
@@ -200,20 +185,28 @@ void MainWindow::createControls() {
 
     _senseParamsLayout->addRow(new QLabel("Mul drop bits"), createComboBox(SIM_PARAM_MUL_DROP_BITS));
 
-    _senseParamsLayout->addRow(new QLabel("Acc drop bits"), createComboBox(SIM_PARAM_ACC_DROP_BITS));
 
-    _senseParamsLayout->addRow(new QLabel("Avg periods"), createComboBox(SIM_PARAM_AVG_PERIODS));
-
-    _senseParamsLayout->addRow(new QLabel("Edge interp"), createComboBox(SIM_PARAM_EDGE_SUBSAMPLING_BITS));
 
     QLineEdit * _edSensePhaseShift = createDoubleValueEditor(&_simParams.sensePhaseShift, -1.0, 1.0, 6);
     //_edFrequency->setMax
     // moved to global
     _globalParamsLayout->addRow(new QLabel("Phase shift 0..1"), _edSensePhaseShift);
 
+    QGroupBox * _gbAdc = new QGroupBox("ADC");
+    _gbAdc->setLayout(_adcParamsLayout);
+    _topLayout->addWidget(_gbAdc);
+
     QGroupBox * _gbSense = new QGroupBox("Sense");
-    _gbSense->setLayout(_senseParamsLayout);
-    _topLayout->addWidget(_gbSense);
+   _gbSense->setLayout(_senseParamsLayout);
+   _topLayout->addWidget(_gbSense);
+
+    QGroupBox * _gbMovingAvgFilter = new QGroupBox("Moving Avg");
+    _gbMovingAvgFilter->setLayout(_movingAvgFilterParamsLayout);
+    _topLayout->addWidget(_gbMovingAvgFilter);
+
+    QGroupBox * _gbLpFilter = new QGroupBox("LP Filter");
+    _gbLpFilter->setLayout(_lpFilterParamsLayout);
+    _topLayout->addWidget(_gbLpFilter);
 
     // measured values display
     QFormLayout * _measuredLayout = new QFormLayout();
@@ -318,8 +311,8 @@ MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent), _running(false), _simRestartAfterResults(false), _simResults(nullptr)
 {
     SimParameterMetadata::applyDefaults(&_simParams);
-    _simParams.freqVariations = 7;
-    _simParams.phaseVariations = 7;
+    _simParams.freqVariations = 3;
+    _simParams.phaseVariations = 3;
     _simParams.freqStep = M_PI/1000; //0.000142466432;
     _simParams.phaseStep = M_PI / 345; //0.0116544187634;
     _simParams.bitFractionCount = 3;

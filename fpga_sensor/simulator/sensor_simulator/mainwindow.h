@@ -8,6 +8,7 @@
 #include <QComboBox>
 #include <QAction>
 #include <QMenuBar>
+#include <QLabel>
 #include "plotwidget.h"
 #include "simbatchdialog.h"
 
@@ -34,6 +35,11 @@ class MainWindow : public QMainWindow
     QLineEdit * _measuredPhaseShiftError;
     QLineEdit * _measuredPhaseExactBits;
     QLineEdit * _realFrequency;
+
+    QLabel * _lpFilterState;
+    QLabel * _lpFilterLatency;
+    QLabel * _movingAvgFilterState;
+    QLabel * _movingAvgFilterLatency;
     // result precision statistics plots
     SimResultPlot * _plot;
     SimResultPlot * _plot2;

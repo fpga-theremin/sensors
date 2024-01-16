@@ -24,7 +24,38 @@ enum SimParameter {
     SIM_PARAM_SENSE_NOISE,
     SIM_PARAM_MUL_DROP_BITS,
     SIM_PARAM_ACC_DROP_BITS,
-    SIM_PARAM_MAX = SIM_PARAM_ACC_DROP_BITS
+    SIM_PARAM_LP_FILTER_SHIFT_BITS,
+    SIM_PARAM_LP_FILTER_STAGES,
+    SIM_PARAM_MAX = SIM_PARAM_LP_FILTER_STAGES
+};
+
+#define MAX_LP_FILTER_STAGES 16
+struct LowPassFilter {
+    int stageCount;
+    int shiftBits;
+    int64_t state[MAX_LP_FILTER_STAGES+1];
+    LowPassFilter(int stages = 2, int shiftBits = 8, int64_t initValue = 0) : stageCount(stages), shiftBits(shiftBits) {
+        reset(initValue);
+    }
+    void reset(int64_t initValue) {
+        for (int i = 0; i <= stageCount; i++)
+            state[i] = initValue;
+    }
+    // one cycle of filter, gets one input value, updates state, returns output value
+    int64_t tick(int64_t inValue) {
+        if (stageCount && shiftBits) {
+            for (int i = stageCount-1; i >= 0; i--) {
+                int64_t in = (i>0) ? state[i-1] : (inValue << shiftBits);
+                int64_t diff = in - state[i];
+                state[i] += diff >> shiftBits;
+            }
+            return state[stageCount-1] >> shiftBits;
+        } else {
+            // pass through if filter is disabled
+            return inValue;
+        }
+    }
+    int stepResponseTime(int value, int limit);
 };
 
 #define SIM_PARAM_ALL ((1<<(SIM_PARAM_MAX+1))-1)
@@ -65,6 +96,10 @@ struct SimParams {
     int mulDropBits;
     // SIM_PARAM_ACC_DROP_BITS
     int accDropBits;
+    // SIM_PARAM_LP_FILTER_SHIFT_BITS
+    int lpFilterShiftBits;
+    // SIM_PARAM_LP_FILTER_STAGES
+    int lpFilterStages;
 
     double frequency;
     // recalculated based on precision
@@ -99,6 +134,8 @@ struct SimParams {
                 , adcDCOffset(0)
                 , mulDropBits(0)
                 , accDropBits(0)
+                , lpFilterShiftBits(8)
+                , lpFilterStages(2)
                 , frequency(1012345)
                 , sinTableSizePhaseCorrection(0)
                 , sensePhaseShift(-0.0765)
@@ -147,6 +184,9 @@ struct SimParams {
 
         mulDropBits = v.mulDropBits;
         accDropBits = v.accDropBits;
+        lpFilterShiftBits = v.lpFilterShiftBits;
+        lpFilterStages = v.lpFilterStages;
+
         adcBits = v.adcBits;
         adcInterpolation = v.adcInterpolation;
         averagingPeriods = v.averagingPeriods;
@@ -438,10 +478,11 @@ public:
 };
 
 struct Edge {
+    int sampleIndex;
     int adcValue;
     int64_t mulAcc1;
     int64_t mulAcc2;
-    Edge() : adcValue(0), mulAcc1(0), mulAcc2(0) {
+    Edge() : sampleIndex(0), adcValue(0), mulAcc1(0), mulAcc2(0) {
 
     }
 };
@@ -466,12 +507,24 @@ struct SimState {
 
     Array<int64_t> senseMulBase1; //[SP_SIM_MAX_SAMPLES + 1000];
     Array<int64_t> senseMulBase2; //[SP_SIM_MAX_SAMPLES + 1000];
+
+    //================================================
+    // moving average filter
+    bool movingAvgEnabled;
     Array<int64_t> senseMulAcc1; //[SP_SIM_MAX_SAMPLES + 1000];
     Array<int64_t> senseMulAcc2; //[SP_SIM_MAX_SAMPLES + 1000];
-
     EdgeArray edgeArray;
-
+    int movingAvgFirstSample;
+    Array<int64_t> movingAvgOut1;
+    Array<int64_t> movingAvgOut2;
     Array<int> periodIndex;
+
+    bool lpFilterEnabled;
+    int lpFilterFirstSample;
+    Array<int64_t> lpFilterOut1;
+    Array<int64_t> lpFilterOut2;
+
+
     int avgMulBase1;
     int avgMulBase2;
 
@@ -497,10 +550,16 @@ struct SimState {
     int64_t sumForPeriodsBase2(int startHalfperiod, int halfPeriodCount);
     double phaseForPeriods(int startHalfperiod, int halfPeriodCount);
 
+    void collectStats(ExactBitStats & stats);
+
     int adcSensedValueForPhase(uint64_t phase);
     double adcExactSensedValueForPhase(uint64_t phase);
     int adcExactToQuantized(double value);
 
+    // microseconds -- half of window length
+    double getMovingAverageLatency();
+    // microseconds -- time to reach 1/2 of step
+    double getLpFilterLatency();
 };
 
 //void runSimTestSuite(SimParams * params);
