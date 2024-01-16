@@ -26,7 +26,9 @@ enum SimParameter {
     SIM_PARAM_ACC_DROP_BITS,
     SIM_PARAM_LP_FILTER_SHIFT_BITS,
     SIM_PARAM_LP_FILTER_STAGES,
-    SIM_PARAM_MAX = SIM_PARAM_LP_FILTER_STAGES
+    SIM_PARAM_LP_FILTER_ENABLED,
+    SIM_PARAM_MOVING_AVG_FILTER_ENABLED,
+    SIM_PARAM_MAX = SIM_PARAM_MOVING_AVG_FILTER_ENABLED
 };
 
 #define MAX_LP_FILTER_STAGES 16
@@ -101,6 +103,11 @@ struct SimParams {
     // SIM_PARAM_LP_FILTER_STAGES
     int lpFilterStages;
 
+    // SIM_PARAM_LP_FILTER_ENABLED,
+    int lpFilterEnabled;
+    // SIM_PARAM_MOVING_AVG_FILTER_ENABLED,
+    int movingAverageFilterEnabled;
+
     double frequency;
     // recalculated based on precision
     double realFrequency;
@@ -136,6 +143,10 @@ struct SimParams {
                 , accDropBits(0)
                 , lpFilterShiftBits(8)
                 , lpFilterStages(2)
+
+                , lpFilterEnabled(1)
+                , movingAverageFilterEnabled(1)
+
                 , frequency(1012345)
                 , sinTableSizePhaseCorrection(0)
                 , sensePhaseShift(-0.0765)
@@ -186,6 +197,9 @@ struct SimParams {
         accDropBits = v.accDropBits;
         lpFilterShiftBits = v.lpFilterShiftBits;
         lpFilterStages = v.lpFilterStages;
+
+        lpFilterEnabled = v.lpFilterEnabled;
+        movingAverageFilterEnabled = v.movingAverageFilterEnabled;
 
         adcBits = v.adcBits;
         adcInterpolation = v.adcInterpolation;

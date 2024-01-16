@@ -146,8 +146,14 @@ SimBatchDialog::SimBatchDialog(SimParams * params, QWidget * parent)
     const int variations[] = {10, 20, 30, 40, 50, 100, END_OF_LIST};
     QComboBox * _cbFreqVariations = createIntComboBox(&_params.freqVariations, variations, 1);
     QComboBox * _cbPhaseVariations = createIntComboBox(&_params.phaseVariations, variations, 1);
+
+    const int simMaxSamples[] = {10000, 20000, 50000, 100000, 500000, END_OF_LIST};
+    QComboBox * _cbMaxSamples = createIntComboBox(&_params.simMaxSamples, simMaxSamples, 1);
     //QLineEdit * _edFrequency = createDoubleValueEditor(&_simParams.frequency, 100000, 9000000, 2);
     //_edFrequency->setMax
+
+    _simParamsLayout->addRow(new QLabel("Max samples"), _cbMaxSamples);
+
     _simParamsLayout->addRow(new QLabel("Frequency variations"), _cbFreqVariations);
 
     const double freqStep[] = {0.00025294, 0.00142466, 0.0135345, 0.03837645, END_OF_LIST};

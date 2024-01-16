@@ -36,8 +36,8 @@ void MainWindow::recalculate() {
     txt = QString("%1").arg(_simParams.realFrequency, 0, 'f', 5);
     _realFrequency->setText(txt);
 
-    _lpFilterState->setText(_simState.lpFilterEnabled ? "Enabled" : "Disabled");
-    _movingAvgFilterState->setText(_simState.movingAvgEnabled ? "Enabled" : "Disabled");
+    //_lpFilterState->setText(_simState.lpFilterEnabled ? "Enabled" : "Disabled");
+    //_movingAvgFilterState->setText(_simState.movingAvgEnabled ? "Enabled" : "Disabled");
     _lpFilterLatency->setText(_simState.lpFilterEnabled ? (QString("%1us").arg(_simState.getLpFilterLatency(), 0, 'g', 4)) : "0us");
     _movingAvgFilterLatency->setText(_simState.movingAvgEnabled ? (QString("%1us").arg(_simState.getMovingAverageLatency(), 0, 'g', 4)) : "0us");
 
@@ -77,6 +77,16 @@ QLineEdit * MainWindow::createReadOnlyEdit() {
     edit->setReadOnly(true);
     edit->setDisabled(true);
     return edit;
+}
+
+QCheckBox * MainWindow::createCheckBox(QString label, int * field) {
+    QCheckBox * cb = new QCheckBox(label);
+    cb->setChecked(*field);
+    connect(cb, QOverload<int>::of(&QCheckBox::stateChanged),
+        [=](int state){ *field = (state == Qt::Checked) ? 1 : 0;
+        recalculate();
+    });
+    return cb;
 }
 
 QLineEdit * MainWindow::createDoubleValueEditor(double * field, double minValue, double maxValue, int precision) {
@@ -156,25 +166,25 @@ void MainWindow::createControls() {
     QFormLayout * _lpFilterParamsLayout = new QFormLayout();
     _lpFilterParamsLayout->setSpacing(10);
 
-    _lpFilterState = new QLabel("unknown");
+    //_lpFilterState = new QLabel("unknown");
     _lpFilterLatency = new QLabel("unknown");
 
+    _lpFilterParamsLayout->addRow(new QLabel(""), createCheckBox("Enabled", &_simParams.lpFilterEnabled));
     _lpFilterParamsLayout->addRow(new QLabel("LP Filt Shift"), createComboBox(SIM_PARAM_LP_FILTER_SHIFT_BITS));
     _lpFilterParamsLayout->addRow(new QLabel("LP Filt Stages"), createComboBox(SIM_PARAM_LP_FILTER_STAGES));
-    _lpFilterParamsLayout->addRow(new QLabel("State"), _lpFilterState);
     _lpFilterParamsLayout->addRow(new QLabel("Latency"), _lpFilterLatency);
 
     // Moving Avg Filter
     QFormLayout * _movingAvgFilterParamsLayout = new QFormLayout();
     _movingAvgFilterParamsLayout->setSpacing(10);
 
-    _movingAvgFilterState = new QLabel("unknown");
+    //_movingAvgFilterState = new QLabel("unknown");
     _movingAvgFilterLatency = new QLabel("unknown");
 
+    _movingAvgFilterParamsLayout->addRow(new QLabel(""), createCheckBox("Enabled", &_simParams.movingAverageFilterEnabled));
     _movingAvgFilterParamsLayout->addRow(new QLabel("Avg periods"), createComboBox(SIM_PARAM_AVG_PERIODS));
     _movingAvgFilterParamsLayout->addRow(new QLabel("Acc drop bits"), createComboBox(SIM_PARAM_ACC_DROP_BITS));
     _movingAvgFilterParamsLayout->addRow(new QLabel("Edge interp"), createComboBox(SIM_PARAM_EDGE_SUBSAMPLING_BITS));
-    _movingAvgFilterParamsLayout->addRow(new QLabel("State"), _movingAvgFilterState);
     _movingAvgFilterParamsLayout->addRow(new QLabel("Latency"), _movingAvgFilterLatency);
 
     // Sense

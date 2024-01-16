@@ -9,6 +9,7 @@
 #include <QAction>
 #include <QMenuBar>
 #include <QLabel>
+#include <QCheckBox>
 #include "plotwidget.h"
 #include "simbatchdialog.h"
 
@@ -36,9 +37,9 @@ class MainWindow : public QMainWindow
     QLineEdit * _measuredPhaseExactBits;
     QLineEdit * _realFrequency;
 
-    QLabel * _lpFilterState;
+    //QLabel * _lpFilterState;
     QLabel * _lpFilterLatency;
-    QLabel * _movingAvgFilterState;
+    //QLabel * _movingAvgFilterState;
     QLabel * _movingAvgFilterLatency;
     // result precision statistics plots
     SimResultPlot * _plot;
@@ -51,6 +52,7 @@ class MainWindow : public QMainWindow
     //QComboBox * createDoubleComboBox(double * field, const double * values);
     QComboBox * createComboBox(SimParameter param);
     QLineEdit * createReadOnlyEdit();
+    QCheckBox * createCheckBox(QString label, int * field);
 
 private:
     void createMenu();

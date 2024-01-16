@@ -7,10 +7,10 @@
 
 static const int sampleRates[] = {3, 4, 10, 20, 25, 40, 65, 80, 100, 125, 200, END_OF_LIST};
 static const int phaseBits[] = {24, 26, 28, 30, 32, 34, 36, END_OF_LIST};
-static const int lpFilterStages[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, END_OF_LIST};
-static const int lpFilterShiftBits[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, END_OF_LIST};
-static const int mulDropBits[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, END_OF_LIST};
-static const int accDropBits[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 14, 16, 18, END_OF_LIST};
+static const int lpFilterStages[] = {1, 2, 3, 4, 5, 6, 7, 8, END_OF_LIST};
+static const int lpFilterShiftBits[] = {3, 4, 5, 6, 7, 8, 9, 10, END_OF_LIST};
+static const int mulDropBits[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, END_OF_LIST};
+static const int accDropBits[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 14, 16, END_OF_LIST};
 static const int ncoValueBits[] = {8, 9, 10, 11, 12, 13, 14, 15, 16, 17, /* 18,*/ END_OF_LIST};
 static const int sinTableBits[] = {/*7,*/ 8, 9, 10, 11, 12, 13, 14, 15, 16, /* 17, 18,*/ END_OF_LIST};
 static const int adcValueBits[] = {/*6, 7,*/ 8, 9, 10, 11, 12, 13, 14, /*16,*/ END_OF_LIST};
@@ -18,9 +18,10 @@ static const int adcInterpolationRate[] = {1, 2, 3, 4, END_OF_LIST};
 static const double adcNoise[] = {0.0, 0.1, 0.25, 0.5, 1.0, 2.0, 5.0, 10.0, END_OF_LIST};
 static const double adcDCOffset[] = {-10.0, -5.0, -2.5, -1.0, -0.5, 0, 0.5, 1.0, 2.5, 5.0, 10.0, END_OF_LIST};
 static const double senseAmplitude[] = {0.1, 0.25, 0.5, 0.8, 0.9, 0.95, 1.0, END_OF_LIST};
-static const int adcAveragingPeriods[] = {0, 1, 2, 4, 8, 16, 32, 64, 128, /*256,*/ END_OF_LIST};
+static const int adcAveragingPeriods[] = {1, 2, 4, 8, 16, 32, 64, 128, /*256,*/ END_OF_LIST};
 static const int edgeAccInterpolation[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, END_OF_LIST};
-
+static const int movingAvgFilterEnabled[] = {0, 1, END_OF_LIST};
+static const int lpFilterEnabled[] = {0, 1, END_OF_LIST};
 
 int quantizeSigned(double value, int bits) {
     // 1.0 will become maxAmpliture, -1.0 -- -maxAmplitude
@@ -220,7 +221,7 @@ void SimState::simulate(SimParams * newParams) {
     senseMulBase2.init(params->simMaxSamples, 0); //[SP_SIM_MAX_SAMPLES + 1000];
 
     // movingAverage filter
-    movingAvgEnabled = (params->averagingPeriods > 0);
+    movingAvgEnabled = params->movingAverageFilterEnabled != 0;
     movingAvgFirstSample = 0;
     senseMulAcc1.init(params->simMaxSamples, 0); //[SP_SIM_MAX_SAMPLES + 1000];
     senseMulAcc2.init(params->simMaxSamples, 0); //[SP_SIM_MAX_SAMPLES + 1000];
@@ -228,7 +229,7 @@ void SimState::simulate(SimParams * newParams) {
     movingAvgOut2.init(params->simMaxSamples, 0);
 
     // LP IIR filter
-    lpFilterEnabled = params->lpFilterShiftBits && params->lpFilterStages;
+    lpFilterEnabled = params->lpFilterEnabled != 0;
     lpFilterFirstSample = 0;
     lpFilterOut1.init(params->simMaxSamples, 0);
     lpFilterOut2.init(params->simMaxSamples, 0);
@@ -372,8 +373,8 @@ void SimState::simulate(SimParams * newParams) {
     Array<int64_t> * lpFilterInput1 = movingAvgEnabled ? &movingAvgOut1 : &senseMulBase1;
     Array<int64_t> * lpFilterInput2 = movingAvgEnabled ? &movingAvgOut2 : &senseMulBase2;
     for (int i = 0; i < params->simMaxSamples - 1; i++) {
-        lpFilterOut1[i] = lpFilter1.tick((*lpFilterInput1)[i]);
-        lpFilterOut2[i] = lpFilter2.tick((*lpFilterInput2)[i]);
+        lpFilterOut1[i] = lpFilterEnabled ? lpFilter1.tick((*lpFilterInput1)[i]) : (*lpFilterInput1)[i];
+        lpFilterOut2[i] = lpFilterEnabled ? lpFilter2.tick((*lpFilterInput2)[i]) : (*lpFilterInput2)[i];
     }
     lpFilterFirstSample = lpFilterEnabled ? ((1<<params->lpFilterShiftBits) * params->lpFilterStages) : movingAvgFirstSample;
 
@@ -865,6 +866,34 @@ public:
 };
 LpFilterStagesMetadata LP_FILTER_STAGES_PARAMETER_METADATA;
 
+struct LpFilterEnabledMetadata : public SimParameterMetadata {
+public:
+    LpFilterEnabledMetadata() : SimParameterMetadata(SIM_PARAM_LP_FILTER_ENABLED, QString("LpFltEnabled"), lpFilterEnabled, 1) {}
+    void setParamByIndex(SimParams * params, int index) override {
+        params->lpFilterEnabled = getValue(index).toInt();
+    }
+    int getInt(const SimParams * params) const override { return params->lpFilterEnabled; }
+    double getDouble(const SimParams * params) const override { return params->lpFilterEnabled; }
+    void setInt(SimParams * params, int value) const override { params->lpFilterEnabled = value; }
+    void setDouble(SimParams * params, double value) const override { params->lpFilterEnabled = value; }
+    void set(SimParams * params, QVariant value) const override { params->lpFilterEnabled = value.toInt(); }
+};
+LpFilterEnabledMetadata LP_FILTER_ENABLED_PARAMETER_METADATA;
+
+struct MovingAvgFilterEnabledMetadata : public SimParameterMetadata {
+public:
+    MovingAvgFilterEnabledMetadata() : SimParameterMetadata(SIM_PARAM_MOVING_AVG_FILTER_ENABLED, QString("MovAvgFltEnabled"), movingAvgFilterEnabled, 1) {}
+    void setParamByIndex(SimParams * params, int index) override {
+        params->movingAverageFilterEnabled = getValue(index).toInt();
+    }
+    int getInt(const SimParams * params) const override { return params->movingAverageFilterEnabled; }
+    double getDouble(const SimParams * params) const override { return params->movingAverageFilterEnabled; }
+    void setInt(SimParams * params, int value) const override { params->movingAverageFilterEnabled = value; }
+    void setDouble(SimParams * params, double value) const override { params->movingAverageFilterEnabled = value; }
+    void set(SimParams * params, QVariant value) const override { params->movingAverageFilterEnabled = value.toInt(); }
+};
+MovingAvgFilterEnabledMetadata MOVING_AVF_FILTER_ENABLED_PARAMETER_METADATA;
+
 
 int SimParameterMetadata::getIndex(const SimParams * params) const {
     double v = getDouble(params);
@@ -902,6 +931,8 @@ const SimParameterMetadata * SimParameterMetadata::get(SimParameter index) {
     case SIM_PARAM_ACC_DROP_BITS: return &ACC_DROP_BITS_PARAMETER_METADATA;
     case SIM_PARAM_LP_FILTER_STAGES: return &LP_FILTER_STAGES_PARAMETER_METADATA;
     case SIM_PARAM_LP_FILTER_SHIFT_BITS: return &LP_FILTER_SHIFT_BITS_PARAMETER_METADATA;
+    case SIM_PARAM_LP_FILTER_ENABLED: return &LP_FILTER_ENABLED_PARAMETER_METADATA;
+    case SIM_PARAM_MOVING_AVG_FILTER_ENABLED: return &MOVING_AVF_FILTER_ENABLED_PARAMETER_METADATA;
     default:
         assert(false);
         return nullptr;
