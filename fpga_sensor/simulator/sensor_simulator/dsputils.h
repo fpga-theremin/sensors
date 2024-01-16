@@ -10,6 +10,9 @@ template <typename T> class Array {
     int _size;
     int _count;
 public:
+    T * data() {
+        return _list;
+    }
     void clear() {
         if (_list)
             delete[] _list;
@@ -20,6 +23,14 @@ public:
     void reserve(int size) {
         if (_size < size) {
             resize(size);
+        }
+    }
+    // set array to "size" elements of specified value
+    void init(int size, T value) {
+        resize(size);
+        _count = size;
+        for (int i = 0; i < _count; i++) {
+            _list[i] = value;
         }
     }
     void resize(int size) {

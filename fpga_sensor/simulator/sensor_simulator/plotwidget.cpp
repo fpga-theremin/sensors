@@ -93,7 +93,7 @@ void PlotWidget::paintEvent(QPaintEvent * /* event */)
     painter.drawLine(QPoint(0, y0), QPoint(w, y0));
 
     // senseMulBase scale
-    int mulBits = _simParams->ncoValueBits + _simParams->adcBits;
+    int mulBits = _simParams->ncoValueBits + _simParams->adcBits - _simParams->mulDropBits;
     double yscalef = (double)(h*0.9) / ((uint64_t)1<<(mulBits-1));
     int dx = xscale/2-1;
     if (dx < 2)
@@ -223,17 +223,20 @@ void PlotWidget::paintEvent(QPaintEvent * /* event */)
 
     // senseExact
     painter.setPen(pen4);
-    QPoint exactPoints[SP_SIM_MAX_SAMPLES];
-    int pointCount = 0;
+    Array<QPoint> exactPoints;
+    //exactPoints.init(_simState->params->simMaxSamples, QPoint());
+    //[SP_SIM_MAX_SAMPLES];
+    //int pointCount = 0;
     for (int i = 0; i <= xsamples; i++) {
         int x = sample0 + i;
         double sense = _simState->senseExact[x];
         int y = y0 - (int)(sense * yscalef);// + yscale/2;
         QPoint pt = QPoint(i*xscale, y);
-        exactPoints[pointCount++] = pt;
+        exactPoints.add(pt);
+        //pointCount++;
 
     }
-    painter.drawPolyline(exactPoints, pointCount);
+    painter.drawPolyline(exactPoints.data(), exactPoints.length());
 
     // sense with noise quantized
     painter.setPen(pen5);

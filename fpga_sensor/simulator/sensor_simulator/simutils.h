@@ -7,6 +7,8 @@
 #include <QStringList>
 #include <memory>
 
+#define SP_SIM_DEFAULT_NUM_SAMPLES 20000
+
 enum SimParameter {
     SIM_PARAM_MIN = 0,
     SIM_PARAM_ADC_BITS = SIM_PARAM_MIN,
@@ -20,7 +22,9 @@ enum SimParameter {
     SIM_PARAM_SENSE_AMPLITUDE,
     SIM_PARAM_SENSE_DC_OFFSET,
     SIM_PARAM_SENSE_NOISE,
-    SIM_PARAM_MAX = SIM_PARAM_SENSE_NOISE
+    SIM_PARAM_MUL_DROP_BITS,
+    SIM_PARAM_ACC_DROP_BITS,
+    SIM_PARAM_MAX = SIM_PARAM_ACC_DROP_BITS
 };
 
 #define SIM_PARAM_ALL ((1<<(SIM_PARAM_MAX+1))-1)
@@ -30,7 +34,7 @@ int quantizeSigned(double value, int bits);
 double quantizeDouble(double value, int bits);
 double scaleDouble(double value, int bits);
 
-#define SP_MAX_SIN_TABLE_SIZE (65536)
+//#define SP_MAX_SIN_TABLE_SIZE (65536)
 struct SimParams {
     // SIM_PARAM_ADC_SAMPLE_RATE
     int sampleRate;
@@ -57,6 +61,10 @@ struct SimParams {
     double adcNoise;
     // SIM_PARAM_SENSE_DC_OFFSET DC offset in adc output, in LSB (e.g. 0.5 means ADC returns + 1/2 LSB)
     double adcDCOffset;
+    // SIM_PARAM_MUL_DROP_BITS
+    int mulDropBits;
+    // SIM_PARAM_ACC_DROP_BITS
+    int accDropBits;
 
     double frequency;
     // recalculated based on precision
@@ -73,6 +81,7 @@ struct SimParams {
     int phaseVariations;
     double phaseStep;
     int bitFractionCount;
+    int simMaxSamples;
     int paramTypeMask;
 
     SinTable sinTable;
@@ -88,6 +97,8 @@ struct SimParams {
                 , edgeAccInterpolation(0)
                 , adcNoise(0)
                 , adcDCOffset(0)
+                , mulDropBits(0)
+                , accDropBits(0)
                 , frequency(1012345)
                 , sinTableSizePhaseCorrection(0)
                 , sensePhaseShift(-0.0765)
@@ -96,6 +107,7 @@ struct SimParams {
                 , phaseVariations(5)
                 , phaseStep(0.0143564)
                 , bitFractionCount(2)
+                , simMaxSamples(SP_SIM_DEFAULT_NUM_SAMPLES)
                 , paramTypeMask(SIM_PARAM_ALL)
                 , sinTable(ncoSinTableSizeBits, ncoValueBits)
     {
@@ -133,6 +145,8 @@ struct SimParams {
         sensePhaseShift = v.sensePhaseShift;
         senseAmplitude = v.senseAmplitude;
 
+        mulDropBits = v.mulDropBits;
+        accDropBits = v.accDropBits;
         adcBits = v.adcBits;
         adcInterpolation = v.adcInterpolation;
         averagingPeriods = v.averagingPeriods;
@@ -148,6 +162,7 @@ struct SimParams {
         phaseVariations = v.phaseVariations;
         phaseStep = v.phaseStep;
         bitFractionCount = v.bitFractionCount;
+        simMaxSamples = v.simMaxSamples;
         paramTypeMask = v.paramTypeMask;
         recalculate();
         return *this;
@@ -176,7 +191,7 @@ public:
         exactBitsCounters[exactBits]++;
     }
     void clear();
-    void updateStats();
+    void updatePercents();
     int bitFractionCount() const { return k; }
     int getTotalCount() const { return totalCount; }
 };
@@ -371,82 +386,6 @@ public:
     void runTests(SimResultsItem & results);
 };
 
-//class AveragingMutator : public SimParamMutator {
-//public:
-//    AveragingMutator(SimParams * params, int count = 9) : SimParamMutator(params, "AvgPeriods", count) {
-//    }
-//    bool next() override {
-//        params.averagingPeriods = 1 << currentStage;
-//        setValue(params.averagingPeriods);
-//        return SimParamMutator::next();
-//    }
-//};
-
-//class ADCBitsMutator : public SimParamMutator {
-//public:
-//    ADCBitsMutator(SimParams * params, int count = 6) : SimParamMutator(params, "ADCBits", count) {
-//    }
-//    bool next() override {
-//        params.adcBits = 8 + currentStage;
-//        setValue(params.adcBits);
-//        return SimParamMutator::next();
-//    }
-//};
-
-//class ADCInterpolationMutator : public SimParamMutator {
-//public:
-//    ADCInterpolationMutator(SimParams * params, int count = 4) : SimParamMutator(params, "ADCInterpolation", count) {
-//    }
-//    bool next() override {
-//        params.adcInterpolation = 1 + currentStage;
-//        setValue(params.adcInterpolation);
-//        return SimParamMutator::next();
-//    }
-//};
-
-//class SinValueBitsMutator : public SimParamMutator {
-//public:
-//    SinValueBitsMutator(SimParams * params, int count = 8) : SimParamMutator(params, "SinValueBits", count) {
-//    }
-//    bool next() override {
-//        params.ncoValueBits = 8 + currentStage;
-//        setValue(params.ncoValueBits);
-//        return SimParamMutator::next();
-//    }
-//};
-
-//class SinTableSizeMutator : public SimParamMutator {
-//public:
-//    SinTableSizeMutator(SimParams * params, int count = 8) : SimParamMutator(params, "SinTableSize", count) {
-//    }
-//    bool next() override {
-//        params.ncoSinTableSizeBits = 8 + currentStage;
-//        setValue(params.ncoSinTableSizeBits);
-//        return SimParamMutator::next();
-//    }
-//};
-
-//class PhaseBitsMutator : public SimParamMutator {
-//public:
-//    PhaseBitsMutator(SimParams * params, int count = 10) : SimParamMutator(params, "PhaseBits", count) {
-//    }
-//    bool next() override {
-//        params.ncoPhaseBits = 16 + currentStage;
-//        setValue(params.ncoPhaseBits);
-//        return SimParamMutator::next();
-//    }
-//};
-
-//class SampleRateMutator : public SimParamMutator {
-//public:
-//    SampleRateMutator(SimParams * params, int count = 9) : SimParamMutator(params, "SampleRate", count) {
-//    }
-//    bool next() override {
-//        params.sampleRate = 20000000 + currentStage * 20000000;
-//        setValue(params.sampleRate/1000000);
-//        return SimParamMutator::next();
-//    }
-//};
 
 void collectSimulationStats(SimParams * newParams, ExactBitStats & stats);
 
@@ -498,8 +437,6 @@ public:
     void addTests() override;
 };
 
-
-
 struct Edge {
     int adcValue;
     int64_t mulAcc1;
@@ -511,25 +448,26 @@ struct Edge {
 
 typedef Array<Edge> EdgeArray;
 
-#define SP_SIM_MAX_SAMPLES 10000
+//#define SP_SIM_MAX_SAMPLES 20000
 struct SimState {
+
     SimParams * params;
     // two sines shifted by 90 degrees
-    int base1[SP_SIM_MAX_SAMPLES + 1000]; // normal (cos)
-    int guard1;
-    int base2[SP_SIM_MAX_SAMPLES + 1000]; // delayed by 90 (sin)
-    int guard2;
+    Array<int> base1; //[SP_SIM_MAX_SAMPLES + 1000]; // normal (cos)
+    //int guard1;
+    Array<int> base2; //[SP_SIM_MAX_SAMPLES + 1000]; // delayed by 90 (sin)
+    //int guard2;
 
     // signal received from ADC
-    double senseExact[SP_SIM_MAX_SAMPLES + 1000];
-    int sense[SP_SIM_MAX_SAMPLES + 1000];
+    Array<double>  senseExact; //[SP_SIM_MAX_SAMPLES + 1000];
+    Array<int> sense; //[SP_SIM_MAX_SAMPLES + 1000];
 
-    int guard3;
+    //int guard3;
 
-    int64_t senseMulBase1[SP_SIM_MAX_SAMPLES + 1000];
-    int64_t senseMulBase2[SP_SIM_MAX_SAMPLES + 1000];
-    int64_t senseMulAcc1[SP_SIM_MAX_SAMPLES + 1000];
-    int64_t senseMulAcc2[SP_SIM_MAX_SAMPLES + 1000];
+    Array<int64_t> senseMulBase1; //[SP_SIM_MAX_SAMPLES + 1000];
+    Array<int64_t> senseMulBase2; //[SP_SIM_MAX_SAMPLES + 1000];
+    Array<int64_t> senseMulAcc1; //[SP_SIM_MAX_SAMPLES + 1000];
+    Array<int64_t> senseMulAcc2; //[SP_SIM_MAX_SAMPLES + 1000];
 
     EdgeArray edgeArray;
 
@@ -537,13 +475,13 @@ struct SimState {
     int avgMulBase1;
     int avgMulBase2;
 
-    int guard4;
+    //int guard4;
 
     //int64_t periodSumBase1[SP_SIM_MAX_SAMPLES + 1000];
     //int64_t periodSumBase2[SP_SIM_MAX_SAMPLES + 1000];
     int periodCount;
 
-    int guard5;
+    //int guard5;
 
     // period-aligned sums
     int64_t alignedSumBase1;
@@ -552,7 +490,7 @@ struct SimState {
     double alignedSensePhaseShiftDiff;
     int alignedSenseExactBits;
 
-    int guard6;
+    //int guard6;
 
     void simulate(SimParams * params);
     int64_t sumForPeriodsBase1(int startHalfperiod, int halfPeriodCount);
@@ -563,11 +501,11 @@ struct SimState {
     double adcExactSensedValueForPhase(uint64_t phase);
     int adcExactToQuantized(double value);
 
-    void checkGuards();
-
 };
 
 //void runSimTestSuite(SimParams * params);
 void debugDumpParameterMetadata();
+
+void atan2BitsTest();
 
 #endif // SIMUTILS_H

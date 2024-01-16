@@ -1,11 +1,14 @@
 #include "simutils.h"
 #include <QtMath>
 #include <QDebug>
+#include <QRandomGenerator64>
 
 #define END_OF_LIST -1000000
 
 static const int sampleRates[] = {3, 4, 10, 20, 25, 40, 65, 80, 100, 125, 200, END_OF_LIST};
 static const int phaseBits[] = {24, 26, 28, 30, 32, 34, 36, END_OF_LIST};
+static const int mulDropBits[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, END_OF_LIST};
+static const int accDropBits[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 14, 16, 18, END_OF_LIST};
 static const int ncoValueBits[] = {8, 9, 10, 11, 12, 13, 14, 15, 16, 17, /* 18,*/ END_OF_LIST};
 static const int sinTableBits[] = {/*7,*/ 8, 9, 10, 11, 12, 13, 14, 15, 16, /* 17, 18,*/ END_OF_LIST};
 static const int adcValueBits[] = {/*6, 7,*/ 8, 9, 10, 11, 12, 13, 14, /*16,*/ END_OF_LIST};
@@ -175,20 +178,22 @@ int SimState::adcSensedValueForPhase(uint64_t phase) {
 void SimState::simulate(SimParams * newParams) {
     edgeArray.clear();
     periodIndex.clear();
-    guard1 = 0x11111111;
-    guard2 = 0x22222222;
-    guard3 = 0x33333333;
-    guard4 = 0x44444444;
-    guard5 = 0x55555555;
-    guard6 = 0x66666666;
-
 
     params = newParams;
 
-    checkGuards();
+    base1.init(params->simMaxSamples, 0); //[SP_SIM_MAX_SAMPLES + 1000]; // normal (cos)
+    base2.init(params->simMaxSamples, 0); //[SP_SIM_MAX_SAMPLES + 1000]; // delayed by 90 (sin)
+    senseExact.init(params->simMaxSamples, 0); //[SP_SIM_MAX_SAMPLES + 1000];
+    sense.init(params->simMaxSamples, 0); //[SP_SIM_MAX_SAMPLES + 1000];
+    senseMulBase1.init(params->simMaxSamples, 0); //[SP_SIM_MAX_SAMPLES + 1000];
+    senseMulBase2.init(params->simMaxSamples, 0); //[SP_SIM_MAX_SAMPLES + 1000];
+    senseMulAcc1.init(params->simMaxSamples, 0); //[SP_SIM_MAX_SAMPLES + 1000];
+    senseMulAcc2.init(params->simMaxSamples, 0); //[SP_SIM_MAX_SAMPLES + 1000];
+
+
     // phase for base1
     int64_t phase = 0;
-    for (int i = 0; i < SP_SIM_MAX_SAMPLES; i++) {
+    for (int i = 0; i < params->simMaxSamples; i++) {
         // phase for base2
         int64_t phase2 = phase - (params->phaseModule>>2);
         if (phase2 < 0)
@@ -200,8 +205,6 @@ void SimState::simulate(SimParams * newParams) {
         phase = phase & (params->phaseModule - 1);
     }
 
-    checkGuards();
-
     int64_t senseShift = (int64_t)round(params->sensePhaseShift * params->phaseModule);
     senseShift &= (params->phaseModule - 1);
     //senseShift -= params->phaseIncrement / 2;
@@ -209,7 +212,7 @@ void SimState::simulate(SimParams * newParams) {
     //int adcScale = 1<<(params->adcBits - 1);
     int64_t acc1=0;
     int64_t acc2=0;
-    for (int i = 0; i < SP_SIM_MAX_SAMPLES; i++) {
+    for (int i = 0; i < params->simMaxSamples; i++) {
         //double exactPhase = 2 * M_PI * phase / params->phaseModule;
         double exactSense = adcExactSensedValueForPhase(phase);
         senseExact[i] = exactSense;
@@ -232,8 +235,9 @@ void SimState::simulate(SimParams * newParams) {
         }
 
         // multiplied
-        senseMulBase1[i] = sense[i] * (int64_t)base1[i];
-        senseMulBase2[i] = sense[i] * (int64_t)base2[i];
+        senseMulBase1[i] = (sense[i] * (int64_t)base1[i]) >> params->mulDropBits;
+        senseMulBase2[i] = (sense[i] * (int64_t)base2[i]) >> params->mulDropBits;
+
         acc1 += senseMulBase1[i];
         acc2 += senseMulBase2[i];
         senseMulAcc1[i] = acc1;
@@ -244,7 +248,7 @@ void SimState::simulate(SimParams * newParams) {
         phase = phase & (params->phaseModule - 1);
     }
 
-    for (int i = 0; i < SP_SIM_MAX_SAMPLES - 1; i++) {
+    for (int i = 0; i < params->simMaxSamples - 1; i++) {
         // number of half period
         periodIndex.add(edgeArray.length());
         // check if sign has been changed
@@ -253,10 +257,10 @@ void SimState::simulate(SimParams * newParams) {
         if ((a ^ b) < 0) {
             // edge detected: make interpolation
             int c = b;
-            int64_t mulacc1a = senseMulAcc1[i];
-            int64_t mulacc1b = senseMulAcc1[i+1];
-            int64_t mulacc2a = senseMulAcc2[i];
-            int64_t mulacc2b = senseMulAcc2[i+1];
+            int64_t mulacc1a = senseMulAcc1[i] >> params->accDropBits;
+            int64_t mulacc1b = senseMulAcc1[i+1] >> params->accDropBits;
+            int64_t mulacc2a = senseMulAcc2[i] >> params->accDropBits;
+            int64_t mulacc2b = senseMulAcc2[i+1] >> params->accDropBits;
             int64_t c1 = mulacc1b;
             int64_t c2 = mulacc2b;
             for (int bit = 0; bit < params->edgeAccInterpolation; bit++) {
@@ -304,49 +308,19 @@ void SimState::simulate(SimParams * newParams) {
     periodCount = edgeArray.length() - 1;
 
 
-    checkGuards();
-
     //int avgMulBase1;
     //int avgMulBase2;
 
     int64_t sumMulBase1 = 0;
     int64_t sumMulBase2 = 0;
-    for (int i = 0; i < SP_SIM_MAX_SAMPLES; i++) {
+    for (int i = 0; i < params->simMaxSamples; i++) {
         sumMulBase1 += senseMulBase1[i];
         sumMulBase2 += senseMulBase2[i];
     }
-    avgMulBase1 = (int)(sumMulBase1 / SP_SIM_MAX_SAMPLES);
-    avgMulBase2 = (int)(sumMulBase2 / SP_SIM_MAX_SAMPLES);
-
-    checkGuards();
+    avgMulBase1 = (int)(sumMulBase1 / params->simMaxSamples);
+    avgMulBase2 = (int)(sumMulBase2 / params->simMaxSamples);
 
 
-//    for (int i = 0; i < SP_SIM_MAX_SAMPLES/10; i++) {
-//        periodSumBase1[i] = 0;
-//        periodSumBase2[i] = 0;
-//    }
-
-    checkGuards();
-
-//    periodCount = 0;
-//    periodIndex[0] = 0;
-//    int64_t sum1 = 0;
-//    int64_t sum2 = 0;
-//    for (int i = 1; i < SP_SIM_MAX_SAMPLES; i++) {
-//        if ( (sense[i] ^ sense[i-1])>>(params->adcBits - 1) ) {
-//            // difference in sign bit
-//            periodSumBase1[periodCount] = sum1;
-//            periodSumBase2[periodCount] = sum2;
-//            sum1 = 0;
-//            sum2 = 0;
-//            periodCount++;
-//        }
-//        sum1 += senseMulBase1[i];
-//        sum2 += senseMulBase2[i];
-//        periodIndex[i] = periodCount;
-//    }
-
-    checkGuards();
 
     // averaging aligned by even period frames
     int avgPeriodsCount = (periodCount - 1) & 0xffffffe;
@@ -362,19 +336,8 @@ void SimState::simulate(SimParams * newParams) {
     //qDebug("alignedSensePhaseShiftDiff = %.6f", alignedSensePhaseShiftDiff);
     alignedSenseExactBits = SimParams::exactBits(alignedSensePhaseShiftDiff);
 
-    checkGuards();
 }
 
-void SimState::checkGuards() {
-//    Q_ASSERT(params->sinTable[params->sinTableSize] == 0x12345678);
-
-    Q_ASSERT(guard1 == 0x11111111);
-    Q_ASSERT(guard2 == 0x22222222);
-    Q_ASSERT(guard3 == 0x33333333);
-    Q_ASSERT(guard4 == 0x44444444);
-    Q_ASSERT(guard5 == 0x55555555);
-    Q_ASSERT(guard6 == 0x66666666);
-}
 void ExactBitStats::clear() {
     for (int i = 0; i < 32*10; i++) {
         exactBitsCounters[i] = 0;
@@ -428,7 +391,7 @@ QString ExactBitStats::toString(int minBits, int maxBits) {
     return res;
 }
 
-void ExactBitStats::updateStats() {
+void ExactBitStats::updatePercents() {
     totalCount = 0;
     for (int i = 0; i < 32*k; i++) {
         totalCount += exactBitsCounters[i];
@@ -552,7 +515,7 @@ void collectSimulationStats(SimParams * newParams, ExactBitStats & stats) {
             }
         }
     }
-    stats.updateStats();
+    stats.updatePercents();
     delete state;
 }
 
@@ -757,6 +720,35 @@ public:
 };
 SenseNoiseMetadata SENSE_NOISE_PARAMETER_METADATA;
 
+struct MulDropBitsMetadata : public SimParameterMetadata {
+public:
+    MulDropBitsMetadata() : SimParameterMetadata(SIM_PARAM_MUL_DROP_BITS, QString("MulDropBits"), mulDropBits, 0) {}
+    void setParamByIndex(SimParams * params, int index) override {
+        params->mulDropBits = getValue(index).toInt();
+    }
+    int getInt(const SimParams * params) const override { return params->mulDropBits; }
+    double getDouble(const SimParams * params) const override { return params->mulDropBits; }
+    void setInt(SimParams * params, int value) const override { params->mulDropBits = value; }
+    void setDouble(SimParams * params, double value) const override { params->mulDropBits = value; }
+    void set(SimParams * params, QVariant value) const override { params->mulDropBits = value.toInt(); }
+};
+MulDropBitsMetadata MUL_DROP_BITS_PARAMETER_METADATA;
+
+struct AccDropBitsMetadata : public SimParameterMetadata {
+public:
+    AccDropBitsMetadata() : SimParameterMetadata(SIM_PARAM_MUL_DROP_BITS, QString("AccDropBits"), accDropBits, 4) {}
+    void setParamByIndex(SimParams * params, int index) override {
+        params->accDropBits = getValue(index).toInt();
+    }
+    int getInt(const SimParams * params) const override { return params->accDropBits; }
+    double getDouble(const SimParams * params) const override { return params->accDropBits; }
+    void setInt(SimParams * params, int value) const override { params->accDropBits = value; }
+    void setDouble(SimParams * params, double value) const override { params->accDropBits = value; }
+    void set(SimParams * params, QVariant value) const override { params->accDropBits = value.toInt(); }
+};
+AccDropBitsMetadata ACC_DROP_BITS_PARAMETER_METADATA;
+
+
 int SimParameterMetadata::getIndex(const SimParams * params) const {
     double v = getDouble(params);
     for (int i = 0; i < values.length(); i++) {
@@ -789,7 +781,8 @@ const SimParameterMetadata * SimParameterMetadata::get(SimParameter index) {
     case SIM_PARAM_SENSE_AMPLITUDE: return &SENSE_AMPLITUDE_PARAMETER_METADATA;
     case SIM_PARAM_SENSE_DC_OFFSET: return &SENSE_DC_OFFSET_PARAMETER_METADATA;
     case SIM_PARAM_SENSE_NOISE: return &SENSE_NOISE_PARAMETER_METADATA;
-
+    case SIM_PARAM_MUL_DROP_BITS: return &MUL_DROP_BITS_PARAMETER_METADATA;
+    case SIM_PARAM_ACC_DROP_BITS: return &ACC_DROP_BITS_PARAMETER_METADATA;
     default:
         assert(false);
         return nullptr;
@@ -845,5 +838,38 @@ SimParameterMetadata::SimParameterMetadata(SimParameter param, QString name, con
             defaultValueIndex = i;
         }
         values.add(QVariant(v));
+    }
+}
+
+void atan2BitsTest() {
+    QRandomGenerator64 rnd(13);
+    int iterationCount = 10000;
+    ExactBitStats stats[33];
+    for (int i = 0; i < iterationCount; i++) {
+        double randomPhase = (rnd.generateDouble() - 0.5) * M_PI * 2;
+        int64_t exactPhase = ((int64_t)(randomPhase / M_PI / 2 * (((int64_t)1)<<32))) & 0xffffffff;
+        double rsin = sin(randomPhase);
+        double rcos = cos(randomPhase);
+        //qDebug("phase %f %d  sin=%f cos=%f", randomPhase, (int)exactPhase, rsin, rcos);
+        for (int bits = 5; bits<32; bits++) {
+            int64_t scale = (((int64_t)1)<<(bits-1));
+            int64_t dsin = (int64_t)(rsin*scale);
+            int64_t dcos = (int64_t)(rcos*scale);
+            double dphase = atan2(dsin, dcos) / M_PI / 2;
+            int64_t iphase = ((int64_t)(dphase * (((int64_t)1)<<32))) & 0xffffffff;
+            int phaseDiff = (int)(iphase - exactPhase);
+            if (phaseDiff < 0)
+                phaseDiff = -phaseDiff;
+            int exactBits = (phaseDiff==0) ? 32 : (32-(int)log2(phaseDiff));
+            //qDebug("[%d] : %d exact bits   dsin=%d dcos=%d  dphase=%f iphase=%d  phaseDiff=%d", bits, exactBits, dsin, dcos, dphase, (int)iphase, phaseDiff);
+            stats[bits].incrementExactBitsCount(exactBits);
+        }
+    }
+    QString head = stats[5].headingString(5, 32);
+    qDebug("atan2 stats");
+    qDebug("\t%s", head.toLocal8Bit().data());
+    for (int bits = 5; bits <= 32; bits++) {
+        stats[bits].updatePercents();
+        qDebug("%d:\t%s", bits, stats[bits].toString(5, 32).toLocal8Bit().data());
     }
 }

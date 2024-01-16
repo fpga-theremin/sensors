@@ -198,13 +198,18 @@ void MainWindow::createControls() {
 
     _senseParamsLayout->addRow(new QLabel("Amplitude"), createComboBox(SIM_PARAM_SENSE_AMPLITUDE));
 
+    _senseParamsLayout->addRow(new QLabel("Mul drop bits"), createComboBox(SIM_PARAM_MUL_DROP_BITS));
+
+    _senseParamsLayout->addRow(new QLabel("Acc drop bits"), createComboBox(SIM_PARAM_ACC_DROP_BITS));
+
     _senseParamsLayout->addRow(new QLabel("Avg periods"), createComboBox(SIM_PARAM_AVG_PERIODS));
 
     _senseParamsLayout->addRow(new QLabel("Edge interp"), createComboBox(SIM_PARAM_EDGE_SUBSAMPLING_BITS));
 
     QLineEdit * _edSensePhaseShift = createDoubleValueEditor(&_simParams.sensePhaseShift, -1.0, 1.0, 6);
     //_edFrequency->setMax
-    _senseParamsLayout->addRow(new QLabel("Phase shift 0..1"), _edSensePhaseShift);
+    // moved to global
+    _globalParamsLayout->addRow(new QLabel("Phase shift 0..1"), _edSensePhaseShift);
 
     QGroupBox * _gbSense = new QGroupBox("Sense");
     _gbSense->setLayout(_senseParamsLayout);
@@ -315,8 +320,8 @@ MainWindow::MainWindow(QWidget *parent)
     SimParameterMetadata::applyDefaults(&_simParams);
     _simParams.freqVariations = 7;
     _simParams.phaseVariations = 7;
-    _simParams.freqStep = 0.00142466432;
-    _simParams.phaseStep = 0.0116544187634;
+    _simParams.freqStep = M_PI/1000; //0.000142466432;
+    _simParams.phaseStep = M_PI / 345; //0.0116544187634;
     _simParams.bitFractionCount = 3;
 
     _layoutSpacing = 10;
