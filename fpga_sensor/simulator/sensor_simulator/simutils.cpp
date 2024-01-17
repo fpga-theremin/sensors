@@ -440,7 +440,7 @@ double ExactBitStats::getMaxPercent(int minBits, int maxBits) {
 }
 
 double ExactBitStats::getPercent(int i, int minBits, int maxBits) {
-    double v = exactBitsPercent[i] * k;
+    double v = exactBitsPercent[i]; // * k;
     //if (i == minBits*k)
     //    v = exactBitsPercentLessOrEqual[i] * k;
     //if (i == maxBits*k)

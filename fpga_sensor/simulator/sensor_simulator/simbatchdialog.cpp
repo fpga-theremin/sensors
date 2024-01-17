@@ -13,6 +13,10 @@
 
 #define END_OF_LIST -1000000
 
+static const int variations[] = {10, 20, 30, 40, 50, 100, END_OF_LIST};
+static const int simMaxSamples[] = {10000, 20000, 30000, 50000, 100000, 500000, END_OF_LIST};
+
+
 //void SimBatchDialog::runSimulation(std::unique_ptr<SimParams> params) {
 
 //}
@@ -143,11 +147,9 @@ SimBatchDialog::SimBatchDialog(SimParams * params, QWidget * parent)
 
 
     _simParamsLayout->setSpacing(10);
-    const int variations[] = {10, 20, 30, 40, 50, 100, END_OF_LIST};
     QComboBox * _cbFreqVariations = createIntComboBox(&_params.freqVariations, variations, 1);
     QComboBox * _cbPhaseVariations = createIntComboBox(&_params.phaseVariations, variations, 1);
 
-    const int simMaxSamples[] = {10000, 20000, 50000, 100000, 500000, END_OF_LIST};
     QComboBox * _cbMaxSamples = createIntComboBox(&_params.simMaxSamples, simMaxSamples, 1);
     //QLineEdit * _edFrequency = createDoubleValueEditor(&_simParams.frequency, 100000, 9000000, 2);
     //_edFrequency->setMax

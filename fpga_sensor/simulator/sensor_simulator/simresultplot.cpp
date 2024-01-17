@@ -95,9 +95,9 @@ void SimResultPlot::paintEvent(QPaintEvent * /* event */)
     int fracbits = (_results.byParameterValue.length() == 0) ? 2 : _results.byParameterValue[0].bitStats.bitFractionCount();
     int maxPercent = (int)_results.maxPercent(minbits, maxbits);
     //maxPercent = (maxPercent + 4) / 5 * 5;
-    if (maxPercent < 35)
-        maxPercent = 35;
-    maxPercent += 10;
+    if (maxPercent < 10)
+        maxPercent = 10;
+    maxPercent = maxPercent * 120/100;
     double yscalef = (haxisy / maxPercent);
     int yscale = (int)yscalef;
     for (int k = 10; k < maxPercent; k += 10) {

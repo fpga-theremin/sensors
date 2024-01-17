@@ -321,11 +321,21 @@ MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent), _running(false), _simRestartAfterResults(false), _simResults(nullptr)
 {
     SimParameterMetadata::applyDefaults(&_simParams);
+#ifdef _DEBUG
     _simParams.freqVariations = 3;
     _simParams.phaseVariations = 3;
-    _simParams.freqStep = M_PI/1000; //0.000142466432;
-    _simParams.phaseStep = M_PI / 345; //0.0116544187634;
+    _simParams.freqStep = 0.000142466432;
+    _simParams.phaseStep = 0.0116544187634;
     _simParams.bitFractionCount = 3;
+    _simParams.simMaxSamples = 20000;
+#else
+    _simParams.freqVariations = 5;
+    _simParams.phaseVariations = 5;
+    _simParams.freqStep = 0.00142466432;   // M_PI/1000
+    _simParams.phaseStep = 0.0116544187634; // M_PI / 345
+    _simParams.bitFractionCount = 3;
+    _simParams.simMaxSamples = 30000;
+#endif
 
     _layoutSpacing = 10;
 
