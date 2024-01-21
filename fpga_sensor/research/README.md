@@ -92,9 +92,18 @@ Now we can see that points on small circle rotate twice faster than on big circl
 
 ![Phase shift 30 half of period](../images/phase_shift_detection_chart5.png)
 
+Note that direction from (0,0) to small circle center is the same as direction from circle center to zero phase point on this circle, but mirrored over X axis (angle has opposite sign when measure from X axis).
 
+But there is only one such point. Can we calculate direction from (0,0) to small circle center from other points?
 
+We just need to know phase of points on circle - and then from angle from circle center to particular point we can calculate angle to zero phase point just by subtracting of phase.
+For each sample, it's easy to get small circle phase (angle between vector pointing from circle center to zero phase point and circle center to particular point on circle) - it's just doubled NCO phase.
 
+For two points on circle we can easy calculate direction to the center of the circle - calculte vector of difference between two points and rotate by 90 degrees.
+
+As phase for two points, average should be used.
+
+To increase precision, it makes sense to use 2 points at some interval - by skipping several points between them to maximize distance.
 
 
 
