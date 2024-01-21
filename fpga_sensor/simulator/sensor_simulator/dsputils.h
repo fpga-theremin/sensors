@@ -349,4 +349,6 @@ public:
 
  */
 
+void testCORDIC();
+
 #endif // DSPUTILS_H

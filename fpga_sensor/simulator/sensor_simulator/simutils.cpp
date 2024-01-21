@@ -20,7 +20,6 @@ static const double adcDCOffset[] = {-10.0, -5.0, -2.5, -1.0, -0.5, 0, 0.5, 1.0,
 static const double senseAmplitude[] = {0.1, 0.25, 0.5, 0.8, 0.9, 0.95, 1.0, END_OF_LIST};
 static const int adcAveragingPeriods[] = {1, 2, 4, 8, 16, 32, 64, 128, /*256,*/ END_OF_LIST};
 static const int edgeAccInterpolation[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, END_OF_LIST};
-static const int movingAvgFilterEnabled[] = {0, 1, END_OF_LIST};
 static const int lpFilterEnabled[] = {0, 1, END_OF_LIST};
 
 int quantizeSigned(double value, int bits) {
@@ -221,7 +220,7 @@ void SimState::simulate(SimParams * newParams) {
     senseMulBase2.init(params->simMaxSamples, 0); //[SP_SIM_MAX_SAMPLES + 1000];
 
     // movingAverage filter
-    movingAvgEnabled = params->movingAverageFilterEnabled != 0;
+    movingAvgEnabled = params->movingAverageFilterMode != 0;
     movingAvgFirstSample = 0;
     senseMulAcc1.init(params->simMaxSamples, 0); //[SP_SIM_MAX_SAMPLES + 1000];
     senseMulAcc2.init(params->simMaxSamples, 0); //[SP_SIM_MAX_SAMPLES + 1000];
@@ -293,6 +292,27 @@ void SimState::simulate(SimParams * newParams) {
 
     int64_t movingAvg1 = 0;
     int64_t movingAvg2 = 0;
+
+    int movingAvgMaxDelay = 128; // max BRAM is 128x32
+    double samplesPerPeriod = params->sampleRate/params->frequency;
+    int movingAvgPeriods = (params->movingAverageFilterMode == MOVING_AVG_PER_SAMPLE_MAX_PERIODS)
+            ? (int)(movingAvgMaxDelay / samplesPerPeriod)
+            : 1;
+    int movingAvgDelay = (int)(movingAvgPeriods * samplesPerPeriod);
+    if (movingAvgPeriods == 0) {
+        movingAvgDelay = movingAvgMaxDelay;
+    } else if (movingAvgDelay > movingAvgMaxDelay) {
+        if (movingAvgPeriods > 1) {
+            movingAvgPeriods--;
+            movingAvgDelay = (int)(movingAvgPeriods * samplesPerPeriod);
+            if (movingAvgDelay > movingAvgMaxDelay) {
+                movingAvgDelay = movingAvgMaxDelay;
+            }
+        } else {
+            movingAvgDelay = movingAvgMaxDelay;
+        }
+    }
+
     int movingAvgHalfPeriods = params->averagingPeriods*2;
     if (movingAvgHalfPeriods < 1)
         movingAvgHalfPeriods = 1; // even if disabled, perform averaging for half period
@@ -351,6 +371,7 @@ void SimState::simulate(SimParams * newParams) {
             edge.mulAcc2 = c2;
             edge.sampleIndex = i;
             edgeArray.add(edge);
+
             int lastEdge = edgeArray.length() - 1;
             int startEdge = lastEdge - movingAvgHalfPeriods;
             if (startEdge >= 0) {
@@ -361,8 +382,18 @@ void SimState::simulate(SimParams * newParams) {
                 }
             }
         }
-        movingAvgOut1[i] = movingAvg1;
-        movingAvgOut2[i] = movingAvg2;
+        if (params->movingAverageFilterMode != MOVING_AVG_ZERO_CROSS_N_PERIODS) {
+            if (i - movingAvgDelay >= 0) {
+                movingAvgOut1[i] = (senseMulAcc1[i] - senseMulAcc1[i - movingAvgDelay]) >> params->accDropBits;
+                movingAvgOut2[i] = (senseMulAcc2[i] - senseMulAcc2[i - movingAvgDelay]) >> params->accDropBits;
+            } else {
+                movingAvgOut1[i] = (senseMulAcc1[i] * movingAvgDelay)  >> params->accDropBits;
+                movingAvgOut2[i] = (senseMulAcc2[i] * movingAvgDelay)  >> params->accDropBits;
+            }
+        } else {
+            movingAvgOut1[i] = movingAvg1;
+            movingAvgOut2[i] = movingAvg2;
+        }
     }
     assert(edgeArray.length() > 100);
     periodCount = edgeArray.length() - 1;
@@ -880,19 +911,20 @@ public:
 };
 LpFilterEnabledMetadata LP_FILTER_ENABLED_PARAMETER_METADATA;
 
-struct MovingAvgFilterEnabledMetadata : public SimParameterMetadata {
+static const char * MOVING_AVG_MODE_NAMES[] = {"Disabled", "Fixed 1 period", "Fixed N periods", "Z-cross N Periods", nullptr};
+struct MovingAvgFilterModeMetadata : public SimParameterMetadata {
 public:
-    MovingAvgFilterEnabledMetadata() : SimParameterMetadata(SIM_PARAM_MOVING_AVG_FILTER_ENABLED, QString("MovAvgFltEnabled"), movingAvgFilterEnabled, 1) {}
+    MovingAvgFilterModeMetadata() : SimParameterMetadata(SIM_PARAM_MOVING_AVG_FILTER_MODE, QString("MovAvgFltMode"), MOVING_AVG_MODE_NAMES, 0) {}
     void setParamByIndex(SimParams * params, int index) override {
-        params->movingAverageFilterEnabled = getValue(index).toInt();
+        params->movingAverageFilterMode = getValue(index).toInt();
     }
-    int getInt(const SimParams * params) const override { return params->movingAverageFilterEnabled; }
-    double getDouble(const SimParams * params) const override { return params->movingAverageFilterEnabled; }
-    void setInt(SimParams * params, int value) const override { params->movingAverageFilterEnabled = value; }
-    void setDouble(SimParams * params, double value) const override { params->movingAverageFilterEnabled = value; }
-    void set(SimParams * params, QVariant value) const override { params->movingAverageFilterEnabled = value.toInt(); }
+    int getInt(const SimParams * params) const override { return params->movingAverageFilterMode; }
+    double getDouble(const SimParams * params) const override { return params->movingAverageFilterMode; }
+    void setInt(SimParams * params, int value) const override { params->movingAverageFilterMode = value; }
+    void setDouble(SimParams * params, double value) const override { params->movingAverageFilterMode = value; }
+    void set(SimParams * params, QVariant value) const override { params->movingAverageFilterMode = value.toInt(); }
 };
-MovingAvgFilterEnabledMetadata MOVING_AVF_FILTER_ENABLED_PARAMETER_METADATA;
+MovingAvgFilterModeMetadata MOVING_AVG_FILTER_MODE_PARAMETER_METADATA;
 
 
 int SimParameterMetadata::getIndex(const SimParams * params) const {
@@ -932,7 +964,7 @@ const SimParameterMetadata * SimParameterMetadata::get(SimParameter index) {
     case SIM_PARAM_LP_FILTER_STAGES: return &LP_FILTER_STAGES_PARAMETER_METADATA;
     case SIM_PARAM_LP_FILTER_SHIFT_BITS: return &LP_FILTER_SHIFT_BITS_PARAMETER_METADATA;
     case SIM_PARAM_LP_FILTER_ENABLED: return &LP_FILTER_ENABLED_PARAMETER_METADATA;
-    case SIM_PARAM_MOVING_AVG_FILTER_ENABLED: return &MOVING_AVF_FILTER_ENABLED_PARAMETER_METADATA;
+    case SIM_PARAM_MOVING_AVG_FILTER_MODE: return &MOVING_AVG_FILTER_MODE_PARAMETER_METADATA;
     default:
         assert(false);
         return nullptr;
@@ -975,6 +1007,30 @@ SimParameterMetadata::SimParameterMetadata(SimParameter param, QString name, con
             defaultValueIndex = i;
         }
         values.add(QVariant(v));
+    }
+}
+
+SimParameterMetadata::SimParameterMetadata(SimParameter param, QString name, int defaultValue)
+    : param(param), name(name), defaultValueIndex(0)
+{
+    defaultValueIndex = 0;
+}
+
+SimParameterMetadata::SimParameterMetadata(SimParameter param, QString name, const char * * valueNames, int defaultValue)
+    : param(param), name(name), defaultValueIndex(defaultValue)
+{
+    for (int i = 0; valueNames[i]; i++) {
+        valueLabels.add(valueNames[i]);
+        values.add(QVariant(i));
+    }
+}
+
+SimParameterMetadata::SimParameterMetadata(SimParameter param, QString name, QStringList valueNames, int defaultValue)
+    : param(param), name(name), defaultValueIndex(defaultValue)
+{
+    for (int i = 0; i < valueNames.length(); i++) {
+        valueLabels.add(valueNames[i]);
+        values.add(QVariant(i));
     }
 }
 

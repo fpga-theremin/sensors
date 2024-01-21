@@ -24,6 +24,7 @@ int main(int argc, char *argv[])
     testDDS();
 #endif
 
+    testCORDIC();
 //    FullSimSuite suite;
 //    suite.run();
     //debugDumpParameterMetadata();

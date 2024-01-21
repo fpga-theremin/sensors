@@ -13,6 +13,8 @@
 
 #include "simbatchdialog.h"
 
+#define APP_VERSION "0.3"
+
 //#define RUN_SIMULATION_AFTER_PARAM_CHANGE
 
 void MainWindow::recalculate() {
@@ -181,7 +183,7 @@ void MainWindow::createControls() {
     //_movingAvgFilterState = new QLabel("unknown");
     _movingAvgFilterLatency = new QLabel("unknown");
 
-    _movingAvgFilterParamsLayout->addRow(new QLabel(""), createCheckBox("Enabled", &_simParams.movingAverageFilterEnabled));
+    _movingAvgFilterParamsLayout->addRow(new QLabel("Mode"), createComboBox(SIM_PARAM_MOVING_AVG_FILTER_MODE));
     _movingAvgFilterParamsLayout->addRow(new QLabel("Avg periods"), createComboBox(SIM_PARAM_AVG_PERIODS));
     _movingAvgFilterParamsLayout->addRow(new QLabel("Acc drop bits"), createComboBox(SIM_PARAM_ACC_DROP_BITS));
     _movingAvgFilterParamsLayout->addRow(new QLabel("Edge interp"), createComboBox(SIM_PARAM_EDGE_SUBSAMPLING_BITS));
@@ -339,7 +341,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     _layoutSpacing = 10;
 
-    setWindowTitle("Theremin Sensor Simulator v0.3");
+    setWindowTitle(QString("Theremin Sensor Simulator v") + APP_VERSION);
     QWidget * _mainWidget = new QWidget();
     QVBoxLayout * _mainLayout = new QVBoxLayout();
     _mainLayout->setSpacing(_layoutSpacing);

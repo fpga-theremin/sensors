@@ -194,6 +194,34 @@ void PlotWidget::paintEvent(QPaintEvent * /* event */)
         }
     }
 
+    Array<QPoint> exactPoints;
+    // y of center point of ADC*sin  (base1)
+    exactPoints.clear();
+    for (int i = 0; i <= xsamples; i++) {
+        int x = sample0 + i;
+        // base1 is sin, base2 is cos
+        // y = adc*cos + adc*sin
+        int64_t centerBase1 = (_simState->senseMulBase2[x] + _simState->senseMulBase1[x]) / 2;
+        int yy1 = y0 - (int)round(centerBase1 * yscalef);
+        QPoint pt = QPoint(i*xscale, yy1);
+        exactPoints.add(pt);
+    }
+    painter.drawPolyline(exactPoints.data(), exactPoints.length());
+
+    // x of center point of ADC*cos (base2)
+    exactPoints.clear();
+    for (int i = 0; i <= xsamples; i++) {
+        int x = sample0 + i;
+        // base1 is sin, base2 is cos
+        // x = adc*cos - adc*sin
+        int64_t centerBase2 = (_simState->senseMulBase2[x] - _simState->senseMulBase1[x]) / 2;
+        int yy2 = y0 - (int)round(centerBase2 * yscalef);
+        QPoint pt = QPoint(i*xscale, yy2);
+        exactPoints.add(pt);
+    }
+    painter.drawPolyline(exactPoints.data(), exactPoints.length());
+
+
     // NCO Y scale
     yscalef = (h * 0.95) / (double)(1<<(_simParams->ncoValueBits));
 
@@ -223,20 +251,16 @@ void PlotWidget::paintEvent(QPaintEvent * /* event */)
 
     // senseExact
     painter.setPen(pen4);
-    Array<QPoint> exactPoints;
-    //exactPoints.init(_simState->params->simMaxSamples, QPoint());
-    //[SP_SIM_MAX_SAMPLES];
-    //int pointCount = 0;
+    exactPoints.clear();
     for (int i = 0; i <= xsamples; i++) {
         int x = sample0 + i;
         double sense = _simState->senseExact[x];
         int y = y0 - (int)(sense * yscalef);// + yscale/2;
         QPoint pt = QPoint(i*xscale, y);
         exactPoints.add(pt);
-        //pointCount++;
-
     }
     painter.drawPolyline(exactPoints.data(), exactPoints.length());
+
 
     // sense with noise quantized
     painter.setPen(pen5);

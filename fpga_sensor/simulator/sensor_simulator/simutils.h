@@ -9,6 +9,13 @@
 
 #define SP_SIM_DEFAULT_NUM_SAMPLES 20000
 
+enum MovingAvgMode {
+    MOVING_AVG_DISABLED,
+    MOVING_AVG_PER_SAMPLE_SINGLE_PERIOD,
+    MOVING_AVG_PER_SAMPLE_MAX_PERIODS,
+    MOVING_AVG_ZERO_CROSS_N_PERIODS,
+};
+
 enum SimParameter {
     SIM_PARAM_MIN = 0,
     SIM_PARAM_ADC_BITS = SIM_PARAM_MIN,
@@ -27,8 +34,8 @@ enum SimParameter {
     SIM_PARAM_LP_FILTER_SHIFT_BITS,
     SIM_PARAM_LP_FILTER_STAGES,
     SIM_PARAM_LP_FILTER_ENABLED,
-    SIM_PARAM_MOVING_AVG_FILTER_ENABLED,
-    SIM_PARAM_MAX = SIM_PARAM_MOVING_AVG_FILTER_ENABLED
+    SIM_PARAM_MOVING_AVG_FILTER_MODE, // 0:OFF, 1:FIXED_WINDOW, 2:PERIOD_WINDOW
+    SIM_PARAM_MAX = SIM_PARAM_MOVING_AVG_FILTER_MODE
 };
 
 #define MAX_LP_FILTER_STAGES 16
@@ -105,8 +112,8 @@ struct SimParams {
 
     // SIM_PARAM_LP_FILTER_ENABLED,
     int lpFilterEnabled;
-    // SIM_PARAM_MOVING_AVG_FILTER_ENABLED,
-    int movingAverageFilterEnabled;
+    // SIM_PARAM_MOVING_AVG_FILTER_MODE,
+    int movingAverageFilterMode;
 
     double frequency;
     // recalculated based on precision
@@ -145,7 +152,7 @@ struct SimParams {
                 , lpFilterStages(2)
 
                 , lpFilterEnabled(1)
-                , movingAverageFilterEnabled(1)
+                , movingAverageFilterMode(1)
 
                 , frequency(1012345)
                 , sinTableSizePhaseCorrection(0)
@@ -199,7 +206,7 @@ struct SimParams {
         lpFilterStages = v.lpFilterStages;
 
         lpFilterEnabled = v.lpFilterEnabled;
-        movingAverageFilterEnabled = v.movingAverageFilterEnabled;
+        movingAverageFilterMode = v.movingAverageFilterMode;
 
         adcBits = v.adcBits;
         adcInterpolation = v.adcInterpolation;
@@ -343,6 +350,9 @@ protected:
     Array<QString> valueLabels;
     Array<QVariant> values;
     int defaultValueIndex;
+    SimParameterMetadata(SimParameter param, QString name, int defaultValue);
+    SimParameterMetadata(SimParameter param, QString name, QStringList valueNames, int defaultValue);
+    SimParameterMetadata(SimParameter param, QString name, const char * * valueNames, int defaultValue);
     SimParameterMetadata(SimParameter param, QString name, const int * intValues, int defaultValue, int multiplier = 1);
     SimParameterMetadata(SimParameter param, QString name, const double * doubleValues, double defaultValue);
 public:
