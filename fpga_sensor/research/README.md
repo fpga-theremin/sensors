@@ -113,6 +113,9 @@ This method should work ok for zero centered ADC output (without DC offset). Wha
 
 ![Phase shift 30 with DC offset](../images/phase_shift_detection_chart7.png)
 
+Let's try to calculate "circle center" for each point on curve considering point is laying on circle.
+
+![Circle center calculations](../images/phase_shift_detection_chart8.png)
 
 
 
