@@ -105,6 +105,13 @@ As phase for two points, average should be used.
 
 To increase precision, it makes sense to use 2 points at some interval - by skipping several points between them to maximize distance.
 
+To get phase shift without LP averaging - only using two samples - in addition to cos_mul_adc and sin_mul_adc values per sample, the only additional thing needed is to have NCO phase per sample.
+
+Angle value from two samples already has only DC component. If ATAN2 is pipelined, it's easy to get angle once per sample, and further averaging should give you a very good performance even if averaged for short interval (even shorter than signal period).
+
+This method should work ok for zero centered ADC output (without DC offset). What happens when we add some DC offset to ADC sine signal?
+
+![Phase shift 30 with DC offset](../images/phase_shift_detection_chart7.png)
 
 
 
