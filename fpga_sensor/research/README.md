@@ -118,4 +118,36 @@ Let's try to calculate "circle center" for each point on curve considering point
 ![Circle center calculations](../images/phase_shift_detection_chart8.png)
 
 
+How angle from (0,0) to calculated "center" of curve changes during period for different DC offset.
+(For DC=0 it's horizontal line).
+
+![Angle to curve "center"](../images/phase_shift_detection_chart9.png)
+
+
+
+Let's try simplified method of phase shift calculation.
+Take 3 points with equal phase step on x=adc*nco_cos, y=adc*nco_sin curve, phase2 is phase for middle point p2:
+
+    pt1=(x1,y1) pt2=(x2,y2) pt3=(x3,y3)
+    phase2 = nco_sin and nco_cos phase for point p2
+
+Direction vector v13 from p1 to p3 is (x3-x1), (y3-y1)
+Direction from point p2 to curve center vcenter is v13 rotated 90 degrees CCW 
+
+    v13 = (x3-x1), (y3-y1)
+    vcenter = ( -(y3-y1), (x3-x1) )
+
+Angle from p2 to curve center can be calculated using atan2()
+
+    acenter = atan2(vcenter.y, vcenter.x) = atan2( (x3-x1), -(y3-y1) )
+
+Correcting acenter angle by doubled NCO phase of point2:
+
+    angle = -(acenter + phase2)
+
+Now we have phase shift angle. Comparison of two methods of angle calculation:
+
+![Comparision of two methods](../images/phase_shift_detection_chart10.png)
+
+Taking angle from direction from single curve point to center and correcting by doubled phase of NCO gives pure sine angle swing.
 
