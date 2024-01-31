@@ -6,6 +6,7 @@
 #include <QString>
 #include <QStringList>
 #include <memory>
+#include <QtMath>
 
 #define SP_SIM_DEFAULT_NUM_SAMPLES 20000
 
@@ -19,6 +20,7 @@ enum MovingAvgMode {
 enum SimParameter {
     SIM_PARAM_MIN = 0,
     SIM_PARAM_ADC_BITS = SIM_PARAM_MIN,
+    SIM_PARAM_ADC_MOVING_AVG,
     SIM_PARAM_ADC_SAMPLE_RATE,
     SIM_PARAM_SIN_VALUE_BITS,
     SIM_PARAM_SIN_TABLE_SIZE_BITS,
@@ -35,7 +37,8 @@ enum SimParameter {
     SIM_PARAM_LP_FILTER_STAGES,
     SIM_PARAM_LP_FILTER_ENABLED,
     SIM_PARAM_MOVING_AVG_FILTER_MODE, // 0:OFF, 1:FIXED_WINDOW, 2:PERIOD_WINDOW
-    SIM_PARAM_MAX = SIM_PARAM_MOVING_AVG_FILTER_MODE
+    SIM_PARAM_ATAN2_STEP_SAMPLES, // angleDetectionPointsStep
+    SIM_PARAM_MAX = SIM_PARAM_ATAN2_STEP_SAMPLES
 };
 
 #define MAX_LP_FILTER_STAGES 16
@@ -92,6 +95,8 @@ struct SimParams {
     int adcBits;
     // SIM_PARAM_ADC_INTERPOLATION 1: ADC samples with specified sample rate, N: ADC samples once per N cycles, linearly interpolating values missed cycles
     int adcInterpolation;
+    // SIM_PARAM_ADC_MOVING_AVG
+    int adcMovingAvg;
     // SIM_PARAM_AVG_PERIODS
     int averagingPeriods;
     // SIM_PARAM_EDGE_SUBSAMPLING_BITS
@@ -115,6 +120,9 @@ struct SimParams {
     // SIM_PARAM_MOVING_AVG_FILTER_MODE,
     int movingAverageFilterMode;
 
+    // SIM_PARAM_ATAN2_STEP_SAMPLES  ATAN2 based mode parameters
+    int atan2StepSamples;
+
     double frequency;
     // recalculated based on precision
     double realFrequency;
@@ -123,6 +131,7 @@ struct SimParams {
     int sinTableSize;
     double sinTableSizePhaseCorrection;
     double sensePhaseShift;
+    int64_t sensePhaseShiftInt;
 
 
     int freqVariations;
@@ -142,6 +151,7 @@ struct SimParams {
                 , senseAmplitude(0.9)
                 , adcBits(12)
                 , adcInterpolation(1)
+                , adcMovingAvg(7)
                 , averagingPeriods(8)
                 , edgeAccInterpolation(0)
                 , adcNoise(0)
@@ -154,9 +164,11 @@ struct SimParams {
                 , lpFilterEnabled(1)
                 , movingAverageFilterMode(1)
 
-                , frequency(1012345)
+                , atan2StepSamples(5)
+
+                , frequency(1212345)
                 , sinTableSizePhaseCorrection(0)
-                , sensePhaseShift(-0.0765)
+                , sensePhaseShift(-20/360.0)
                 , freqVariations(5)
                 , freqStep(0.0014325)
                 , phaseVariations(5)
@@ -178,6 +190,10 @@ struct SimParams {
     double phaseByAtan2(int64_t y, int64_t x);
     // compare phase with expected
     double phaseError(double phase);
+    // compare phase with expected - returns value in range -phaseModule/2..phaseModule/2
+    int64_t phaseErrorInt(int64_t phase);
+    // number of exact bits in phase, from phase diff
+    int exactBitsInt(int64_t phaseDiff, int fractionCount = 1) const;
     // number of exact bits in phase, from phase diff
     static int exactBits(double phaseDiff, int fractionCount = 1);
     // takes phase difference from expected value, and converts to nanoseconds
@@ -208,8 +224,11 @@ struct SimParams {
         lpFilterEnabled = v.lpFilterEnabled;
         movingAverageFilterMode = v.movingAverageFilterMode;
 
+        atan2StepSamples = v.atan2StepSamples;
+
         adcBits = v.adcBits;
         adcInterpolation = v.adcInterpolation;
+        adcMovingAvg = v.adcMovingAvg;
         averagingPeriods = v.averagingPeriods;
         edgeAccInterpolation = v.edgeAccInterpolation;
         adcNoise = v.adcNoise;
@@ -526,6 +545,7 @@ struct SimState {
     // signal received from ADC
     Array<double>  senseExact; //[SP_SIM_MAX_SAMPLES + 1000];
     Array<int> sense; //[SP_SIM_MAX_SAMPLES + 1000];
+    Array<int> senseRaw; //[SP_SIM_MAX_SAMPLES + 1000];
 
     //int guard3;
 
@@ -537,6 +557,10 @@ struct SimState {
     bool movingAvgEnabled;
     Array<int64_t> senseMulAcc1; //[SP_SIM_MAX_SAMPLES + 1000];
     Array<int64_t> senseMulAcc2; //[SP_SIM_MAX_SAMPLES + 1000];
+    Array<int64_t> samplePhase; //[SP_SIM_MAX_SAMPLES + 1000];
+    Array<int64_t> angle; //[SP_SIM_MAX_SAMPLES + 1000];
+    Array<int64_t> angleFiltered; //[SP_SIM_MAX_SAMPLES + 1000];
+
     EdgeArray edgeArray;
     int movingAvgFirstSample;
     Array<int64_t> movingAvgOut1;

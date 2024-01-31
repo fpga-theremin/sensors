@@ -94,7 +94,7 @@ void PlotWidget::paintEvent(QPaintEvent * /* event */)
 
     // senseMulBase scale
     int mulBits = _simParams->ncoValueBits + _simParams->adcBits - _simParams->mulDropBits;
-    double yscalef = (double)(h*0.9) / ((uint64_t)1<<(mulBits-1));
+    double yscalef = (double)(h*0.9) / ((uint64_t)1<<(mulBits-1)) / _simParams->adcMovingAvg;
     int dx = xscale/2-1;
     if (dx < 2)
         dx = 2;

@@ -159,9 +159,10 @@ void MainWindow::createControls() {
 
     _adcParamsLayout->addRow(new QLabel("ADC bits"), createComboBox(SIM_PARAM_ADC_BITS));
     _adcParamsLayout->addRow(new QLabel("ADC interpolation"), createComboBox(SIM_PARAM_ADC_INTERPOLATION));
-    _adcParamsLayout->addRow(new QLabel("Noise, LSB"), createComboBox(SIM_PARAM_SENSE_NOISE));
+    _adcParamsLayout->addRow(new QLabel("ADC MovAvg"), createComboBox(SIM_PARAM_ADC_MOVING_AVG));
     _adcParamsLayout->addRow(new QLabel("DC offset, LSB"), createComboBox(SIM_PARAM_SENSE_DC_OFFSET));
 
+    _adcParamsLayout->addRow(new QLabel("ATAN Step"), createComboBox(SIM_PARAM_ATAN2_STEP_SAMPLES));
 
 
     // LP Filter
@@ -245,8 +246,8 @@ void MainWindow::createControls() {
         _cbResult->addItem(metadata->getName(), QVariant(i));
         _cbResult2->addItem(metadata->getName(), QVariant(i));
     }
-    _cbResult->setCurrentIndex(SIM_PARAM_AVG_PERIODS);
-    _cbResult2->setCurrentIndex(SIM_PARAM_EDGE_SUBSAMPLING_BITS);
+    _cbResult->setCurrentIndex(SIM_PARAM_ADC_BITS);
+    _cbResult2->setCurrentIndex(SIM_PARAM_ADC_MOVING_AVG);
     connect(_cbResult, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &MainWindow::plotIndexChanged);
     connect(_cbResult2, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &MainWindow::plotIndexChanged2);
     resultLayout->addWidget(_cbResult);

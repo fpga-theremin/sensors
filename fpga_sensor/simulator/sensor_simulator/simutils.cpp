@@ -7,6 +7,8 @@
 
 static const int sampleRates[] = {3, 4, 10, 20, 25, 40, 65, 80, 100, 125, 200, END_OF_LIST};
 static const int phaseBits[] = {24, 26, 28, 30, 32, 34, 36, END_OF_LIST};
+
+static const int atanStepSamples[] = {0, 1, 2, 3, 4, 5, 6, 7, END_OF_LIST};
 static const int lpFilterStages[] = {1, 2, 3, 4, 5, 6, 7, 8, END_OF_LIST};
 static const int lpFilterShiftBits[] = {3, 4, 5, 6, 7, 8, 9, 10, END_OF_LIST};
 static const int mulDropBits[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, END_OF_LIST};
@@ -15,6 +17,7 @@ static const int ncoValueBits[] = {8, 9, 10, 11, 12, 13, 14, 15, 16, 17, /* 18,*
 static const int sinTableBits[] = {/*7,*/ 8, 9, 10, 11, 12, 13, 14, 15, 16, /* 17, 18,*/ END_OF_LIST};
 static const int adcValueBits[] = {/*6, 7,*/ 8, 9, 10, 11, 12, 13, 14, /*16,*/ END_OF_LIST};
 static const int adcInterpolationRate[] = {1, 2, 3, 4, END_OF_LIST};
+static const int adcMovingAvg[] = {1, 3, 5, 7, 15, END_OF_LIST};
 static const double adcNoise[] = {0.0, 0.1, 0.25, 0.5, 1.0, 2.0, 5.0, 10.0, END_OF_LIST};
 static const double adcDCOffset[] = {-10.0, -5.0, -2.5, -1.0, -0.5, 0, 0.5, 1.0, 2.5, 5.0, 10.0, END_OF_LIST};
 static const double senseAmplitude[] = {0.1, 0.25, 0.5, 0.8, 0.9, 0.95, 1.0, END_OF_LIST};
@@ -75,6 +78,9 @@ void SimParams::recalculate() {
     phaseModule = ((int64_t)1) << ncoPhaseBits;
     phaseIncrement = (int64_t)round(phaseInc * phaseModule);
     realFrequency = sampleRate / ((double)phaseModule / (double)phaseIncrement);
+
+    sensePhaseShiftInt = sensePhaseShift * phaseModule;
+
     sinTableSize = 1 << ncoSinTableSizeBits;
     sinTable.init(ncoSinTableSizeBits, ncoValueBits, 1.0);
     // correction by half of sin table - calculated phase centered at center of table step, not in beginning
@@ -127,6 +133,16 @@ double SimParams::phaseByAtan2(int64_t y, int64_t x) {
 }
 
 // compare phase with expected
+int64_t SimParams::phaseErrorInt(int64_t angle) {
+    int64_t diff = (angle - sensePhaseShiftInt) & (phaseModule-1);
+    while (diff > (phaseModule>>1))
+        diff -= (phaseModule);
+    while (diff < -(phaseModule>>1))
+        diff += (phaseModule);
+    return diff;
+}
+
+// compare phase with expected
 double SimParams::phaseError(double angle) {
     double diff = angle - sensePhaseShift;
     if (diff < -0.5)
@@ -143,6 +159,22 @@ double SimParams::phaseErrorToNanoSeconds(double phaseErr) {
     double res = nanosecondsPerPeriod * absError;
     //res = round(res * 1000) / 1000;
     return res;
+}
+
+// number of exact bits in phase, from phase diff
+int SimParams::exactBitsInt(int64_t phaseDiff, int fractionCount) const {
+    phaseDiff &= (phaseModule-1);
+    if (phaseDiff >= (phaseModule>>1))
+        phaseDiff -= phaseModule;
+    if (phaseDiff < 0)
+        phaseDiff = -phaseDiff;
+    if (phaseDiff < 10)
+        return 32*fractionCount - 1;
+    double vlog2 = this->ncoPhaseBits - log2(phaseDiff);
+    int bitCount = (int)floor(vlog2*fractionCount);
+    if (bitCount >= 32 * fractionCount)
+        bitCount = 32 * fractionCount - 1;
+    return bitCount;
 }
 
 // number of exact bits in phase, from phase diff
@@ -206,6 +238,15 @@ int SimState::adcSensedValueForPhase(uint64_t phase) {
     return adcExactToQuantized(exactSense);
 }
 
+// ensure angle in range -180..180
+double clampAngleDegrees(double angle) {
+    while (angle >= 180.0)
+        angle -= 360.0;
+    while (angle < -180.0)
+        angle += 360.0;
+    return angle;
+}
+
 void SimState::simulate(SimParams * newParams) {
     edgeArray.clear();
     periodIndex.clear();
@@ -216,6 +257,7 @@ void SimState::simulate(SimParams * newParams) {
     base2.init(params->simMaxSamples, 0); //[SP_SIM_MAX_SAMPLES + 1000]; // delayed by 90 (sin)
     senseExact.init(params->simMaxSamples, 0); //[SP_SIM_MAX_SAMPLES + 1000];
     sense.init(params->simMaxSamples, 0); //[SP_SIM_MAX_SAMPLES + 1000];
+    senseRaw.init(params->simMaxSamples, 0); //[SP_SIM_MAX_SAMPLES + 1000];
     senseMulBase1.init(params->simMaxSamples, 0); //[SP_SIM_MAX_SAMPLES + 1000];
     senseMulBase2.init(params->simMaxSamples, 0); //[SP_SIM_MAX_SAMPLES + 1000];
 
@@ -226,6 +268,9 @@ void SimState::simulate(SimParams * newParams) {
     senseMulAcc2.init(params->simMaxSamples, 0); //[SP_SIM_MAX_SAMPLES + 1000];
     movingAvgOut1.init(params->simMaxSamples, 0);
     movingAvgOut2.init(params->simMaxSamples, 0);
+    samplePhase.init(params->simMaxSamples, 0);
+    angle.init(params->simMaxSamples, 0);
+    angleFiltered.init(params->simMaxSamples, 0);
 
     // LP IIR filter
     lpFilterEnabled = params->lpFilterEnabled != 0;
@@ -233,6 +278,9 @@ void SimState::simulate(SimParams * newParams) {
     lpFilterOut1.init(params->simMaxSamples, 0);
     lpFilterOut2.init(params->simMaxSamples, 0);
 
+    // =======================================================
+    // SIN, COS, phase
+    // =======================================================
     // phase for base1
     int64_t phase = 0;
     for (int i = 0; i < params->simMaxSamples; i++) {
@@ -242,24 +290,26 @@ void SimState::simulate(SimParams * newParams) {
             phase2 += params->phaseModule;
         base1[i] = params->tableEntryForPhase(phase);
         base2[i] = params->tableEntryForPhase(phase2);
+        samplePhase[i] = phase;
         // increment phase
         phase += params->phaseIncrement;
         phase = phase & (params->phaseModule - 1);
     }
 
+    // =======================================================
+    // Sense (ADC)
+    // =======================================================
     int64_t senseShift = (int64_t)round(params->sensePhaseShift * params->phaseModule);
     senseShift &= (params->phaseModule - 1);
     //senseShift -= params->phaseIncrement / 2;
     phase = senseShift;
-    //int adcScale = 1<<(params->adcBits - 1);
-    int64_t acc1=0;
-    int64_t acc2=0;
     for (int i = 0; i < params->simMaxSamples; i++) {
         //double exactPhase = 2 * M_PI * phase / params->phaseModule;
         double exactSense = adcExactSensedValueForPhase(phase);
         senseExact[i] = exactSense;
         // quantization (rounding to integer)
-        sense[i] = adcExactToQuantized(exactSense);
+        senseRaw[i] = adcExactToQuantized(exactSense);
+        sense[i] = senseRaw[i];
 
         if (params->adcInterpolation > 1) {
             int frac = i % params->adcInterpolation;
@@ -276,6 +326,31 @@ void SimState::simulate(SimParams * newParams) {
             }
         }
 
+        // increment phase
+        phase += params->phaseIncrement;
+        phase = phase & (params->phaseModule - 1);
+    }
+
+    //=============================================================
+    // ADC filtering
+    //=============================================================
+    if (params->adcMovingAvg>1) {
+        for (int i = params->adcMovingAvg/2; i < params->simMaxSamples - params->adcMovingAvg/2; i++) {
+            int sum = 0;
+            for (int j = -params->adcMovingAvg/2; j<=params->adcMovingAvg/2; j++) {
+                sum += senseRaw[i + j];
+            }
+            sense[i] = sum;
+        }
+    }
+
+    //=============================================================
+    // ADC * SIN, ADC * COS
+    //=============================================================
+    phase = 0;
+    int64_t acc1=0;
+    int64_t acc2=0;
+    for (int i = 0; i < params->simMaxSamples; i++) {
         // multiplied
         senseMulBase1[i] = (sense[i] * (int64_t)base1[i]) >> params->mulDropBits;
         senseMulBase2[i] = (sense[i] * (int64_t)base2[i]) >> params->mulDropBits;
@@ -289,6 +364,121 @@ void SimState::simulate(SimParams * newParams) {
         phase += params->phaseIncrement;
         phase = phase & (params->phaseModule - 1);
     }
+
+    //int64_t
+    // angle from 3 points
+//    double lastAngle = 0;
+//    double lastPhase = 0;
+//    double sumAngle = 0;
+//    double sumPhase = 0;
+//    double sumShift = 0;
+//    int anglePhaseCount = 0;
+    if (params->atan2StepSamples > 0) {
+        // ATAN2 first pipeline
+        for (int i = params->atan2StepSamples; i < params->simMaxSamples - params->atan2StepSamples * 2; i++) {
+            int64_t x0 = senseMulBase2[i - params->atan2StepSamples];
+            int64_t y0 = senseMulBase1[i - params->atan2StepSamples];
+            int64_t x1 = senseMulBase2[i];
+            int64_t y1 = senseMulBase1[i];
+            int64_t x2 = senseMulBase2[i + params->atan2StepSamples];
+            int64_t y2 = senseMulBase1[i + params->atan2StepSamples];
+            int64_t x3 = senseMulBase2[i + params->atan2StepSamples*2];
+            int64_t y3 = senseMulBase1[i + params->atan2StepSamples*2];
+
+            int outx = 0;
+            int outy = 0;
+            circleCenter(outx, outy,
+                         x0, y0, x1, y1, x2, y2, x3, y3);
+            double angleFromCenterDouble = -atan2(outx, outy);
+            uint64_t angleFromCenter = (uint64_t)(angleFromCenterDouble * (params->phaseModule>>1) / M_PI);
+            angle[i] = angleFromCenter & (params->phaseModule-1);
+//            double angleError = params->phaseErrorInt(angle[i]) * 360.0 / params->phaseModule;
+
+//            if (i < 1000) {
+//                qDebug("    [%d]\t%d\t%d\t %.9f  err=\t%.9f", i,
+//                       outx, outy,
+//                       angleFromCenterDouble,
+//                       angleError);
+//            }
+
+#if 0
+            int64_t x1 = senseMulBase2[i - params->atan2StepSamples];
+            int64_t y1 = senseMulBase1[i - params->atan2StepSamples];
+            int64_t x2 = senseMulBase2[i + params->atan2StepSamples];
+            int64_t y2 = senseMulBase1[i + params->atan2StepSamples];
+            phase = samplePhase[i]; // - params->phaseIncrement / 2; // + params->phaseIncrement / 2;
+            phase = phase * 2;
+            int64_t dx = (x2 - x1);
+            int64_t dy = (y2 - y1);
+            double angleFromCenterDouble = atan2(dy, -dx);
+    //        double angleFromCenterDoubleDegrees = angleFromCenterDouble * 180.0 / M_PI;
+    //        double phaseDoubleDegrees = phase * 360.0 / params->phaseModule;
+            uint64_t angleFromCenter = (uint64_t)(angleFromCenterDouble * (params->phaseModule>>1) / M_PI);
+            angle[i] = (angleFromCenter - phase) & (params->phaseModule-1);
+            //double angleDegrees = clampAngleDegrees(angleFromCenterDoubleDegrees - phaseDoubleDegrees);
+    //        if (i > params->angleDetectionPointsStep) {
+    //            double diffAngle = clampAngleDegrees(lastAngle - angleFromCenterDoubleDegrees);
+    //            double diffPhase = clampAngleDegrees(lastPhase - phaseDoubleDegrees);
+    //            sumAngle += diffAngle;
+    //            sumPhase += diffPhase;
+    //            sumShift += angleDegrees;
+    //            anglePhaseCount++;
+    //        }
+    //        lastAngle = clampAngleDegrees(angleFromCenterDoubleDegrees);
+    //        lastPhase = clampAngleDegrees(phaseDoubleDegrees);
+    //        double angleError = params->phaseErrorInt(angle[i]) * 360.0 / params->phaseModule;
+    //        if (i < 1000) {
+    //            qDebug("  [%d]  x1=%d y1=%d  x2=%d y2=%d "
+    //                   "  dx=%d dy=%d "
+
+    //                   " angleC = %08x"
+    //                   " phase*2 = %08x"
+    //                   " angle = %08x  "
+
+    //                   " exactBits=%.1f"
+    //                   " expected=%08x "
+    //                   " angleError=%.3f"
+    //                   " angleF=%.5f  phase2F=%.5f  diff=%.5f",
+    //                   (int)i,
+    //                   (int)x1, (int)y1, (int)x2, (int)y2,
+
+    //                   (int)dx, (int)dy,
+
+    //                   (uint32_t)angleFromCenter,
+    //                   (uint32_t)(phase),
+    //                   (uint32_t)angle[i],
+
+    //                   params->exactBitsInt(angle[i]-params->sensePhaseShiftInt, 10)/10.0,
+    //                   (uint32_t)params->sensePhaseShiftInt,
+
+    //                   angleError,
+    //                   angleFromCenterDoubleDegrees,
+    //                   phaseDoubleDegrees,
+    //                   clampAngleDegrees(angleFromCenterDoubleDegrees-phaseDoubleDegrees));
+    //        }
+#endif
+        }
+        // fill begin and end with nearest angle value
+        for (int i = 0 ; i < params->atan2StepSamples; i++) {
+            angle[i] = angle[params->atan2StepSamples];
+        }
+        for (int i = params->simMaxSamples - params->atan2StepSamples; i < params->simMaxSamples; i++) {
+            angle[i] = angle[params->simMaxSamples - params->atan2StepSamples - 1];
+        }
+
+
+        // LP filter
+        LowPassFilter lpFilter(params->lpFilterStages, params->lpFilterShiftBits, angle[0]);
+        for (int i = 0; i < params->simMaxSamples - 1; i++) {
+            angleFiltered[i] = lpFilterEnabled ? lpFilter.tick(angle[i]) : angle[i];
+        }
+    }
+
+//    qDebug("*** angle step=\t%.9f\t phase step=\t%.9f\t shift angle=\t%.9f\t",
+//           sumAngle/anglePhaseCount,
+//           sumPhase/anglePhaseCount,
+//           sumShift/anglePhaseCount
+//           );
 
     int64_t movingAvg1 = 0;
     int64_t movingAvg2 = 0;
@@ -597,17 +787,34 @@ void SimParamMutator::runTests(SimResultsItem & results) {
 }
 
 void SimState::collectStats(ExactBitStats & stats) {
-    int startSample = movingAvgFirstSample + lpFilterFirstSample*2 + 2000;
-//    if (startSample < lpFilterFirstSample)
-//        startSample = lpFilterFirstSample;
-    int step = 10;
-    for (int i = startSample; i < params->simMaxSamples; i+=step) {
-        int64_t sumBase1 = lpFilterOut1[i];
-        int64_t sumBase2 = lpFilterOut2[i];
-        double angle = params->phaseByAtan2(sumBase2, sumBase1); //- atan2(sum2, sum1) / M_PI / 2;
-        double err = params->phaseError(angle);
-        int exactBits = SimParams::exactBits(err, stats.bitFractionCount());
-        stats.incrementExactBitsCount(exactBits);
+    if (params->atan2StepSamples > 0) {
+        int startSample = 1000; //movingAvgFirstSample + lpFilterFirstSample*2 + 2000;
+        int step = 1;
+        int maxPrecision = 32*stats.bitFractionCount();
+        for (int i = startSample; i < params->simMaxSamples; i+=step) {
+            int64_t err = params->phaseErrorInt(angleFiltered[i]);
+            int exactBits = params->exactBitsInt(err, stats.bitFractionCount()); // SimParams::exactBits(err, stats.bitFractionCount());
+            if (exactBits >= maxPrecision)
+                exactBits = maxPrecision - 1;
+            if (exactBits < 0) {
+                qDebug("Exact bits < 0: err=%d bits=%d", (int)err, exactBits);
+                exactBits = 0;
+            }
+            stats.incrementExactBitsCount(exactBits);
+        }
+    } else {
+        int startSample = movingAvgFirstSample + lpFilterFirstSample*2 + 2000;
+    //    if (startSample < lpFilterFirstSample)
+    //        startSample = lpFilterFirstSample;
+        int step = 10;
+        for (int i = startSample; i < params->simMaxSamples; i+=step) {
+            int64_t sumBase1 = lpFilterOut1[i];
+            int64_t sumBase2 = lpFilterOut2[i];
+            double angle = params->phaseByAtan2(sumBase2, sumBase1); //- atan2(sum2, sum1) / M_PI / 2;
+            double err = params->phaseError(angle);
+            int exactBits = SimParams::exactBits(err, stats.bitFractionCount());
+            stats.incrementExactBitsCount(exactBits);
+        }
     }
 }
 
@@ -743,6 +950,20 @@ public:
 };
 AdcInterpolationMetadata ADC_INTERPOLATION_PARAMETER_METADATA;
 
+struct AdcMovingAvgMetadata : public SimParameterMetadata {
+public:
+    AdcMovingAvgMetadata() : SimParameterMetadata(SIM_PARAM_ADC_MOVING_AVG, QString("ADC Moving Avg"), adcMovingAvg, 7) {}
+    void setParamByIndex(SimParams * params, int index) override {
+        params->adcMovingAvg = getValue(index).toInt();
+    }
+    int getInt(const SimParams * params) const override { return params->adcMovingAvg; }
+    double getDouble(const SimParams * params) const override { return params->adcMovingAvg; }
+    void setInt(SimParams * params, int value) const override { params->adcMovingAvg = value; }
+    void setDouble(SimParams * params, double value) const override { params->adcMovingAvg = value; }
+    void set(SimParams * params, QVariant value) const override { params->adcMovingAvg = value.toInt(); }
+};
+AdcMovingAvgMetadata ADC_MOVING_AVG_PARAMETER_METADATA;
+
 struct SinValueBitsMetadata : public SimParameterMetadata {
 public:
     SinValueBitsMetadata() : SimParameterMetadata(SIM_PARAM_SIN_VALUE_BITS, QString("SinValueBits"), ncoValueBits, 13) {}
@@ -784,6 +1005,20 @@ public:
     void set(SimParams * params, QVariant value) const override { params->ncoPhaseBits = value.toInt(); }
 };
 PhaseBitsMetadata PHASE_BITS_PARAMETER_METADATA;
+
+struct Atan2StepSamplesMetadata : public SimParameterMetadata {
+public:
+    Atan2StepSamplesMetadata() : SimParameterMetadata(SIM_PARAM_ATAN2_STEP_SAMPLES, QString("AtanStep"), atanStepSamples, 7) {}
+    void setParamByIndex(SimParams * params, int index) override {
+        params->atan2StepSamples = getValue(index).toInt();
+    }
+    int getInt(const SimParams * params) const override { return params->atan2StepSamples; }
+    double getDouble(const SimParams * params) const override { return params->atan2StepSamples; }
+    void setInt(SimParams * params, int value) const override { params->atan2StepSamples = value; }
+    void setDouble(SimParams * params, double value) const override { params->atan2StepSamples = value; }
+    void set(SimParams * params, QVariant value) const override { params->atan2StepSamples = value.toInt(); }
+};
+Atan2StepSamplesMetadata ATAN2_STEP_SAMPLES_PARAMETER_METADATA;
 
 struct EdgeSubsamplingBitsMetadata : public SimParameterMetadata {
 public:
@@ -953,8 +1188,10 @@ const SimParameterMetadata * SimParameterMetadata::get(SimParameter index) {
     case SIM_PARAM_SIN_VALUE_BITS: return &SIN_VALUE_BITS_PARAMETER_METADATA;
     case SIM_PARAM_SIN_TABLE_SIZE_BITS: return &SIN_TABLE_SIZE_BITS_PARAMETER_METADATA;
     case SIM_PARAM_PHASE_BITS: return &PHASE_BITS_PARAMETER_METADATA;
+    case SIM_PARAM_ATAN2_STEP_SAMPLES: return &ATAN2_STEP_SAMPLES_PARAMETER_METADATA;
     case SIM_PARAM_AVG_PERIODS: return &AVG_PERIODS_PARAMETER_METADATA;
     case SIM_PARAM_ADC_INTERPOLATION: return &ADC_INTERPOLATION_PARAMETER_METADATA;
+    case SIM_PARAM_ADC_MOVING_AVG: return &ADC_MOVING_AVG_PARAMETER_METADATA;
     case SIM_PARAM_EDGE_SUBSAMPLING_BITS: return &EDGE_SUBSAMPLING_BITS_PARAMETER_METADATA;
     case SIM_PARAM_SENSE_AMPLITUDE: return &SENSE_AMPLITUDE_PARAMETER_METADATA;
     case SIM_PARAM_SENSE_DC_OFFSET: return &SENSE_DC_OFFSET_PARAMETER_METADATA;

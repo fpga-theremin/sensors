@@ -1603,3 +1603,189 @@ void testCORDIC() {
 
     qDebug("Tests finished");
 }
+
+#define DSP_DELAY_BUFFER_SIZE 32
+struct DelayBuffer {
+    int delayCycles;
+    int values[DSP_DELAY_BUFFER_SIZE];
+    int wrpos;
+    DelayBuffer(int delay=6) : delayCycles(delay), wrpos(0) {
+        for (int i = 0; i < DSP_DELAY_BUFFER_SIZE; i++)
+            values[i] = 0;
+    }
+    int push(int v) {
+        wrpos = (wrpos + 1) & (DSP_DELAY_BUFFER_SIZE-1);
+        return peek();
+    }
+    int peek() {
+        int rdpos = (wrpos - delayCycles + DSP_DELAY_BUFFER_SIZE) & (DSP_DELAY_BUFFER_SIZE-1);
+        return values[rdpos];
+    }
+};
+
+// find circle center by 4 points
+void circleCenter(int &outx, int &outy, int x0, int y0, int x1, int y1, int x2, int y2, int x3, int y3) {
+    int dx10 = x1 - x0;
+    int dx21 = x2 - x1;
+    int dx32 = x3 - x2;
+    int dy10 = y1 - y0;
+    int dy21 = y2 - y1;
+    int dy32 = y3 - y2;
+    int ddx20 = dx21 - dx10;
+    int ddx31 = dx32 - dx21;
+    int ddy20 = dy21 - dy10;
+    int ddy31 = dy32 - dy21;
+    int dddx = ddx31 - ddx20;
+    int dddy = ddy31 - ddy20;
+    int adx21 = dx21 > 0 ? dx21 : -dx21;
+    int ady21 = dy21 > 0 ? dy21 : -dy21;
+    int adddx = dddx > 0 ? dddx : -dddx;
+    int adddy = dddy > 0 ? dddy : -dddy;
+    int x = x1;
+    int y = y1;
+    int dx = ddx20;
+    int dy = ddy20;
+    int dm = (adx21 > ady21) ? adddx : adddy;
+    int m = (adx21 > ady21) ? adx21 : ady21;
+
+    // scaling
+    while (dm < (m>>1)) {
+        dx <<= 1;
+        dy <<= 1;
+        dm <<= 1;
+    }
+
+    for (int i = 0; i < 16; i++) {
+        if (m > 0) {
+            x += dx;
+            y += dy;
+            m -= dm;
+        } else {
+            x -= dx;
+            y -= dy;
+            m += dm;
+        }
+        dm >>= 1;
+        dx >>= 1;
+        dy >>= 1;
+    }
+    outx = x;
+    outy = y;
+}
+
+// on input, there is a sequence of points on a circle.
+// ouput - attempt
+struct CenterCircleFilter {
+    // optimal is 1/6 of circle = 1/12 of signal period.
+    int pointDelay;
+    // 0: x, 1: y
+    int phase;
+    DelayBuffer delay1;
+    DelayBuffer delay2;
+    DelayBuffer delay3;
+
+    int p0;
+    int p1;
+    int p2;
+    int p3;
+    int d10;
+    int d21;
+    int d32;
+    int dd20;
+    int dd31;
+    int ddd;
+    int ad21;
+    int addd;
+
+    int prev_p0;
+    int prev_p1;
+    int prev_p2;
+    int prev_p3;
+    int prev_d10;
+    int prev_d21;
+    int prev_d32;
+    int prev_dd20;
+    int prev_dd31;
+    int prev_ddd;
+    int prev_ad21;
+    int prev_addd;
+public:
+    CenterCircleFilter(int delay) : pointDelay(delay), phase(0), delay1(delay), delay2(delay), delay3(delay){
+        p0 = 0;
+        p1 = 0;
+        p2 = 0;
+        p3 = 0;
+        d10 = 0;
+        d21 = 0;
+        d32 = 0;
+        dd20 = 0;
+        dd31 = 0;
+        ddd = 0;
+        ad21 = 0;
+        addd = 0;
+
+        prev_p0 = 0;
+        prev_p1 = 0;
+        prev_p2 = 0;
+        prev_p3 = 0;
+        prev_d10 = 0;
+        prev_d21 = 0;
+        prev_d32 = 0;
+        prev_dd20 = 0;
+        prev_dd31 = 0;
+        prev_ddd = 0;
+        prev_ad21 = 0;
+        prev_addd = 0;
+    }
+    // one cycle, v is either x or y, interleaved for odd/even cycles
+    // output is calculated circle center, x or y
+    int tick(int v) {
+        prev_p0 = p0;
+        prev_p1 = p1;
+        prev_p2 = p2;
+        prev_p3 = p3;
+        prev_d10 = d10;
+        prev_d21 = d21;
+        prev_d32 = d32;
+        prev_dd20 = dd20;
+        prev_dd31 = dd31;
+        prev_ddd = ddd;
+        prev_ad21 = ad21;
+        prev_addd = addd;
+
+        p0 = v;
+        p1 = delay1.push(p0);
+        p2 = delay2.push(p1);
+        p3 = delay3.push(p2);
+        d10 = p1 - p0;
+        d21 = p2 - p1;
+        d32 = p3 - p2;
+        dd20 = d21 - d10;
+        dd31 = d32 - d21;
+        ddd = dd31 - dd20;
+        ad21 = d21 > 0 ? d21 : -d21;
+        addd = ddd > 0 ? ddd : -ddd;
+
+        int pt = p1;
+        int dpt = dd20;
+        int dm = (ad21 > prev_ad21) ? addd : prev_addd;
+        int m = (ad21 > prev_ad21) ? ad21 : prev_ad21;
+
+        for (int i = 0; i < 24; i++) {
+            if (m > 0) {
+                pt += dpt;
+                m -= dm;
+            } else {
+                pt -= dpt;
+                m += dm;
+            }
+            dpt >>= 1;
+            dm >>= 1;
+        }
+
+        phase = phase ? 0 : 1;
+        return 0;
+    }
+};
+
+

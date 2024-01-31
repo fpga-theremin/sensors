@@ -342,6 +342,8 @@ public:
     }
 };
 
+void circleCenter(int &outx, int &outy, int x0, int y0, int x1, int y1, int x2, int y2, int x3, int y3);
+
 /*
 
   SimReg r(10);
