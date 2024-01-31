@@ -1655,7 +1655,7 @@ void circleCenter(int &outx, int &outy, int x0, int y0, int x1, int y1, int x2, 
         dm <<= 1;
     }
 
-    for (int i = 0; i < 16; i++) {
+    for (int i = 0; i < 24; i++) {
         if (m > 0) {
             x += dx;
             y += dy;
@@ -1668,6 +1668,8 @@ void circleCenter(int &outx, int &outy, int x0, int y0, int x1, int y1, int x2, 
         dm >>= 1;
         dx >>= 1;
         dy >>= 1;
+        if (dm == 0)
+            break;
     }
     outx = x;
     outy = y;

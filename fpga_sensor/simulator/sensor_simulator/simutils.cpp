@@ -14,7 +14,7 @@ static const int lpFilterShiftBits[] = {3, 4, 5, 6, 7, 8, 9, 10, END_OF_LIST};
 static const int mulDropBits[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, END_OF_LIST};
 static const int accDropBits[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 14, 16, END_OF_LIST};
 static const int ncoValueBits[] = {8, 9, 10, 11, 12, 13, 14, 15, 16, 17, /* 18,*/ END_OF_LIST};
-static const int sinTableBits[] = {/*7,*/ 8, 9, 10, 11, 12, 13, 14, 15, 16, /* 17, 18,*/ END_OF_LIST};
+static const int sinTableBits[] = {/*7,*/ 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, END_OF_LIST};
 static const int adcValueBits[] = {/*6, 7,*/ 8, 9, 10, 11, 12, 13, 14, /*16,*/ END_OF_LIST};
 static const int adcInterpolationRate[] = {1, 2, 3, 4, END_OF_LIST};
 static const int adcMovingAvg[] = {1, 3, 5, 7, 15, END_OF_LIST};
@@ -788,7 +788,7 @@ void SimParamMutator::runTests(SimResultsItem & results) {
 
 void SimState::collectStats(ExactBitStats & stats) {
     if (params->atan2StepSamples > 0) {
-        int startSample = 1000; //movingAvgFirstSample + lpFilterFirstSample*2 + 2000;
+        int startSample = params->simMaxSamples * 3 / 4; //movingAvgFirstSample + lpFilterFirstSample*2 + 2000;
         int step = 1;
         int maxPrecision = 32*stats.bitFractionCount();
         for (int i = startSample; i < params->simMaxSamples; i+=step) {
@@ -966,7 +966,7 @@ AdcMovingAvgMetadata ADC_MOVING_AVG_PARAMETER_METADATA;
 
 struct SinValueBitsMetadata : public SimParameterMetadata {
 public:
-    SinValueBitsMetadata() : SimParameterMetadata(SIM_PARAM_SIN_VALUE_BITS, QString("SinValueBits"), ncoValueBits, 13) {}
+    SinValueBitsMetadata() : SimParameterMetadata(SIM_PARAM_SIN_VALUE_BITS, QString("SinValueBits"), ncoValueBits, 16) {}
     void setParamByIndex(SimParams * params, int index) override {
         params->ncoValueBits = getValue(index).toInt();
     }
@@ -980,7 +980,7 @@ SinValueBitsMetadata SIN_VALUE_BITS_PARAMETER_METADATA;
 
 struct SinTableSizeBitsMetadata : public SimParameterMetadata {
 public:
-    SinTableSizeBitsMetadata() : SimParameterMetadata(SIM_PARAM_SIN_TABLE_SIZE_BITS, QString("SinTableSizeBits"), sinTableBits, 12) {}
+    SinTableSizeBitsMetadata() : SimParameterMetadata(SIM_PARAM_SIN_TABLE_SIZE_BITS, QString("SinTableSizeBits"), sinTableBits, 16) {}
     void setParamByIndex(SimParams * params, int index) override {
         params->ncoSinTableSizeBits = getValue(index).toInt();
     }
