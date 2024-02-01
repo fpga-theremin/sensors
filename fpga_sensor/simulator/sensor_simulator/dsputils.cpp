@@ -1675,6 +1675,76 @@ void circleCenter(int &outx, int &outy, int x0, int y0, int x1, int y1, int x2, 
     outy = y;
 }
 
+// find circle center by 3 points
+void circleCenter3(int &outx, int &outy, int x0, int y0, int x1, int y1, int x2, int y2) {
+    // p10 = (x10,y10), p21 = (x21,y21) -- centers between points p0,p1 and p1,p2
+    int x10 = (x0 + x1) / 2;
+    int y10 = (y0 + y1) / 2;
+    //int x21 = (x1 + x2) / 2;
+    //int y21 = (y1 + y2) / 2;
+    // vector from p10 to p21
+    int dx20 = (x2-x0) / 2;
+    int dy20 = (y2-y0) / 2;
+    // vectors from p0 to p1 (dx10,dy10) and p1 to p2 (dx21,dy21)
+    int dx10 = x1 - x0;
+    int dx21 = x2 - x1;
+    int dy10 = y1 - y0;
+    int dy21 = y2 - y1;
+    // vector from p10 and p21 to circle center - rotate 90 degrees CCW
+    int cdx10 = -dy10;
+    int cdy10 = dx10;
+    int cdx21 = -dy21;
+    int cdy21 = dx21;
+    // vector from end points of p10 moved to center to p21 moved to center
+    int ddx = cdx21 - cdx10;
+    int ddy = cdy21 - cdy10;
+    if (dx20 < 0) {
+        dx20 = -dx20;
+        ddx = -ddx;
+    }
+    if (dy20 < 0) {
+        dy20 = -dy20;
+        ddy = -ddy;
+    }
+    int m = (dy20 > dx20) ? dy20 : dx20;
+    int dm = (dy20 > dx20) ? -ddy : -ddx;
+    int x = x10;
+    int y = y10;
+    int dx = cdx10;
+    int dy = cdy10;
+    // scaling right
+    while (dm > m) {
+        dx >>= 1;
+        dy >>= 1;
+        dm >>= 1;
+    }
+    // scaling left
+    while (dm < (m>>1)) {
+        dx <<= 1;
+        dy <<= 1;
+        dm <<= 1;
+    }
+
+    for (int i = 0; i < 24; i++) {
+        if (m > dm) {
+            x += dx;
+            y += dy;
+            m -= dm;
+        }/* else {
+            x -= dx;
+            y -= dy;
+            m += dm;
+        }*/
+        dm >>= 1;
+        dx >>= 1;
+        dy >>= 1;
+        if (dm == 0)
+            break;
+    }
+    outx = x;
+    outy = y;
+}
+
 // on input, there is a sequence of points on a circle.
 // ouput - attempt
 struct CenterCircleFilter {

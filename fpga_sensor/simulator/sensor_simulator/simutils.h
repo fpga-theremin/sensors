@@ -119,6 +119,7 @@ struct SimParams {
     int lpFilterEnabled;
     // SIM_PARAM_MOVING_AVG_FILTER_MODE,
     int movingAverageFilterMode;
+    int centerPointMovingAvgSamples;
 
     // SIM_PARAM_ATAN2_STEP_SAMPLES  ATAN2 based mode parameters
     int atan2StepSamples;
@@ -163,6 +164,8 @@ struct SimParams {
 
                 , lpFilterEnabled(1)
                 , movingAverageFilterMode(1)
+                , centerPointMovingAvgSamples(17)
+                //, centerPointMovingAvgSamples(64)
 
                 , atan2StepSamples(5)
 
@@ -223,6 +226,7 @@ struct SimParams {
 
         lpFilterEnabled = v.lpFilterEnabled;
         movingAverageFilterMode = v.movingAverageFilterMode;
+        centerPointMovingAvgSamples = v.centerPointMovingAvgSamples;
 
         atan2StepSamples = v.atan2StepSamples;
 
@@ -551,6 +555,9 @@ struct SimState {
 
     Array<int64_t> senseMulBase1; //[SP_SIM_MAX_SAMPLES + 1000];
     Array<int64_t> senseMulBase2; //[SP_SIM_MAX_SAMPLES + 1000];
+
+    Array<int64_t> centerBase1; //[SP_SIM_MAX_SAMPLES + 1000];
+    Array<int64_t> centerBase2; //[SP_SIM_MAX_SAMPLES + 1000];
 
     //================================================
     // moving average filter

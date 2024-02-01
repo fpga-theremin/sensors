@@ -260,6 +260,8 @@ void SimState::simulate(SimParams * newParams) {
     senseRaw.init(params->simMaxSamples, 0); //[SP_SIM_MAX_SAMPLES + 1000];
     senseMulBase1.init(params->simMaxSamples, 0); //[SP_SIM_MAX_SAMPLES + 1000];
     senseMulBase2.init(params->simMaxSamples, 0); //[SP_SIM_MAX_SAMPLES + 1000];
+    centerBase1.init(params->simMaxSamples, 0);
+    centerBase2.init(params->simMaxSamples, 0);
 
     // movingAverage filter
     movingAvgEnabled = params->movingAverageFilterMode != 0;
@@ -375,21 +377,77 @@ void SimState::simulate(SimParams * newParams) {
 //    int anglePhaseCount = 0;
     if (params->atan2StepSamples > 0) {
         // ATAN2 first pipeline
-        for (int i = params->atan2StepSamples; i < params->simMaxSamples - params->atan2StepSamples * 2; i++) {
-            int64_t x0 = senseMulBase2[i - params->atan2StepSamples];
-            int64_t y0 = senseMulBase1[i - params->atan2StepSamples];
-            int64_t x1 = senseMulBase2[i];
-            int64_t y1 = senseMulBase1[i];
-            int64_t x2 = senseMulBase2[i + params->atan2StepSamples];
-            int64_t y2 = senseMulBase1[i + params->atan2StepSamples];
-            int64_t x3 = senseMulBase2[i + params->atan2StepSamples*2];
-            int64_t y3 = senseMulBase1[i + params->atan2StepSamples*2];
+        // moving points to circle center
+        for (int i = params->atan2StepSamples; i < params->simMaxSamples - params->atan2StepSamples; i++) {
+            int64_t x0 = senseMulBase1[i - params->atan2StepSamples];
+            int64_t y0 = senseMulBase2[i - params->atan2StepSamples];
+            int64_t x1 = senseMulBase1[i];
+            int64_t y1 = senseMulBase2[i];
+            int64_t x2 = senseMulBase1[i + params->atan2StepSamples];
+            int64_t y2 = senseMulBase2[i + params->atan2StepSamples];
+            //int64_t x3 = senseMulBase2[i + params->atan2StepSamples*2];
+            //int64_t y3 = senseMulBase1[i + params->atan2StepSamples*2];
 
             int outx = 0;
             int outy = 0;
-            circleCenter(outx, outy,
-                         x0, y0, x1, y1, x2, y2, x3, y3);
-            double angleFromCenterDouble = -atan2(outx, outy);
+            //circleCenter(outx, outy,
+            //             x0, y0, x1, y1, x2, y2, x3, y3);
+            circleCenter3(outx, outy,
+                         x0, y0, x1, y1, x2, y2);
+            centerBase1[i] = outx;
+            centerBase2[i] = outy;
+//            double angleError = params->phaseErrorInt(angle[i]) * 360.0 / params->phaseModule;
+
+//            if (i < 1000) {
+//                qDebug("    [%d]\t%d\t%d\t %.9f  err=\t%.9f", i,
+//                       outx, outy,
+//                       angleFromCenterDouble,
+//                       angleError);
+//            }
+
+        }
+        // fill begin and end with nearest point
+        for (int i = 0 ; i < params->atan2StepSamples; i++) {
+            centerBase1[i] = centerBase1[params->atan2StepSamples];
+            centerBase2[i] = centerBase2[params->atan2StepSamples];
+        }
+        for (int i = params->simMaxSamples - params->atan2StepSamples; i < params->simMaxSamples; i++) {
+            centerBase1[i] = centerBase1[params->simMaxSamples - params->atan2StepSamples - 1];
+            centerBase2[i] = centerBase2[params->simMaxSamples - params->atan2StepSamples - 1];
+        }
+        // LP filtering of points
+        // LP filter
+        LowPassFilter lpFilter1(params->lpFilterStages, params->lpFilterShiftBits, centerBase1[0]);
+        LowPassFilter lpFilter2(params->lpFilterStages, params->lpFilterShiftBits, centerBase2[0]);
+        for (int i = 0; i < params->simMaxSamples - 1; i++) {
+            centerBase1[i] = lpFilterEnabled ? lpFilter1.tick(centerBase1[i]) : centerBase1[i];
+            centerBase2[i] = lpFilterEnabled ? lpFilter2.tick(centerBase2[i]) : centerBase2[i];
+        }
+
+        acc1 = 0;
+        acc2 = 0;
+        for (int i = 0; i < params->simMaxSamples; i++) {
+            acc1 += centerBase1[i];
+            acc2 += centerBase2[i];
+            senseMulAcc1[i] = acc1;
+            senseMulAcc2[i] = acc2;
+        }
+
+        // calculating angle with ATAN2
+        for (int i = 0; i < params->simMaxSamples; i++) {
+            int64_t outx = centerBase1[i];
+            int64_t outy = centerBase2[i];
+            if (params->centerPointMovingAvgSamples > 0) {
+                // use moving average LP filter for center point
+                if (i > params->centerPointMovingAvgSamples) {
+                    outx = senseMulAcc1[i] - senseMulAcc1[i-params->centerPointMovingAvgSamples];
+                    outy = senseMulAcc2[i] - senseMulAcc2[i-params->centerPointMovingAvgSamples];
+                } else {
+                    outx *= params->centerPointMovingAvgSamples;
+                    outy *= params->centerPointMovingAvgSamples;
+                }
+            }
+            double angleFromCenterDouble = -atan2(outy, outx);
             uint64_t angleFromCenter = (uint64_t)(angleFromCenterDouble * (params->phaseModule>>1) / M_PI);
             angle[i] = angleFromCenter & (params->phaseModule-1);
 //            double angleError = params->phaseErrorInt(angle[i]) * 360.0 / params->phaseModule;
@@ -401,70 +459,8 @@ void SimState::simulate(SimParams * newParams) {
 //                       angleError);
 //            }
 
-#if 0
-            int64_t x1 = senseMulBase2[i - params->atan2StepSamples];
-            int64_t y1 = senseMulBase1[i - params->atan2StepSamples];
-            int64_t x2 = senseMulBase2[i + params->atan2StepSamples];
-            int64_t y2 = senseMulBase1[i + params->atan2StepSamples];
-            phase = samplePhase[i]; // - params->phaseIncrement / 2; // + params->phaseIncrement / 2;
-            phase = phase * 2;
-            int64_t dx = (x2 - x1);
-            int64_t dy = (y2 - y1);
-            double angleFromCenterDouble = atan2(dy, -dx);
-    //        double angleFromCenterDoubleDegrees = angleFromCenterDouble * 180.0 / M_PI;
-    //        double phaseDoubleDegrees = phase * 360.0 / params->phaseModule;
-            uint64_t angleFromCenter = (uint64_t)(angleFromCenterDouble * (params->phaseModule>>1) / M_PI);
-            angle[i] = (angleFromCenter - phase) & (params->phaseModule-1);
-            //double angleDegrees = clampAngleDegrees(angleFromCenterDoubleDegrees - phaseDoubleDegrees);
-    //        if (i > params->angleDetectionPointsStep) {
-    //            double diffAngle = clampAngleDegrees(lastAngle - angleFromCenterDoubleDegrees);
-    //            double diffPhase = clampAngleDegrees(lastPhase - phaseDoubleDegrees);
-    //            sumAngle += diffAngle;
-    //            sumPhase += diffPhase;
-    //            sumShift += angleDegrees;
-    //            anglePhaseCount++;
-    //        }
-    //        lastAngle = clampAngleDegrees(angleFromCenterDoubleDegrees);
-    //        lastPhase = clampAngleDegrees(phaseDoubleDegrees);
-    //        double angleError = params->phaseErrorInt(angle[i]) * 360.0 / params->phaseModule;
-    //        if (i < 1000) {
-    //            qDebug("  [%d]  x1=%d y1=%d  x2=%d y2=%d "
-    //                   "  dx=%d dy=%d "
-
-    //                   " angleC = %08x"
-    //                   " phase*2 = %08x"
-    //                   " angle = %08x  "
-
-    //                   " exactBits=%.1f"
-    //                   " expected=%08x "
-    //                   " angleError=%.3f"
-    //                   " angleF=%.5f  phase2F=%.5f  diff=%.5f",
-    //                   (int)i,
-    //                   (int)x1, (int)y1, (int)x2, (int)y2,
-
-    //                   (int)dx, (int)dy,
-
-    //                   (uint32_t)angleFromCenter,
-    //                   (uint32_t)(phase),
-    //                   (uint32_t)angle[i],
-
-    //                   params->exactBitsInt(angle[i]-params->sensePhaseShiftInt, 10)/10.0,
-    //                   (uint32_t)params->sensePhaseShiftInt,
-
-    //                   angleError,
-    //                   angleFromCenterDoubleDegrees,
-    //                   phaseDoubleDegrees,
-    //                   clampAngleDegrees(angleFromCenterDoubleDegrees-phaseDoubleDegrees));
-    //        }
-#endif
         }
-        // fill begin and end with nearest angle value
-        for (int i = 0 ; i < params->atan2StepSamples; i++) {
-            angle[i] = angle[params->atan2StepSamples];
-        }
-        for (int i = params->simMaxSamples - params->atan2StepSamples; i < params->simMaxSamples; i++) {
-            angle[i] = angle[params->simMaxSamples - params->atan2StepSamples - 1];
-        }
+
 
 
         // LP filter

@@ -271,7 +271,68 @@ void generateVerilogVectorLengthCases3x3() {
     qDebug("");
 }
 
+void SinCosCORDIC::sinCos(int & outx, int & outy, uint32_t phase32) {
+    int quadrant = (phase32 >> (14+16)) & 3;
+    // 7 bits of tabular sin&cos
+    int step1 = (phase32 >> (14+9)) & 127;
+    // 9 bits of rotation
+    int step2 = (phase32 >> (14+0)) & 511;
+
+    uint32_t tableEntry = sinCosTable[step1];
+    int x = tableEntry & 0xFFFF;
+    int y = (tableEntry >> 16) & 0xFFFF;
+
+    // second stage - rotation by small angle
+
+    // final stage - quadrant processing
+    switch (quadrant) {
+    case 0: // 0 degrees
+    default:
+        outx = x;
+        outy = y;
+        break;
+    case 1: // 90 degrees
+        outx = -y;
+        outy = x;
+        break;
+    case 2: // 180 degrees
+        outx = -x;
+        outy = -y;
+        break;
+    case 3: // 270 degrees
+        outx = y;
+        outy = -x;
+        break;
+    }
+
+}
+
+SinCosCORDIC::SinCosCORDIC() {
+    double bigStepAngle = M_PI / 256.0;
+    // init table for step 1
+    for (int i = 0; i < 128; i++) {
+        // 0..127 are angles in range (0..PI/2)
+        double phase = (i + 0.5) * bigStepAngle;
+        uint32_t x = (int)(cos(phase) * 65536.0);
+        uint32_t y = (int)(sin(phase) * 65536.0);
+        assert((x >= 0) && (x<=65535) && (y >= 0) && (y<=65535));
+        qDebug(" [%d]\t%.9f\t%d\t%d", i, phase, x, y);
+        sinCosTable[i] = (y<<16) | x;
+    }
+    for (int i = 0; i < 512; i++) {
+        double angle = (i + 0.5) * bigStepAngle / 512;
+    }
+}
+
+void testCordic() {
+    qDebug("CORDIC tests");
+    SinCosCORDIC();
+    qDebug("CORDIC tests done");
+}
+
 void testDDS() {
+    testCordic();
+
     SinTable sinTable(10, 12);
     sinTable.generateVerilog("");
     sinTable.generateMemInitFile("");
@@ -288,3 +349,5 @@ void testDDS() {
     testDDS2();
     generateVerilogVectorLengthCases3x3();
 }
+
+

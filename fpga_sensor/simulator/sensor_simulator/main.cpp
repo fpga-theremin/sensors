@@ -20,6 +20,8 @@ int main(int argc, char *argv[])
 //    //8.062/16.0
 //    SinTable sinTable3(10, 9, 8.0/16.0);
 
+    testCordic();
+
 #ifdef ENABLE_UNIT_TESTS
     testDDS();
 #endif
