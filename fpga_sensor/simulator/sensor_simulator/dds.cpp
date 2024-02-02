@@ -282,51 +282,159 @@ void SinCosCORDIC::sinCos(int & outx, int & outy, uint32_t phase32) {
     int x = tableEntry & 0xFFFF;
     int y = (tableEntry >> 16) & 0xFFFF;
 
+    // increase precision by shift bits
+    //int extraPrecisionBits = 8;
+    x = x << extraPrecisionBits;
+    y = y << extraPrecisionBits;
+
+    //double lastAngle = atan2(y, x);
+    //double startLength = sqrt(1.0*x*x + 1.0*y*y);
+
     // second stage - rotation by small angle
+    int signFlags = fracRotationTable[step2];
+    for (int i = 0; i < rotations; i++) {
+        int sx = x >> (startShift + i);
+        int sy = y >> (startShift + i);
+        if (signFlags & 1) {
+            x += sy;
+            y -= sx;
+        } else {
+            x -= sy;
+            y += sx;
+
+        }
+        //double angle = atan2(y, x);
+        //qDebug("     step %d sign %d  rotated by %.9f", i, (signFlags & 1), angle-lastAngle);
+        //lastAngle = angle;
+        signFlags >>= 1;
+    }
+
+    //double endLength = sqrt(1.0*x*x + 1.0*y*y);
+    //qDebug("startLength=%.9f  endLength=%.9f  scaledBy=%.9f", startLength, endLength, endLength/startLength);
+
+
+    // rounding
+    //x = x + (1 << extraPrecisionBits);
+    //y = y + (1 << extraPrecisionBits);
+    // drop extra bits
+    //x = x >> (extraPrecisionBits+1);
+    //y = y >> (extraPrecisionBits+1);
 
     // final stage - quadrant processing
     switch (quadrant) {
     case 0: // 0 degrees
     default:
-        outx = x;
-        outy = y;
+        outx = x >> (extraPrecisionBits+1);
+        outy = y >> (extraPrecisionBits+1);
         break;
     case 1: // 90 degrees
-        outx = -y;
-        outy = x;
+        outx = (~y)  >> (extraPrecisionBits+1);
+        outy = (x)  >> (extraPrecisionBits+1);
         break;
     case 2: // 180 degrees
-        outx = -x;
-        outy = -y;
+        outx = (~x)  >> (extraPrecisionBits+1);
+        outy = (~y)  >> (extraPrecisionBits+1);
         break;
     case 3: // 270 degrees
-        outx = y;
-        outy = -x;
+        outx = (y) >> (extraPrecisionBits+1);
+        outy = (~x) >> (extraPrecisionBits+1);
         break;
     }
 
+    //double length = sqrt(1.0*x*x + 1.0*y*y);
+    //qDebug("x=%d y=%d length=%.9f", outx, outy, length);
+
 }
 
-SinCosCORDIC::SinCosCORDIC() {
+SinCosCORDIC::SinCosCORDIC(int rotCount, int extraBits) : rotations(rotCount), extraPrecisionBits(extraBits) {
     double bigStepAngle = M_PI / 256.0;
+    //qDebug("bigStepAngle = %.9f  bigStepAngle/2 = %.9f", bigStepAngle, bigStepAngle/2.0);
+    double atanPowerOfTwo[32];
+    int start = 0;
+    for (int i = 0; i < 32; i++) {
+        double k = 1.0 / (1<<i);
+        double ak = atan(k);
+        atanPowerOfTwo[i] = ak;
+        //qDebug(" ATAN  [2^-%d]  %.9f", i, ak);
+        if (start == 0 && ak < bigStepAngle/2.0) {
+            //qDebug("        FOUND first frac angle: %d    %.9f", i, ak);
+            start = i;
+        }
+    }
+    double scalex = 1.0;
+    double scaley = 0.0;
+    for (int i = 0; i < 8; i++) {
+        double shiftx = scalex / (1 << (start + i));
+        double shifty = scaley / (1 << (start + i));
+        scalex -= shifty;
+        scaley += shiftx;
+    }
+    double length = sqrt(scalex * scalex + scaley * scaley);
+    double scale = length;
+    //qDebug("scale = %.9f", scale);
     // init table for step 1
     for (int i = 0; i < 128; i++) {
         // 0..127 are angles in range (0..PI/2)
         double phase = (i + 0.5) * bigStepAngle;
-        uint32_t x = (int)(cos(phase) * 65536.0);
-        uint32_t y = (int)(sin(phase) * 65536.0);
+        uint32_t x = (int)(cos(phase) * 65534.0 / scale);
+        uint32_t y = (int)(sin(phase) * 65534.0 / scale);
         assert((x >= 0) && (x<=65535) && (y >= 0) && (y<=65535));
-        qDebug(" [%d]\t%.9f\t%d\t%d", i, phase, x, y);
+        //qDebug(" [%d]\t%.9f\t%d\t%d", i, phase, x, y);
         sinCosTable[i] = (y<<16) | x;
     }
     for (int i = 0; i < 512; i++) {
         double angle = (i + 0.5) * bigStepAngle / 512;
+        angle = angle - bigStepAngle / 2.0;
+        //double startAngle = angle;
+        //qDebug("  frac angle [%d]   %.9f", i, angle);
+        int flags = 0;
+        for (int j = 0; j < rotCount; j++) {
+            double step = atanPowerOfTwo[start + j];
+            if (angle < 0) {
+                angle += step;
+                flags = flags | (1<<j);
+            } else {
+                angle -= step;
+            }
+        }
+        fracRotationTable[i] = flags;
+        //qDebug("             [%d]  %04x    %.9f", i, flags, angle);
     }
+    startShift = start;
 }
 
 void testCordic() {
     qDebug("CORDIC tests");
-    SinCosCORDIC();
+    qDebug("rot\textraBits\tsumError\tpError");
+    int samples = 1235793;
+    for (int rotations = 8; rotations <= 12; rotations++) {
+        for (int extraBits = 0; extraBits <= rotations; extraBits++) {
+            SinCosCORDIC cordic(rotations, extraBits);
+            int x = 0;
+            int y = 0;
+            cordic.sinCos(x, y, 0x00123456);
+
+            int sumError = 0;
+            for (int i = 0; i < samples; i++) {
+                double phase = 2 * M_PI * i / samples + 0.000001;
+                int64_t phase32 = phase * (1ULL<<31) / M_PI;
+                // rounding to number of supported bits
+                phase32 = (phase32 & 0xFFFFC000) + 0x00002000;
+                phase = phase32 * M_PI / (1ULL << 31);
+                int expectedx = (int)(cos(phase)*32767);
+                int expectedy = (int)(sin(phase)*32767);
+                cordic.sinCos(x, y, phase32);
+                //qDebug(" [%d]  phase=%.9f  %08x   x=%d y=%d   expx=%d expy=%d   xerror=%d  yerror=%d", i, phase, phase32,
+                //       x, y, expectedx, expectedy, x-expectedx, y-expectedy);
+                int dx = expectedx - x;
+                int dy = expectedy - y;
+                dx = dx < 0 ? -dx : dx;
+                dy = dy < 0 ? -dy : dy;
+                sumError += dx + dy;
+            }
+            qDebug("%d\t%d\t%d\t%.9f", rotations, extraBits, sumError, sumError * 1.0 / samples);
+        }
+    }
     qDebug("CORDIC tests done");
 }
 

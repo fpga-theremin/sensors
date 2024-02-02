@@ -106,8 +106,11 @@ struct SinCosCORDIC {
     // table for angles 0..PI/2
     // upper 16 bits: sin(x), lower 16 bits: cos(x)
     uint32_t sinCosTable[128];      // phase bits [15:9]
-    uint8_t fracRotationTable[512]; // phase bits [8:0]
-    SinCosCORDIC();
+    uint16_t fracRotationTable[512]; // phase bits [8:0]
+    int startShift;
+    int rotations;
+    int extraPrecisionBits;
+    SinCosCORDIC(int rotCount = 10, int extraPrecisionBits = 4);
     void sinCos(int & outx, int & outy, uint32_t phase32);
 };
 
