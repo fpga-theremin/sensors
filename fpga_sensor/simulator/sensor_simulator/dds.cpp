@@ -324,22 +324,25 @@ void SinCosCORDIC::sinCos(int & outx, int & outy, uint32_t phase32) {
     switch (quadrant) {
     case 0: // 0 degrees
     default:
-        outx = x >> (extraPrecisionBits+1);
-        outy = y >> (extraPrecisionBits+1);
+        outx = x >> (extraPrecisionBits);
+        outy = y >> (extraPrecisionBits);
         break;
     case 1: // 90 degrees
-        outx = (~y)  >> (extraPrecisionBits+1);
-        outy = (x)  >> (extraPrecisionBits+1);
+        outx = (-y)  >> (extraPrecisionBits);
+        outy = (x)  >> (extraPrecisionBits);
         break;
     case 2: // 180 degrees
-        outx = (~x)  >> (extraPrecisionBits+1);
-        outy = (~y)  >> (extraPrecisionBits+1);
+        outx = (-x)  >> (extraPrecisionBits);
+        outy = (-y)  >> (extraPrecisionBits);
         break;
     case 3: // 270 degrees
-        outx = (y) >> (extraPrecisionBits+1);
-        outy = (~x) >> (extraPrecisionBits+1);
+        outx = (y) >> (extraPrecisionBits);
+        outy = (-x) >> (extraPrecisionBits);
         break;
     }
+    // rounding
+    outx = (outx + 1) >> 1;
+    outy = (outy + 1) >> 1;
 
     //double length = sqrt(1.0*x*x + 1.0*y*y);
     //qDebug("x=%d y=%d length=%.9f", outx, outy, length);
@@ -407,6 +410,7 @@ void testCordic() {
     qDebug("CORDIC tests");
     qDebug("rot\textraBits\tsumError\tpError");
     int samples = 1235793;
+    SinTable sinTable(18, 16);
     for (int rotations = 8; rotations <= 12; rotations++) {
         for (int extraBits = 0; extraBits <= rotations; extraBits++) {
             SinCosCORDIC cordic(rotations, extraBits);
@@ -415,12 +419,17 @@ void testCordic() {
             cordic.sinCos(x, y, 0x00123456);
 
             int sumError = 0;
-            for (int i = 0; i < samples; i++) {
-                double phase = 2 * M_PI * i / samples + 0.000001;
-                int64_t phase32 = phase * (1ULL<<31) / M_PI;
+            int maxxError = 0;
+            int maxyError = 0;
+            for (uint64_t i = 0; i < 0x100000000ULL; i+=0x00004000) {
+                int64_t phase32 = i;
+                //double phase = 2 * M_PI * i / samples + 0.000001;
+                //int64_t phase32 = phase * (1ULL<<31) / M_PI;
                 // rounding to number of supported bits
-                phase32 = (phase32 & 0xFFFFC000) + 0x00002000;
-                phase = phase32 * M_PI / (1ULL << 31);
+                //phase32 = (phase32 & 0xFFFFC000) + 0x00002000;
+                double phase = (phase32 + 0x00002000) * M_PI / (1ULL << 31);
+                //int expectedy = sinTable.getForPhase(phase32);
+                //int expectedx = sinTable.getForPhase(((phase32 + 0x40000000) & 0xFFFFFFFF));
                 int expectedx = (int)(cos(phase)*32767);
                 int expectedy = (int)(sin(phase)*32767);
                 cordic.sinCos(x, y, phase32);
@@ -430,9 +439,13 @@ void testCordic() {
                 int dy = expectedy - y;
                 dx = dx < 0 ? -dx : dx;
                 dy = dy < 0 ? -dy : dy;
+                if (maxxError < dx)
+                    maxxError = dx;
+                if (maxyError < dy)
+                    maxyError = dy;
                 sumError += dx + dy;
             }
-            qDebug("%d\t%d\t%d\t%.9f", rotations, extraBits, sumError, sumError * 1.0 / samples);
+            qDebug("%d\t%d\t%d\t%.9f\t%d\t%d", rotations, extraBits, sumError, sumError * 1.0 / samples, maxxError, maxyError);
         }
     }
     qDebug("CORDIC tests done");
