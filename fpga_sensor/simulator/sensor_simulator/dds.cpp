@@ -271,12 +271,109 @@ void generateVerilogVectorLengthCases3x3() {
     qDebug("");
 }
 
-void SinCosCORDIC::sinCos(int & outx, int & outy, uint32_t phase32) {
-    int quadrant = (phase32 >> (14+16)) & 3;
+void SinCosCORDIC::sinCosPiDiv4(int & outx, int & outy, uint32_t phase32) {
+    int firstSignificantPhaseBit = 32 - 2 - step1PhaseBits - step2PhaseBits - 1;
+    int quadrant = (phase32 >> (32-2)) & 3;
+    int swapSinCos = (phase32 >> (32-3)) & 1;
     // 7 bits of tabular sin&cos
-    int step1 = (phase32 >> (14+9)) & 127;
+    int step1 = (phase32 >> (firstSignificantPhaseBit+step2PhaseBits)) & (steps1-1);
     // 9 bits of rotation
-    int step2 = (phase32 >> (14+0)) & 511;
+    int step2 = (phase32 >> (firstSignificantPhaseBit+0)) & (steps2-1);
+    if (swapSinCos) {
+        // invert angle for PI/4..PI/2
+        step1 ^= (steps1-1);
+        step2 ^= (steps2-1);
+    }
+    int negx = 0;
+    int negy = 0;
+    switch (quadrant) {
+    case 0: // 0 degrees
+    default:
+        break;
+    case 1: // 90 degrees
+        swapSinCos ^= 1;
+        negx = 1;
+        break;
+    case 2: // 180 degrees
+        negx = 1;
+        negy = 1;
+        break;
+    case 3: // 270 degrees
+        swapSinCos ^= 1;
+        negy = 1;
+        break;
+    }
+
+    uint32_t tableEntry = sinCosTable[step1];
+    int x = (tableEntry & 0xFFFF) | 0x10000;
+    int y = (tableEntry >> 16) & 0xFFFF;
+    if (step1 > sinHighBitBound)
+        y |= 0x10000;
+
+    // increase precision by shift bits
+    //int extraPrecisionBits = 8;
+    x = x << extraPrecisionBits;
+    y = y << extraPrecisionBits;
+
+    //double lastAngle = atan2(y, x);
+    //double startLength = sqrt(1.0*x*x + 1.0*y*y);
+
+    // second stage - rotation by small angle
+    int signFlags = (fracRotationTable[step2] << 1);
+    if (step2 < steps2/2)
+        signFlags |= 1;
+    for (int i = 0; i < rotations; i++) {
+        int sx = x >> (startShift + i);
+        int sy = y >> (startShift + i);
+        if (signFlags & 1) {
+            x += sy;
+            y -= sx;
+        } else {
+            x -= sy;
+            y += sx;
+
+        }
+        //double angle = atan2(y, x);
+        //qDebug("     step %d sign %d  rotated by %.9f", i, (signFlags & 1), angle-lastAngle);
+        //lastAngle = angle;
+        signFlags >>= 1;
+    }
+
+    //double endLength = sqrt(1.0*x*x + 1.0*y*y);
+    //qDebug("startLength=%.9f  endLength=%.9f  scaledBy=%.9f", startLength, endLength, endLength/startLength);
+
+
+    // rounding
+    //x = x + (1 << extraPrecisionBits);
+    //y = y + (1 << extraPrecisionBits);
+    // drop extra bits
+    //x = x >> (extraPrecisionBits+1);
+    //y = y >> (extraPrecisionBits+1);
+
+    if (swapSinCos) {
+        outx = y >> (extraPrecisionBits + 1);
+        outy = x >> (extraPrecisionBits + 1);
+    } else {
+        outx = x >> (extraPrecisionBits + 1);
+        outy = y >> (extraPrecisionBits + 1);
+    }
+    if (negx)
+        outx = -outx;
+    if (negy)
+        outy = -outy;
+    // rounding
+    outx = (outx + 1) >> 1;
+    outy = (outy + 1) >> 1;
+}
+void SinCosCORDIC::sinCos(int & outx, int & outy, uint32_t phase32) {
+    if (usePiDiv4Table)
+        return sinCosPiDiv4(outx, outy, phase32);
+    int firstSignificantPhaseBit = 32 - 2 - step1PhaseBits - step2PhaseBits;
+    int quadrant = (phase32 >> (32-2)) & 3;
+    // 7 bits of tabular sin&cos
+    int step1 = (phase32 >> (firstSignificantPhaseBit+step2PhaseBits)) & (steps1-1);
+    // 9 bits of rotation
+    int step2 = (phase32 >> (firstSignificantPhaseBit+0)) & (steps2-1);
 
     uint32_t tableEntry = sinCosTable[step1];
     int x = tableEntry & 0xFFFF;
@@ -291,7 +388,9 @@ void SinCosCORDIC::sinCos(int & outx, int & outy, uint32_t phase32) {
     //double startLength = sqrt(1.0*x*x + 1.0*y*y);
 
     // second stage - rotation by small angle
-    int signFlags = fracRotationTable[step2];
+    int signFlags = (fracRotationTable[step2] << 1);
+    if (step2 < steps2/2)
+        signFlags |= 1;
     for (int i = 0; i < rotations; i++) {
         int sx = x >> (startShift + i);
         int sy = y >> (startShift + i);
@@ -349,10 +448,8 @@ void SinCosCORDIC::sinCos(int & outx, int & outy, uint32_t phase32) {
 
 }
 
-SinCosCORDIC::SinCosCORDIC(int rotCount, int extraBits) : rotations(rotCount), extraPrecisionBits(extraBits) {
-    double bigStepAngle = M_PI / 256.0;
+void SinCosCORDIC::initAngles(double bigStepAngle) {
     //qDebug("bigStepAngle = %.9f  bigStepAngle/2 = %.9f", bigStepAngle, bigStepAngle/2.0);
-    double atanPowerOfTwo[32];
     int start = 0;
     for (int i = 0; i < 32; i++) {
         double k = 1.0 / (1<<i);
@@ -360,23 +457,63 @@ SinCosCORDIC::SinCosCORDIC(int rotCount, int extraBits) : rotations(rotCount), e
         atanPowerOfTwo[i] = ak;
         //qDebug(" ATAN  [2^-%d]  %.9f", i, ak);
         if (start == 0 && ak < bigStepAngle/2.0) {
-            //qDebug("        FOUND first frac angle: %d    %.9f", i, ak);
+//            qDebug("        FOUND first frac angle: %d    %.9f   <  %.9f", i, ak, bigStepAngle/2.0);
             start = i;
         }
     }
+//    double angleSum = 0;
+//    double angleSumNext = 0;
+//    for (int i = 0; i < rotations; i++) {
+//        angleSum += atanPowerOfTwo[start + i];
+//        angleSumNext += atanPowerOfTwo[start + i + 1];
+//    }
+//    qDebug(" bigStepAngle/2= %.9f    angleSum=%.9f  nextAngleSum=%.9f", bigStepAngle/2.0, angleSum, angleSumNext);
     double scalex = 1.0;
     double scaley = 0.0;
-    for (int i = 0; i < 8; i++) {
+    for (int i = 0; i < rotations; i++) {
         double shiftx = scalex / (1 << (start + i));
         double shifty = scaley / (1 << (start + i));
         scalex -= shifty;
         scaley += shiftx;
     }
     double length = sqrt(scalex * scalex + scaley * scaley);
-    double scale = length;
+    scale = length;
+    startShift = start;
+    for (int i = 0; i < steps2; i++) {
+        double angle = (i + 0.5) * bigStepAngle / steps2;
+        angle = angle - bigStepAngle / 2.0;
+        //double startAngle = angle;
+        //qDebug("  frac angle [%d]   %.9f", i, angle);
+        int flags = 0;
+        //int reverseFlags = 0;
+        for (int j = 0; j < rotations; j++) {
+            double step = atanPowerOfTwo[startShift + j];
+            if (angle < 0) {
+                angle += step;
+                flags = flags | (1<<j);
+                //reverseFlags = reverseFlags | (1<<(rotations - j - 1));
+            } else {
+                angle -= step;
+            }
+        }
+        int angle0 = (i < steps2/2) ? 1 : 0;
+        assert((flags & 1) == angle0);
+//        qDebug("             [%d]%04x  flags=%04x revFlags=%04x     %.9f", i, i, flags, reverseFlags, angle);
+//        if (i != reverseFlags) {
+//            qDebug("    [%i]  angle difference  %04x %04x ", i, i, reverseFlags);
+//        }
+        fracRotationTable[i] = flags >> 1;
+    }
+}
+
+void SinCosCORDIC::initPiDiv2() {
+    steps1 = 1 << step1PhaseBits;
+    steps2 = 1 << step2PhaseBits;
+    double bigStepAngle = M_PI / (steps1 * 2);
+    initAngles(bigStepAngle);
     //qDebug("scale = %.9f", scale);
     // init table for step 1
-    for (int i = 0; i < 128; i++) {
+    for (int i = 0; i < steps1; i++) {
         // 0..127 are angles in range (0..PI/2)
         double phase = (i + 0.5) * bigStepAngle;
         uint32_t x = (int)(cos(phase) * 65534.0 / scale);
@@ -385,25 +522,45 @@ SinCosCORDIC::SinCosCORDIC(int rotCount, int extraBits) : rotations(rotCount), e
         //qDebug(" [%d]\t%.9f\t%d\t%d", i, phase, x, y);
         sinCosTable[i] = (y<<16) | x;
     }
-    for (int i = 0; i < 512; i++) {
-        double angle = (i + 0.5) * bigStepAngle / 512;
-        angle = angle - bigStepAngle / 2.0;
-        //double startAngle = angle;
-        //qDebug("  frac angle [%d]   %.9f", i, angle);
-        int flags = 0;
-        for (int j = 0; j < rotCount; j++) {
-            double step = atanPowerOfTwo[start + j];
-            if (angle < 0) {
-                angle += step;
-                flags = flags | (1<<j);
-            } else {
-                angle -= step;
-            }
-        }
-        fracRotationTable[i] = flags;
-        //qDebug("             [%d]  %04x    %.9f", i, flags, angle);
+}
+
+void SinCosCORDIC::initPiDiv4() {
+    steps1 = 1 << step1PhaseBits;
+    steps2 = 1 << step2PhaseBits;
+    double bigStepAngle = M_PI / (steps1 * 4);
+    initAngles(bigStepAngle);
+    //qDebug("scale = %.9f", scale);
+    // init table for step 1
+    int tableScale = 32767 * 4;
+    for (int i = 0; i < steps1; i++) {
+        // 0..127 are angles in range (0..PI/2)
+        double phase = (i + 0.5) * bigStepAngle;
+        uint32_t x = (int)(cos(phase) * tableScale / scale);
+        uint32_t y = (int)(sin(phase) * tableScale / scale);
+        assert((x >= 0) && (x<=tableScale) && (y >= 0) && (y<=tableScale));
+        // for 0..PI/4 cos>0.5, sin<0.5 - so we can avoid storing upper bit since it's const
+        assert(x >= tableScale/2);
+        //assert(y < tableScale/2);
+        //qDebug(" [%d]\t%.9f\t%d\t%d", i, phase, x, y);
+        if (y < 0x10000)
+            sinHighBitBound = i;
+        x = x & 0xffff;
+        y = y & 0xffff;
+        sinCosTable[i] = (y<<16) | x;
     }
-    startShift = start;
+}
+
+SinCosCORDIC::SinCosCORDIC(bool usePiDiv4Table, int step1bits, int step2bits, int rotCount, int extraBits)
+    : usePiDiv4Table(usePiDiv4Table),
+      step1PhaseBits(step1bits),
+      step2PhaseBits(step2bits),
+      rotations(rotCount), extraPrecisionBits(extraBits) {
+
+    //
+    if (usePiDiv4Table)
+        initPiDiv4();
+    else
+        initPiDiv2();
 }
 
 void testCordic() {
@@ -413,7 +570,7 @@ void testCordic() {
     SinTable sinTable(18, 16);
     for (int rotations = 8; rotations <= 12; rotations++) {
         for (int extraBits = 0; extraBits <= rotations; extraBits++) {
-            SinCosCORDIC cordic(rotations, extraBits);
+            SinCosCORDIC cordic(true, 7, 9, rotations, extraBits);
             int x = 0;
             int y = 0;
             cordic.sinCos(x, y, 0x00123456);
@@ -421,7 +578,8 @@ void testCordic() {
             int sumError = 0;
             int maxxError = 0;
             int maxyError = 0;
-            for (uint64_t i = 0; i < 0x100000000ULL; i+=0x00004000) {
+            int angleStep = 1 << (32 - 2 - cordic.step1PhaseBits - cordic.step2PhaseBits);
+            for (uint64_t i = 0; i < 0x100000000ULL; i+=angleStep) {
                 int64_t phase32 = i;
                 //double phase = 2 * M_PI * i / samples + 0.000001;
                 //int64_t phase32 = phase * (1ULL<<31) / M_PI;

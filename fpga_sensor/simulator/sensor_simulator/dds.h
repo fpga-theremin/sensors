@@ -105,13 +105,25 @@ struct SinCosCORDIC {
     // Phase bits [17:16] are implemented by flipping and sign change
     // table for angles 0..PI/2
     // upper 16 bits: sin(x), lower 16 bits: cos(x)
-    uint32_t sinCosTable[128];      // phase bits [15:9]
-    uint16_t fracRotationTable[512]; // phase bits [8:0]
+    bool usePiDiv4Table;
+    uint32_t sinCosTable[1024];      // phase bits [15:9]
+    uint16_t fracRotationTable[1024]; // phase bits [8:0]
+    int step1PhaseBits;
+    int step2PhaseBits;
+    int steps1;
+    int steps2;
     int startShift;
     int rotations;
     int extraPrecisionBits;
-    SinCosCORDIC(int rotCount = 10, int extraPrecisionBits = 4);
+    double atanPowerOfTwo[32];
+    double scale;
+    int sinHighBitBound;
+    SinCosCORDIC(bool usePiDiv4Table, int step1bits, int step2bits, int rotCount, int extraPrecisionBits);
+    void initAngles(double bigStepAngle);
+    void initPiDiv2();
+    void initPiDiv4();
     void sinCos(int & outx, int & outy, uint32_t phase32);
+    void sinCosPiDiv4(int & outx, int & outy, uint32_t phase32);
 };
 
 void testDDS();
