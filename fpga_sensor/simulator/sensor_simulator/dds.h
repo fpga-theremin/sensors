@@ -124,6 +124,7 @@ struct SinCosCORDIC {
     void initPiDiv4();
     void sinCos(int & outx, int & outy, uint32_t phase32);
     void sinCosPiDiv4(int & outx, int & outy, uint32_t phase32);
+    void genVerilog(const char * fname);
 };
 
 void testDDS();

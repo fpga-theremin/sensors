@@ -550,6 +550,25 @@ void SinCosCORDIC::initPiDiv4() {
     }
 }
 
+void SinCosCORDIC::genVerilog(const char * fname) {
+    qDebug("localparam FIRST_ROTATION_SHIFT = %d;", startShift);
+    qDebug("localparam SIN_HIGH_BIT_0_BOUND = %d;", sinHighBitBound);
+    qDebug("        // SIN and COS lookup table ROM content");
+    qDebug("        case(step1_lookup_addr)");
+    for (int i = 0; i < steps1; i++) {
+        qDebug("        %d: sin_cos_data_stage0 <= 32'h%08x;", i, sinCosTable[i]);
+    }
+    qDebug("        endcase");
+
+    qDebug("");
+    qDebug("        // ROTATIONS lookup table ROM content");
+    qDebug("        case(step2_lookup_addr)");
+    for (int i = 0; i < steps2; i++) {
+        qDebug("        %d: rotation_data_stage0 <= 8'h%02x;", i, fracRotationTable[i] & 0xFF);
+    }
+    qDebug("        endcase");
+}
+
 SinCosCORDIC::SinCosCORDIC(bool usePiDiv4Table, int step1bits, int step2bits, int rotCount, int extraBits)
     : usePiDiv4Table(usePiDiv4Table),
       step1PhaseBits(step1bits),
@@ -606,6 +625,12 @@ void testCordic() {
             qDebug("%d\t%d\t%d\t%.9f\t%d\t%d", rotations, extraBits, sumError, sumError * 1.0 / samples, maxxError, maxyError);
         }
     }
+    qDebug("Generating verilog:");
+    {
+        SinCosCORDIC cordic(true, 7, 9, 9, 4);
+        cordic.genVerilog("cordic.v");
+    }
+
     qDebug("CORDIC tests done");
 }
 
