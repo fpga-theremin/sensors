@@ -1,10 +1,15 @@
 /*
     Calculate SIN + COS from phase using combined lookup table + CORDIC algorithm.
     Optimized for low end devices like Lattice iCE40 Ultra 4K with LUT4 and small BRAMs.
+    Step1: use looup table to get initial SIN and COS values for 2^STEP1_PHASE_BITS angles in range 0..PI/4 
+    Step2: use CORDIC to rotate vector from Step1 by small angle, one of 2^STEP2_PHASE_BITS
+    Latency: 2 + STEP2_PHASE_BITS + 1 CLK cycles (2 cycles for BRAM lookup, STEP2_PHASE_BITS cycles for CORDIC rotations, 1 cycle for final result rounding 
 */
 module cordic_sin_cos #(
     parameter DATA_BITS = 16,
-    parameter PHASE_BITS = 32,
+    // number of bits in input phase, higher bits used if too much bits are provided
+    // really used: 3 + STEP1_PHASE_BITS + STEP2_PHASE_BITS bits 
+    parameter PHASE_BITS = 19,
     // size of PI/4 sin&cos lookup table (7 is 128)
     parameter STEP1_PHASE_BITS = 7,
     // size of rotations table (9 is 512)
@@ -18,32 +23,51 @@ module cordic_sin_cos #(
     input wire RESET,
 
     input wire [PHASE_BITS-1:0] PHASE,
-    output wire [DATA_BITS-1:0] SIN,
-    output wire [DATA_BITS-1:0] COS
+    output wire signed [DATA_BITS-1:0] SIN,
+    output wire signed [DATA_BITS-1:0] COS
+    
+//    , output wire debug_swap_sin_and_cos_delayed
+//    , output wire debug_neg_sin_delayed
+//    , output wire debug_neg_cos_delayed
+//    , output wire [PHASE_BITS-1:0] debug_PHASE
+//    , output wire [STEP1_PHASE_BITS-1:0] debug_step1_lookup_addr
+//    , output wire [STEP2_PHASE_BITS-1:0] debug_step2_lookup_addr
 );
+
+localparam SIN_COS_LOOKUP_DATA_BITS = 16;
+localparam ROTATIONS_LOOKUP_DATA_BITS = 8;
+localparam ROTATIONS = ROTATIONS_LOOKUP_DATA_BITS;
 
 // top 3 bits of phase are splitting period into PI/4 ranges.
 // all calculations are being made for 0..PI/4, then transformations like swap sin and cos or sign inversion are applied
 
 wire inv_lookup_addr = PHASE[PHASE_BITS-3];
 wire swap_sin_and_cos = PHASE[PHASE_BITS-3] ^ PHASE[PHASE_BITS-2];
-wire neg_cos = (PHASE[PHASE_BITS-1:PHASE_BITS-2] == 2'b01) || (PHASE[PHASE_BITS-1:PHASE_BITS-2] == 2'b10);
-wire neg_sin = (PHASE[PHASE_BITS-1:PHASE_BITS-2] == 2'b10) || (PHASE[PHASE_BITS-1:PHASE_BITS-2] == 2'b11);
+wire [1:0] quadrant = PHASE[PHASE_BITS-1:PHASE_BITS-2];
+wire neg_cos = (quadrant == 2'b01) || (quadrant == 2'b10);
+wire neg_sin = (quadrant == 2'b10) || (quadrant == 2'b11);
 
 wire swap_sin_and_cos_delayed;
 wire neg_cos_delayed;
 wire neg_sin_delayed;
+
+//assign debug_swap_sin_and_cos_delayed = PHASE[17] ^ PHASE[16]; //PHASE[PHASE_BITS-3] ^ PHASE[PHASE_BITS-2]; //swap_sin_and_cos;
+//assign debug_neg_sin_delayed = PHASE[0];
+//assign debug_neg_cos_delayed = PHASE[PHASE_BITS-1]; //neg_cos;
+//assign debug_PHASE = PHASE;
+
 
 variable_delay_shift_register #(
     // data width to store
     .DATA_BITS(3),
     .DELAY_BITS(4)
 )
+variable_delay_shift_register_inst
 (
     .CLK(CLK),
     .CE(CE),
     .RESET(RESET),
-    .DELAY(9 + 2),
+    .DELAY(ROTATIONS + 2),
     .IN_VALUE( {swap_sin_and_cos, neg_cos, neg_sin} ),
     .OUT_VALUE( {swap_sin_and_cos_delayed, neg_cos_delayed, neg_sin_delayed} )
 );
@@ -55,6 +79,10 @@ localparam STEP2_LSB = STEP2_MSB - STEP2_PHASE_BITS + 1;
 
 wire [STEP1_PHASE_BITS-1:0] step1_lookup_addr = PHASE[STEP1_MSB:STEP1_LSB] ^ { STEP1_PHASE_BITS {inv_lookup_addr}};
 wire [STEP2_PHASE_BITS-1:0] step2_lookup_addr = PHASE[STEP2_MSB:STEP2_LSB] ^ { STEP2_PHASE_BITS {inv_lookup_addr}};
+
+//assign debug_step1_lookup_addr = step1_lookup_addr; 
+//assign debug_step2_lookup_addr = step2_lookup_addr;
+
 
 // optimization: COS top bit for angles 0..PI/4 is always 1, SIN is 1 if exceeds bound 
 localparam SIN_HIGH_BIT_0_BOUND = 84; // for angle <= bound top bit of sin is 0, otherwise 1
@@ -80,15 +108,12 @@ always @(posedge CLK) begin
     end
 end
 
-localparam SIN_COS_LOOKUP_DATA_BITS = 16;
-localparam ROTATIONS_LOOKUP_DATA_BITS = 8;
-
-reg [SIN_COS_LOOKUP_DATA_BITS*2-1:0] sin_cos_data_stage0;
-reg [ROTATIONS_LOOKUP_DATA_BITS-1:0] rotation_data_stage0;
+reg [SIN_COS_LOOKUP_DATA_BITS*2-1:0] sin_cos_data_stage0 = 0;
+reg [ROTATIONS_LOOKUP_DATA_BITS-1:0] rotation_data_stage0 = 0;
 
 always @(posedge CLK) begin
     if (RESET) begin
-        sin_cos_data_stage0 <= 0;
+        //sin_cos_data_stage0 <= 0;
     end else if (CE) begin
         // SIN and COS lookup table ROM content
         case(step1_lookup_addr)
@@ -227,7 +252,7 @@ end
 
 always @(posedge CLK) begin
     if (RESET) begin
-        rotation_data_stage0 <= 0;
+        //rotation_data_stage0 <= 0;
     end else if (CE) begin
         // ROTATIONS lookup table ROM content
         case(step2_lookup_addr)
@@ -747,13 +772,13 @@ always @(posedge CLK) begin
     end
 end
 
-reg [SIN_COS_LOOKUP_DATA_BITS*2-1:0] sin_cos_data_stage1;
-reg [ROTATIONS_LOOKUP_DATA_BITS-1:0] rotation_data_stage1;
+reg [SIN_COS_LOOKUP_DATA_BITS*2-1:0] sin_cos_data_stage1 = 0;
+reg [ROTATIONS_LOOKUP_DATA_BITS-1:0] rotation_data_stage1 = 0;
 
 always @(posedge CLK) begin
     if (RESET) begin
-        sin_cos_data_stage1 <= 0;
-        rotation_data_stage1 <= 0;
+        //sin_cos_data_stage1 <= 0;
+        //rotation_data_stage1 <= 0;
     end else if (CE) begin
         sin_cos_data_stage1 <= sin_cos_data_stage0;
         rotation_data_stage1 <= rotation_data_stage0;
@@ -767,7 +792,6 @@ wire signed [INTERNAL_DATA_BITS-1:0] x_stage_1 = {1'b0, 1'b1, sin_cos_data_stage
 wire signed [INTERNAL_DATA_BITS-1:0] y_stage_1 = {1'b0, sin_value_top_bit_stage1, sin_cos_data_stage1[SIN_COS_LOOKUP_DATA_BITS*2-1:SIN_COS_LOOKUP_DATA_BITS], {EXTRA_DATA_BITS{1'b0}} }; 
 wire [ROTATIONS_LOOKUP_DATA_BITS:0] rotation_stage_1 = {rotation_data_stage1, first_rotation_sign_stage1};
 
-localparam ROTATIONS = ROTATIONS_LOOKUP_DATA_BITS;
 reg signed [INTERNAL_DATA_BITS-1:0] x_buf[ROTATIONS-1:0];
 reg signed [INTERNAL_DATA_BITS-1:0] y_buf[ROTATIONS-1:0];
 reg [ROTATIONS_LOOKUP_DATA_BITS-1:0] rotation_buf[ROTATIONS-1:0];
@@ -816,6 +840,8 @@ always @(posedge CLK) begin
     end
 end
 
+//assign SIN = sin_cos_data_stage1[31:16];
+//assign COS = sin_cos_data_stage1[15:0];
 assign SIN = x_out[INTERNAL_DATA_BITS-1:INTERNAL_DATA_BITS-DATA_BITS];
 assign COS = y_out[INTERNAL_DATA_BITS-1:INTERNAL_DATA_BITS-DATA_BITS];
 
