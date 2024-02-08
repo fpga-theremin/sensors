@@ -7,8 +7,6 @@ localparam PHASE_BITS = 3 + STEP1_PHASE_BITS + STEP2_PHASE_BITS; // 19
 localparam LATENCY = 2 + STEP2_PHASE_BITS + 1;
 localparam EXTRA_DATA_BITS = 4;
 
-localparam DELAY_BITS = 4;
-
 logic [PHASE_BITS:0] cycleCounter = 0;
 logic CLK;
 logic CE;
@@ -60,6 +58,8 @@ real sin_expected = 0;
 real cos_expected = 0;
 real sin_diff = 0;
 real cos_diff = 0;
+real abs_sin_diff = 0;
+real abs_cos_diff = 0;
 real sum_sin_diff = 0;
 real sum_cos_diff = 0;
 real sum_abs_sin_diff = 0;
@@ -67,6 +67,8 @@ real sum_abs_cos_diff = 0;
 real max_abs_sin_diff = 0;
 real max_abs_cos_diff = 0;
 int errorCount = 0;
+int bigSinDiffCount = 0;
+int bigCosDiffCount = 0;
 
 localparam PI = 3.14159265359;
 task nextCycle();
@@ -76,24 +78,30 @@ task nextCycle();
          cos_expected = ($cos(PHASE_DELAYED*2*PI/(1<<(PHASE_BITS)))*32767);
          sin_diff = SIN-sin_expected;
          cos_diff = COS-cos_expected;
+         abs_sin_diff = sin_diff < 0 ? -sin_diff : sin_diff;
+         abs_cos_diff = cos_diff < 0 ? -cos_diff : cos_diff;
          if (PHASE > LATENCY) begin
              sum_sin_diff = sum_sin_diff + sin_diff;
              sum_cos_diff = sum_cos_diff + cos_diff;
              sum_abs_sin_diff = sum_abs_sin_diff + (sin_diff < 0 ? -sin_diff : sin_diff);
              sum_abs_cos_diff = sum_abs_cos_diff + (cos_diff < 0 ? -cos_diff : cos_diff);
-             if (max_abs_cos_diff < (cos_diff < 0 ? -cos_diff : cos_diff))
-                 max_abs_cos_diff = (cos_diff < 0 ? -cos_diff : cos_diff);
-             if (max_abs_sin_diff < (sin_diff < 0 ? -sin_diff : sin_diff))
-                 max_abs_sin_diff = (sin_diff < 0 ? -sin_diff : sin_diff);
-         if (sin_diff > 2 || cos_diff > 2 ||  sin_diff < -2 || cos_diff < -2) begin 
-             $display("    [%d]   nextCycle PHASE=%h  PHASE_DELAYED=%h  SIN=%d COS=%d  sin_diff=%f (%f) cos_diff=%f (%f)    phase=%f", cycleCounter, PHASE, PHASE_DELAYED, SIN, COS, 
-                 sin_diff, sin_expected, 
-                 cos_diff, cos_expected,
-                 PHASE_DELAYED*2*PI/(1<<(PHASE_BITS)) );
-             errorCount = errorCount + 1;
-             if (errorCount > 20)
-                 $finish();
-         end
+             if (max_abs_cos_diff < abs_cos_diff)
+                 max_abs_cos_diff = abs_cos_diff;
+             if (max_abs_sin_diff < abs_sin_diff)
+                 max_abs_sin_diff = abs_sin_diff;
+             if (abs_sin_diff >= 0.5)
+                 bigSinDiffCount = bigSinDiffCount + 1;
+             if (abs_cos_diff >= 0.5)
+                 bigCosDiffCount = bigCosDiffCount + 1;
+             if (sin_diff > 1 || cos_diff > 1 ||  sin_diff < -1 || cos_diff < -1) begin 
+                 $display("    [%d]   nextCycle PHASE=%h  PHASE_DELAYED=%h  SIN=%d COS=%d  sin_diff=%f (%f) cos_diff=%f (%f)    phase=%f", cycleCounter, PHASE, PHASE_DELAYED, SIN, COS, 
+                     sin_diff, sin_expected, 
+                     cos_diff, cos_expected,
+                     PHASE_DELAYED*2*PI/(1<<(PHASE_BITS)) );
+                 errorCount = errorCount + 1;
+                 if (errorCount > 20)
+                     $finish();
+             end
          end
      end
 endtask
@@ -139,6 +147,9 @@ initial begin
         sum_abs_cos_diff, sum_abs_cos_diff/(1<<PHASE_BITS)
         );
     $display("*** max abs cos diff = %f   sin diff = %f", max_abs_cos_diff, max_abs_sin_diff);
+    $display("bigSinDiffCount = %d (%f) bigCosDiffCount = %d (%f)", 
+        bigSinDiffCount, (bigSinDiffCount+0.0)/(1<<PHASE_BITS),
+        bigCosDiffCount, (bigCosDiffCount+0.0)/(1<<PHASE_BITS));
     $display("===========");
     $display("Test passed");
     $finish();
