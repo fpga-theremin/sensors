@@ -57,17 +57,16 @@ wire neg_sin_delayed;
 //assign debug_PHASE = PHASE;
 
 
-variable_delay_shift_register #(
+fixed_delay_shift_register #(
     // data width to store
     .DATA_BITS(3),
-    .DELAY_BITS(4)
+    .DELAY_CYCLES(ROTATIONS + 2)
 )
-variable_delay_shift_register_inst
+fixed_delay_shift_register_inst
 (
     .CLK(CLK),
     .CE(CE),
     .RESET(RESET),
-    .DELAY(ROTATIONS + 2),
     .IN_VALUE( {swap_sin_and_cos, neg_cos, neg_sin} ),
     .OUT_VALUE( {swap_sin_and_cos_delayed, neg_cos_delayed, neg_sin_delayed} )
 );
@@ -922,28 +921,44 @@ wire [ROTATIONS_LOOKUP_DATA_BITS:0] rotation_stage_1 = {rotation_data_stage1, fi
 
 reg signed [INTERNAL_DATA_BITS-1:0] x_buf[ROTATIONS-1:0];
 reg signed [INTERNAL_DATA_BITS-1:0] y_buf[ROTATIONS-1:0];
-reg [ROTATIONS_LOOKUP_DATA_BITS-1:0] rotation_buf[ROTATIONS-1:0];
+//reg [ROTATIONS_LOOKUP_DATA_BITS-1:0] rotation_buf[ROTATIONS-1:0];
 genvar i;
 generate
-        for (i = 0; i < ROTATIONS; i = i + 1) begin
-    always @(posedge CLK) begin
+    for (i = 0; i < ROTATIONS; i = i + 1) begin
+        wire rot_angle;
+        
+        fixed_delay_shift_register #(
+            // data width to store
+            .DATA_BITS(1),
+            .DELAY_CYCLES(i)
+        )
+        rot_angle_delay_inst
+        (
+            .CLK(CLK),
+            .CE(CE),
+            .RESET(RESET),
+            .IN_VALUE( rotation_stage_1[i] ),
+            .OUT_VALUE( rot_angle )
+        );
+                
+        always @(posedge CLK) begin
             if (RESET) begin
                 x_buf[i] <= 0;
                 y_buf[i] <= 0;
-                rotation_buf[i] <= 0;
+                //rotation_buf[i] <= 0;
             end else if (CE) begin
                 if (i == 0) begin
-                    x_buf[i] <= (rotation_stage_1[0]) ? x_stage_1 + (y_stage_1 >>> (FIRST_ROTATION_SHIFT+i)) 
-                                                      : x_stage_1 - (y_stage_1 >>> (FIRST_ROTATION_SHIFT+i));
-                    y_buf[i] <= (rotation_stage_1[0]) ? y_stage_1 - (x_stage_1 >>> (FIRST_ROTATION_SHIFT+i))
-                                                      : y_stage_1 + (x_stage_1 >>> (FIRST_ROTATION_SHIFT+i));
-                    rotation_buf[i] <= (rotation_stage_1 >> 1);
+                    x_buf[i] <= rot_angle ? x_stage_1 + (y_stage_1 >>> (FIRST_ROTATION_SHIFT+i)) 
+                                          : x_stage_1 - (y_stage_1 >>> (FIRST_ROTATION_SHIFT+i));
+                    y_buf[i] <= rot_angle ? y_stage_1 - (x_stage_1 >>> (FIRST_ROTATION_SHIFT+i))
+                                          : y_stage_1 + (x_stage_1 >>> (FIRST_ROTATION_SHIFT+i));
+                    //rotation_buf[i] <= (rotation_stage_1 >> 1);
                 end else begin
-                    x_buf[i] <= (rotation_buf[i-1][0]) ? x_buf[i-1] + (y_buf[i-1] >>> (FIRST_ROTATION_SHIFT+i)) 
-                                                       : x_buf[i-1] - (y_buf[i-1] >>> (FIRST_ROTATION_SHIFT+i));
-                    y_buf[i] <= (rotation_buf[i-1][0]) ? y_buf[i-1] - (x_buf[i-1] >>> (FIRST_ROTATION_SHIFT+i))
-                                                       : y_buf[i-1] + (x_buf[i-1] >>> (FIRST_ROTATION_SHIFT+i));
-                    rotation_buf[i] <= (rotation_buf[i-1] >> 1);
+                    x_buf[i] <= rot_angle ? x_buf[i-1] + (y_buf[i-1] >>> (FIRST_ROTATION_SHIFT+i)) 
+                                          : x_buf[i-1] - (y_buf[i-1] >>> (FIRST_ROTATION_SHIFT+i));
+                    y_buf[i] <= rot_angle ? y_buf[i-1] - (x_buf[i-1] >>> (FIRST_ROTATION_SHIFT+i))
+                                          : y_buf[i-1] + (x_buf[i-1] >>> (FIRST_ROTATION_SHIFT+i));
+                    //rotation_buf[i] <= (rotation_buf[i-1] >> 1);
                 end
             end
         end 
@@ -963,8 +978,8 @@ always @(posedge CLK) begin
         x_out <= 0;
         y_out <= 0;
     end else if (CE) begin
-        x_out <= x_inverted + ROUNDING + neg_cos_delayed;
-        y_out <= y_inverted + ROUNDING + neg_sin_delayed;
+        x_out <= x_inverted + ROUNDING;// + neg_cos_delayed;
+        y_out <= y_inverted + ROUNDING;// + neg_sin_delayed;
     end
 end
 

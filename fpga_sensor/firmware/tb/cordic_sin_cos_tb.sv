@@ -17,17 +17,16 @@ logic RESET;
 logic [PHASE_BITS-1:0] PHASE;
 wire [PHASE_BITS-1:0] PHASE_DELAYED;
 
-variable_delay_shift_register
+fixed_delay_shift_register
 #(
     .DATA_BITS(PHASE_BITS),
-    .DELAY_BITS(DELAY_BITS)
+    .DELAY_CYCLES(LATENCY)
 )
-variable_delay_shift_register_inst
+fixed_delay_shift_register_inst
 (
     .CLK(CLK),
     .CE(CE),
     .RESET(RESET),
-    .DELAY(LATENCY),
     .IN_VALUE(PHASE),
     .OUT_VALUE(PHASE_DELAYED)
 );
@@ -64,6 +63,8 @@ real sum_sin_diff = 0;
 real sum_cos_diff = 0;
 real sum_abs_sin_diff = 0;
 real sum_abs_cos_diff = 0;
+real max_abs_sin_diff = 0;
+real max_abs_cos_diff = 0;
 int errorCount = 0;
 
 localparam PI = 3.14159265359;
@@ -79,6 +80,10 @@ task nextCycle();
              sum_cos_diff = sum_cos_diff + cos_diff;
              sum_abs_sin_diff = sum_abs_sin_diff + (sin_diff < 0 ? -sin_diff : sin_diff);
              sum_abs_cos_diff = sum_abs_cos_diff + (cos_diff < 0 ? -cos_diff : cos_diff);
+             if (max_abs_cos_diff < (cos_diff < 0 ? -cos_diff : cos_diff))
+                 max_abs_cos_diff = (cos_diff < 0 ? -cos_diff : cos_diff);
+             if (max_abs_sin_diff < (sin_diff < 0 ? -sin_diff : sin_diff))
+                 max_abs_sin_diff = (sin_diff < 0 ? -sin_diff : sin_diff);
          if (sin_diff > 2 || cos_diff > 2 ||  sin_diff < -2 || cos_diff < -2) begin 
              $display("    [%d]   nextCycle PHASE=%h  PHASE_DELAYED=%h  SIN=%d COS=%d  sin_diff=%f (%f) cos_diff=%f (%f)    phase=%f", cycleCounter, PHASE, PHASE_DELAYED, SIN, COS, 
                  sin_diff, sin_expected, 
@@ -110,6 +115,7 @@ initial begin
     #100 @(posedge CLK) RESET = 0;
     @(posedge CLK) #1 CE = 1;
     $display("Starting CORDIC SIN COS test");
+    $display("===========");
     cycleCounter = 0;
 
     //repeat(3000) nextCycle();
@@ -121,6 +127,8 @@ initial begin
         sum_abs_sin_diff, sum_abs_sin_diff/(1<<PHASE_BITS),
         sum_abs_cos_diff, sum_abs_cos_diff/(1<<PHASE_BITS)
         );
+    $display("*** max abs cos diff = %f   sin diff = %f", max_abs_cos_diff, max_abs_sin_diff);
+    $display("===========");
     $display("Test passed");
     $finish();
 
