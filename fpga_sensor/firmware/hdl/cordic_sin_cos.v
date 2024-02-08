@@ -11,7 +11,7 @@ module cordic_sin_cos #(
     // really used: 3 + STEP1_PHASE_BITS + STEP2_PHASE_BITS bits 
     parameter PHASE_BITS = 19,
     // size of PI/4 sin&cos lookup table (7 is 128)
-    parameter STEP1_PHASE_BITS = 7,
+    parameter STEP1_PHASE_BITS = 8,
     // size of rotations table (9 is 512)
     parameter STEP2_PHASE_BITS = 9
 ) (
@@ -36,7 +36,7 @@ module cordic_sin_cos #(
 
 localparam SIN_COS_LOOKUP_DATA_BITS = 16;
 localparam ROTATIONS_LOOKUP_DATA_BITS = 8;
-localparam ROTATIONS = ROTATIONS_LOOKUP_DATA_BITS;
+localparam ROTATIONS = ROTATIONS_LOOKUP_DATA_BITS + 1;
 
 // top 3 bits of phase are splitting period into PI/4 ranges.
 // all calculations are being made for 0..PI/4, then transformations like swap sin and cos or sign inversion are applied
@@ -85,10 +85,9 @@ wire [STEP2_PHASE_BITS-1:0] step2_lookup_addr = PHASE[STEP2_MSB:STEP2_LSB] ^ { S
 
 
 // optimization: COS top bit for angles 0..PI/4 is always 1, SIN is 1 if exceeds bound 
-localparam SIN_HIGH_BIT_0_BOUND = 84; // for angle <= bound top bit of sin is 0, otherwise 1
 wire sin_value_top_bit =  (step1_lookup_addr>SIN_HIGH_BIT_0_BOUND) ? 1'b1 : 1'b0;
 // optimization: first rotation can be get from phase bit, avoiding storing of one bit of data 
-wire first_rotation_sign = PHASE[STEP2_MSB] ^ 1'b1;
+wire first_rotation_sign = step2_lookup_addr[STEP2_PHASE_BITS-1] ^ 1'b1;
 
 reg sin_value_top_bit_stage0;
 reg first_rotation_sign_stage0;
@@ -108,152 +107,283 @@ always @(posedge CLK) begin
     end
 end
 
+localparam FIRST_ROTATION_SHIFT = 10;
+localparam EXTRA_DATA_BITS = 4;
+// for angle <= bound top bit of sin is 0, otherwise 1
+localparam SIN_HIGH_BIT_0_BOUND = 170;
+
+// SIN&COS lookup table ROM internal register
 reg [SIN_COS_LOOKUP_DATA_BITS*2-1:0] sin_cos_data_stage0 = 0;
+// ROTATIONS lookup table ROM internal register
 reg [ROTATIONS_LOOKUP_DATA_BITS-1:0] rotation_data_stage0 = 0;
 
 always @(posedge CLK) begin
-    if (RESET) begin
-        //sin_cos_data_stage0 <= 0;
-    end else if (CE) begin
+    if (CE) begin
         // SIN and COS lookup table ROM content
         case(step1_lookup_addr)
-        0: sin_cos_data_stage0 <= 32'h0192fffb;
-        1: sin_cos_data_stage0 <= 32'h04b6fff6;
-        2: sin_cos_data_stage0 <= 32'h07daffec;
-        3: sin_cos_data_stage0 <= 32'h0afeffdd;
-        4: sin_cos_data_stage0 <= 32'h0e22ffc9;
-        5: sin_cos_data_stage0 <= 32'h1146ffb1;
-        6: sin_cos_data_stage0 <= 32'h146aff93;
-        7: sin_cos_data_stage0 <= 32'h178dff70;
-        8: sin_cos_data_stage0 <= 32'h1ab0ff49;
-        9: sin_cos_data_stage0 <= 32'h1dd3ff1d;
-        10: sin_cos_data_stage0 <= 32'h20f6feeb;
-        11: sin_cos_data_stage0 <= 32'h2418feb5;
-        12: sin_cos_data_stage0 <= 32'h273afe7a;
-        13: sin_cos_data_stage0 <= 32'h2a5cfe3a;
-        14: sin_cos_data_stage0 <= 32'h2d7dfdf5;
-        15: sin_cos_data_stage0 <= 32'h309efdab;
-        16: sin_cos_data_stage0 <= 32'h33befd5c;
-        17: sin_cos_data_stage0 <= 32'h36defd08;
-        18: sin_cos_data_stage0 <= 32'h39fefcb0;
-        19: sin_cos_data_stage0 <= 32'h3d1cfc52;
-        20: sin_cos_data_stage0 <= 32'h403bfbf0;
-        21: sin_cos_data_stage0 <= 32'h4358fb88;
-        22: sin_cos_data_stage0 <= 32'h4675fb1c;
-        23: sin_cos_data_stage0 <= 32'h4991faab;
-        24: sin_cos_data_stage0 <= 32'h4cadfa35;
-        25: sin_cos_data_stage0 <= 32'h4fc8f9ba;
-        26: sin_cos_data_stage0 <= 32'h52e2f93a;
-        27: sin_cos_data_stage0 <= 32'h55fbf8b6;
-        28: sin_cos_data_stage0 <= 32'h5913f82c;
-        29: sin_cos_data_stage0 <= 32'h5c2bf79e;
-        30: sin_cos_data_stage0 <= 32'h5f41f70b;
-        31: sin_cos_data_stage0 <= 32'h6257f673;
-        32: sin_cos_data_stage0 <= 32'h656cf5d6;
-        33: sin_cos_data_stage0 <= 32'h6880f534;
-        34: sin_cos_data_stage0 <= 32'h6b92f48d;
-        35: sin_cos_data_stage0 <= 32'h6ea4f3e2;
-        36: sin_cos_data_stage0 <= 32'h71b5f332;
-        37: sin_cos_data_stage0 <= 32'h74c4f27d;
-        38: sin_cos_data_stage0 <= 32'h77d3f1c3;
-        39: sin_cos_data_stage0 <= 32'h7ae0f104;
-        40: sin_cos_data_stage0 <= 32'h7decf041;
-        41: sin_cos_data_stage0 <= 32'h80f7ef79;
-        42: sin_cos_data_stage0 <= 32'h8401eeac;
-        43: sin_cos_data_stage0 <= 32'h8709edda;
-        44: sin_cos_data_stage0 <= 32'h8a10ed04;
-        45: sin_cos_data_stage0 <= 32'h8d16ec28;
-        46: sin_cos_data_stage0 <= 32'h901aeb48;
-        47: sin_cos_data_stage0 <= 32'h931dea64;
-        48: sin_cos_data_stage0 <= 32'h961fe97a;
-        49: sin_cos_data_stage0 <= 32'h991fe88c;
-        50: sin_cos_data_stage0 <= 32'h9c1ee799;
-        51: sin_cos_data_stage0 <= 32'h9f1be6a1;
-        52: sin_cos_data_stage0 <= 32'ha217e5a5;
-        53: sin_cos_data_stage0 <= 32'ha511e4a4;
-        54: sin_cos_data_stage0 <= 32'ha809e39f;
-        55: sin_cos_data_stage0 <= 32'hab00e294;
-        56: sin_cos_data_stage0 <= 32'hadf5e185;
-        57: sin_cos_data_stage0 <= 32'hb0e9e072;
-        58: sin_cos_data_stage0 <= 32'hb3dbdf5a;
-        59: sin_cos_data_stage0 <= 32'hb6cbde3d;
-        60: sin_cos_data_stage0 <= 32'hb9b9dd1b;
-        61: sin_cos_data_stage0 <= 32'hbca6dbf5;
-        62: sin_cos_data_stage0 <= 32'hbf90dacb;
-        63: sin_cos_data_stage0 <= 32'hc279d99c;
-        64: sin_cos_data_stage0 <= 32'hc560d868;
-        65: sin_cos_data_stage0 <= 32'hc845d72f;
-        66: sin_cos_data_stage0 <= 32'hcb28d5f3;
-        67: sin_cos_data_stage0 <= 32'hce0ad4b1;
-        68: sin_cos_data_stage0 <= 32'hd0e9d36b;
-        69: sin_cos_data_stage0 <= 32'hd3c6d221;
-        70: sin_cos_data_stage0 <= 32'hd6a1d0d2;
-        71: sin_cos_data_stage0 <= 32'hd97acf7f;
-        72: sin_cos_data_stage0 <= 32'hdc51ce27;
-        73: sin_cos_data_stage0 <= 32'hdf26ccca;
-        74: sin_cos_data_stage0 <= 32'he1f9cb6a;
-        75: sin_cos_data_stage0 <= 32'he4caca05;
-        76: sin_cos_data_stage0 <= 32'he798c89b;
-        77: sin_cos_data_stage0 <= 32'hea64c72d;
-        78: sin_cos_data_stage0 <= 32'hed2ec5bb;
-        79: sin_cos_data_stage0 <= 32'heff5c444;
-        80: sin_cos_data_stage0 <= 32'hf2bbc2c9;
-        81: sin_cos_data_stage0 <= 32'hf57ec149;
-        82: sin_cos_data_stage0 <= 32'hf83ebfc6;
-        83: sin_cos_data_stage0 <= 32'hfafcbe3d;
-        84: sin_cos_data_stage0 <= 32'hfdb8bcb1;
-        85: sin_cos_data_stage0 <= 32'h0071bb20;
-        86: sin_cos_data_stage0 <= 32'h0328b98b;
-        87: sin_cos_data_stage0 <= 32'h05ddb7f2;
-        88: sin_cos_data_stage0 <= 32'h088eb655;
-        89: sin_cos_data_stage0 <= 32'h0b3eb4b3;
-        90: sin_cos_data_stage0 <= 32'h0deab30d;
-        91: sin_cos_data_stage0 <= 32'h1094b163;
-        92: sin_cos_data_stage0 <= 32'h133cafb5;
-        93: sin_cos_data_stage0 <= 32'h15e1ae02;
-        94: sin_cos_data_stage0 <= 32'h1883ac4c;
-        95: sin_cos_data_stage0 <= 32'h1b22aa91;
-        96: sin_cos_data_stage0 <= 32'h1dbfa8d2;
-        97: sin_cos_data_stage0 <= 32'h2059a70f;
-        98: sin_cos_data_stage0 <= 32'h22f0a549;
-        99: sin_cos_data_stage0 <= 32'h2584a37d;
-        100: sin_cos_data_stage0 <= 32'h2816a1ae;
-        101: sin_cos_data_stage0 <= 32'h2aa49fdb;
-        102: sin_cos_data_stage0 <= 32'h2d309e04;
-        103: sin_cos_data_stage0 <= 32'h2fb99c29;
-        104: sin_cos_data_stage0 <= 32'h323f9a4a;
-        105: sin_cos_data_stage0 <= 32'h34c29867;
-        106: sin_cos_data_stage0 <= 32'h37429680;
-        107: sin_cos_data_stage0 <= 32'h39bf9495;
-        108: sin_cos_data_stage0 <= 32'h3c3992a6;
-        109: sin_cos_data_stage0 <= 32'h3eb090b4;
-        110: sin_cos_data_stage0 <= 32'h41248ebd;
-        111: sin_cos_data_stage0 <= 32'h43958cc3;
-        112: sin_cos_data_stage0 <= 32'h46028ac5;
-        113: sin_cos_data_stage0 <= 32'h486d88c3;
-        114: sin_cos_data_stage0 <= 32'h4ad486bd;
-        115: sin_cos_data_stage0 <= 32'h4d3884b3;
-        116: sin_cos_data_stage0 <= 32'h4f9982a6;
-        117: sin_cos_data_stage0 <= 32'h51f78095;
-        118: sin_cos_data_stage0 <= 32'h54527e80;
-        119: sin_cos_data_stage0 <= 32'h56a97c68;
-        120: sin_cos_data_stage0 <= 32'h58fd7a4c;
-        121: sin_cos_data_stage0 <= 32'h5b4d782c;
-        122: sin_cos_data_stage0 <= 32'h5d9a7609;
-        123: sin_cos_data_stage0 <= 32'h5fe473e2;
-        124: sin_cos_data_stage0 <= 32'h622b71b7;
-        125: sin_cos_data_stage0 <= 32'h646e6f89;
-        126: sin_cos_data_stage0 <= 32'h66ad6d57;
-        127: sin_cos_data_stage0 <= 32'h68ea6b22;
+        0: sin_cos_data_stage0 <= 32'h00c9fffb;
+        1: sin_cos_data_stage0 <= 32'h025bfffa;
+        2: sin_cos_data_stage0 <= 32'h03edfff8;
+        3: sin_cos_data_stage0 <= 32'h057ffff4;
+        4: sin_cos_data_stage0 <= 32'h0711ffef;
+        5: sin_cos_data_stage0 <= 32'h08a3ffe9;
+        6: sin_cos_data_stage0 <= 32'h0a35ffe1;
+        7: sin_cos_data_stage0 <= 32'h0bc7ffd9;
+        8: sin_cos_data_stage0 <= 32'h0d59ffcf;
+        9: sin_cos_data_stage0 <= 32'h0eebffc4;
+        10: sin_cos_data_stage0 <= 32'h107dffb7;
+        11: sin_cos_data_stage0 <= 32'h120fffaa;
+        12: sin_cos_data_stage0 <= 32'h13a1ff9b;
+        13: sin_cos_data_stage0 <= 32'h1532ff8b;
+        14: sin_cos_data_stage0 <= 32'h16c4ff7a;
+        15: sin_cos_data_stage0 <= 32'h1856ff67;
+        16: sin_cos_data_stage0 <= 32'h19e8ff54;
+        17: sin_cos_data_stage0 <= 32'h1b79ff3f;
+        18: sin_cos_data_stage0 <= 32'h1d0bff28;
+        19: sin_cos_data_stage0 <= 32'h1e9cff11;
+        20: sin_cos_data_stage0 <= 32'h202dfef8;
+        21: sin_cos_data_stage0 <= 32'h21bffede;
+        22: sin_cos_data_stage0 <= 32'h2350fec3;
+        23: sin_cos_data_stage0 <= 32'h24e1fea7;
+        24: sin_cos_data_stage0 <= 32'h2672fe89;
+        25: sin_cos_data_stage0 <= 32'h2803fe6b;
+        26: sin_cos_data_stage0 <= 32'h2994fe4a;
+        27: sin_cos_data_stage0 <= 32'h2b24fe29;
+        28: sin_cos_data_stage0 <= 32'h2cb5fe07;
+        29: sin_cos_data_stage0 <= 32'h2e46fde3;
+        30: sin_cos_data_stage0 <= 32'h2fd6fdbe;
+        31: sin_cos_data_stage0 <= 32'h3166fd98;
+        32: sin_cos_data_stage0 <= 32'h32f6fd70;
+        33: sin_cos_data_stage0 <= 32'h3487fd48;
+        34: sin_cos_data_stage0 <= 32'h3616fd1e;
+        35: sin_cos_data_stage0 <= 32'h37a6fcf3;
+        36: sin_cos_data_stage0 <= 32'h3936fcc7;
+        37: sin_cos_data_stage0 <= 32'h3ac5fc99;
+        38: sin_cos_data_stage0 <= 32'h3c55fc6a;
+        39: sin_cos_data_stage0 <= 32'h3de4fc3a;
+        40: sin_cos_data_stage0 <= 32'h3f73fc09;
+        41: sin_cos_data_stage0 <= 32'h4102fbd7;
+        42: sin_cos_data_stage0 <= 32'h4291fba3;
+        43: sin_cos_data_stage0 <= 32'h441ffb6e;
+        44: sin_cos_data_stage0 <= 32'h45aefb38;
+        45: sin_cos_data_stage0 <= 32'h473cfb00;
+        46: sin_cos_data_stage0 <= 32'h48cafac8;
+        47: sin_cos_data_stage0 <= 32'h4a58fa8e;
+        48: sin_cos_data_stage0 <= 32'h4be6fa53;
+        49: sin_cos_data_stage0 <= 32'h4d74fa17;
+        50: sin_cos_data_stage0 <= 32'h4f01f9d9;
+        51: sin_cos_data_stage0 <= 32'h508ef99b;
+        52: sin_cos_data_stage0 <= 32'h521bf95b;
+        53: sin_cos_data_stage0 <= 32'h53a8f91a;
+        54: sin_cos_data_stage0 <= 32'h5535f8d8;
+        55: sin_cos_data_stage0 <= 32'h56c1f894;
+        56: sin_cos_data_stage0 <= 32'h584df84f;
+        57: sin_cos_data_stage0 <= 32'h59d9f809;
+        58: sin_cos_data_stage0 <= 32'h5b65f7c2;
+        59: sin_cos_data_stage0 <= 32'h5cf0f77a;
+        60: sin_cos_data_stage0 <= 32'h5e7cf730;
+        61: sin_cos_data_stage0 <= 32'h6007f6e5;
+        62: sin_cos_data_stage0 <= 32'h6192f699;
+        63: sin_cos_data_stage0 <= 32'h631cf64c;
+        64: sin_cos_data_stage0 <= 32'h64a7f5fe;
+        65: sin_cos_data_stage0 <= 32'h6631f5ae;
+        66: sin_cos_data_stage0 <= 32'h67bbf55d;
+        67: sin_cos_data_stage0 <= 32'h6944f50b;
+        68: sin_cos_data_stage0 <= 32'h6acef4b8;
+        69: sin_cos_data_stage0 <= 32'h6c57f463;
+        70: sin_cos_data_stage0 <= 32'h6de0f40e;
+        71: sin_cos_data_stage0 <= 32'h6f68f3b7;
+        72: sin_cos_data_stage0 <= 32'h70f1f35f;
+        73: sin_cos_data_stage0 <= 32'h7279f305;
+        74: sin_cos_data_stage0 <= 32'h7401f2ab;
+        75: sin_cos_data_stage0 <= 32'h7588f24f;
+        76: sin_cos_data_stage0 <= 32'h770ff1f2;
+        77: sin_cos_data_stage0 <= 32'h7896f194;
+        78: sin_cos_data_stage0 <= 32'h7a1df135;
+        79: sin_cos_data_stage0 <= 32'h7ba3f0d4;
+        80: sin_cos_data_stage0 <= 32'h7d29f072;
+        81: sin_cos_data_stage0 <= 32'h7eaff010;
+        82: sin_cos_data_stage0 <= 32'h8035efab;
+        83: sin_cos_data_stage0 <= 32'h81baef46;
+        84: sin_cos_data_stage0 <= 32'h833feee0;
+        85: sin_cos_data_stage0 <= 32'h84c3ee78;
+        86: sin_cos_data_stage0 <= 32'h8647ee0f;
+        87: sin_cos_data_stage0 <= 32'h87cbeda5;
+        88: sin_cos_data_stage0 <= 32'h894fed3a;
+        89: sin_cos_data_stage0 <= 32'h8ad2eccd;
+        90: sin_cos_data_stage0 <= 32'h8c55ec60;
+        91: sin_cos_data_stage0 <= 32'h8dd7ebf1;
+        92: sin_cos_data_stage0 <= 32'h8f5aeb81;
+        93: sin_cos_data_stage0 <= 32'h90dbeb10;
+        94: sin_cos_data_stage0 <= 32'h925dea9d;
+        95: sin_cos_data_stage0 <= 32'h93deea2a;
+        96: sin_cos_data_stage0 <= 32'h955fe9b5;
+        97: sin_cos_data_stage0 <= 32'h96dfe93f;
+        98: sin_cos_data_stage0 <= 32'h985fe8c8;
+        99: sin_cos_data_stage0 <= 32'h99dfe850;
+        100: sin_cos_data_stage0 <= 32'h9b5ee7d6;
+        101: sin_cos_data_stage0 <= 32'h9cdde75c;
+        102: sin_cos_data_stage0 <= 32'h9e5ce6e0;
+        103: sin_cos_data_stage0 <= 32'h9fdae663;
+        104: sin_cos_data_stage0 <= 32'ha158e5e5;
+        105: sin_cos_data_stage0 <= 32'ha2d5e566;
+        106: sin_cos_data_stage0 <= 32'ha452e4e5;
+        107: sin_cos_data_stage0 <= 32'ha5cfe464;
+        108: sin_cos_data_stage0 <= 32'ha74be3e1;
+        109: sin_cos_data_stage0 <= 32'ha8c7e35d;
+        110: sin_cos_data_stage0 <= 32'haa43e2d8;
+        111: sin_cos_data_stage0 <= 32'habbee251;
+        112: sin_cos_data_stage0 <= 32'had38e1ca;
+        113: sin_cos_data_stage0 <= 32'haeb2e141;
+        114: sin_cos_data_stage0 <= 32'hb02ce0b7;
+        115: sin_cos_data_stage0 <= 32'hb1a5e02c;
+        116: sin_cos_data_stage0 <= 32'hb31edfa0;
+        117: sin_cos_data_stage0 <= 32'hb497df13;
+        118: sin_cos_data_stage0 <= 32'hb60fde85;
+        119: sin_cos_data_stage0 <= 32'hb787ddf5;
+        120: sin_cos_data_stage0 <= 32'hb8fedd64;
+        121: sin_cos_data_stage0 <= 32'hba74dcd3;
+        122: sin_cos_data_stage0 <= 32'hbbebdc40;
+        123: sin_cos_data_stage0 <= 32'hbd61dbab;
+        124: sin_cos_data_stage0 <= 32'hbed6db16;
+        125: sin_cos_data_stage0 <= 32'hc04bda80;
+        126: sin_cos_data_stage0 <= 32'hc1bfd9e8;
+        127: sin_cos_data_stage0 <= 32'hc333d94f;
+        128: sin_cos_data_stage0 <= 32'hc4a7d8b5;
+        129: sin_cos_data_stage0 <= 32'hc61ad81a;
+        130: sin_cos_data_stage0 <= 32'hc78cd77e;
+        131: sin_cos_data_stage0 <= 32'hc8fed6e1;
+        132: sin_cos_data_stage0 <= 32'hca70d642;
+        133: sin_cos_data_stage0 <= 32'hcbe1d5a3;
+        134: sin_cos_data_stage0 <= 32'hcd52d502;
+        135: sin_cos_data_stage0 <= 32'hcec2d460;
+        136: sin_cos_data_stage0 <= 32'hd031d3bd;
+        137: sin_cos_data_stage0 <= 32'hd1a0d319;
+        138: sin_cos_data_stage0 <= 32'hd30fd274;
+        139: sin_cos_data_stage0 <= 32'hd47dd1ce;
+        140: sin_cos_data_stage0 <= 32'hd5ebd126;
+        141: sin_cos_data_stage0 <= 32'hd758d07e;
+        142: sin_cos_data_stage0 <= 32'hd8c4cfd4;
+        143: sin_cos_data_stage0 <= 32'hda30cf29;
+        144: sin_cos_data_stage0 <= 32'hdb9cce7d;
+        145: sin_cos_data_stage0 <= 32'hdd07cdd0;
+        146: sin_cos_data_stage0 <= 32'hde71cd22;
+        147: sin_cos_data_stage0 <= 32'hdfdbcc73;
+        148: sin_cos_data_stage0 <= 32'he145cbc3;
+        149: sin_cos_data_stage0 <= 32'he2adcb11;
+        150: sin_cos_data_stage0 <= 32'he416ca5e;
+        151: sin_cos_data_stage0 <= 32'he57dc9ab;
+        152: sin_cos_data_stage0 <= 32'he6e5c8f6;
+        153: sin_cos_data_stage0 <= 32'he84bc840;
+        154: sin_cos_data_stage0 <= 32'he9b1c789;
+        155: sin_cos_data_stage0 <= 32'heb17c6d1;
+        156: sin_cos_data_stage0 <= 32'hec7cc618;
+        157: sin_cos_data_stage0 <= 32'hede0c55e;
+        158: sin_cos_data_stage0 <= 32'hef44c4a2;
+        159: sin_cos_data_stage0 <= 32'hf0a7c3e6;
+        160: sin_cos_data_stage0 <= 32'hf20ac328;
+        161: sin_cos_data_stage0 <= 32'hf36cc26a;
+        162: sin_cos_data_stage0 <= 32'hf4cdc1aa;
+        163: sin_cos_data_stage0 <= 32'hf62ec0e9;
+        164: sin_cos_data_stage0 <= 32'hf78ec027;
+        165: sin_cos_data_stage0 <= 32'hf8eebf64;
+        166: sin_cos_data_stage0 <= 32'hfa4dbea0;
+        167: sin_cos_data_stage0 <= 32'hfbacbddb;
+        168: sin_cos_data_stage0 <= 32'hfd09bd15;
+        169: sin_cos_data_stage0 <= 32'hfe67bc4d;
+        170: sin_cos_data_stage0 <= 32'hffc3bb85;
+        171: sin_cos_data_stage0 <= 32'h011fbabc;
+        172: sin_cos_data_stage0 <= 32'h027bb9f1;
+        173: sin_cos_data_stage0 <= 32'h03d6b926;
+        174: sin_cos_data_stage0 <= 32'h0530b859;
+        175: sin_cos_data_stage0 <= 32'h0689b78b;
+        176: sin_cos_data_stage0 <= 32'h07e2b6bd;
+        177: sin_cos_data_stage0 <= 32'h093bb5ed;
+        178: sin_cos_data_stage0 <= 32'h0a92b51c;
+        179: sin_cos_data_stage0 <= 32'h0be9b44a;
+        180: sin_cos_data_stage0 <= 32'h0d3fb377;
+        181: sin_cos_data_stage0 <= 32'h0e95b2a3;
+        182: sin_cos_data_stage0 <= 32'h0feab1ce;
+        183: sin_cos_data_stage0 <= 32'h113fb0f8;
+        184: sin_cos_data_stage0 <= 32'h1292b021;
+        185: sin_cos_data_stage0 <= 32'h13e5af49;
+        186: sin_cos_data_stage0 <= 32'h1538ae70;
+        187: sin_cos_data_stage0 <= 32'h1689ad95;
+        188: sin_cos_data_stage0 <= 32'h17dbacba;
+        189: sin_cos_data_stage0 <= 32'h192babde;
+        190: sin_cos_data_stage0 <= 32'h1a7bab00;
+        191: sin_cos_data_stage0 <= 32'h1bcaaa22;
+        192: sin_cos_data_stage0 <= 32'h1d18a943;
+        193: sin_cos_data_stage0 <= 32'h1e66a862;
+        194: sin_cos_data_stage0 <= 32'h1fb3a781;
+        195: sin_cos_data_stage0 <= 32'h20ffa69e;
+        196: sin_cos_data_stage0 <= 32'h224aa5bb;
+        197: sin_cos_data_stage0 <= 32'h2395a4d6;
+        198: sin_cos_data_stage0 <= 32'h24e0a3f1;
+        199: sin_cos_data_stage0 <= 32'h2629a30a;
+        200: sin_cos_data_stage0 <= 32'h2772a223;
+        201: sin_cos_data_stage0 <= 32'h28baa13a;
+        202: sin_cos_data_stage0 <= 32'h2a01a051;
+        203: sin_cos_data_stage0 <= 32'h2b489f66;
+        204: sin_cos_data_stage0 <= 32'h2c8e9e7b;
+        205: sin_cos_data_stage0 <= 32'h2dd39d8e;
+        206: sin_cos_data_stage0 <= 32'h2f179ca0;
+        207: sin_cos_data_stage0 <= 32'h305b9bb2;
+        208: sin_cos_data_stage0 <= 32'h319e9ac2;
+        209: sin_cos_data_stage0 <= 32'h32e099d2;
+        210: sin_cos_data_stage0 <= 32'h342298e0;
+        211: sin_cos_data_stage0 <= 32'h356297ee;
+        212: sin_cos_data_stage0 <= 32'h36a296fa;
+        213: sin_cos_data_stage0 <= 32'h37e29606;
+        214: sin_cos_data_stage0 <= 32'h39209510;
+        215: sin_cos_data_stage0 <= 32'h3a5e941a;
+        216: sin_cos_data_stage0 <= 32'h3b9b9323;
+        217: sin_cos_data_stage0 <= 32'h3cd7922a;
+        218: sin_cos_data_stage0 <= 32'h3e139131;
+        219: sin_cos_data_stage0 <= 32'h3f4d9037;
+        220: sin_cos_data_stage0 <= 32'h40878f3b;
+        221: sin_cos_data_stage0 <= 32'h41c18e3f;
+        222: sin_cos_data_stage0 <= 32'h42f98d42;
+        223: sin_cos_data_stage0 <= 32'h44318c44;
+        224: sin_cos_data_stage0 <= 32'h45678b45;
+        225: sin_cos_data_stage0 <= 32'h469d8a45;
+        226: sin_cos_data_stage0 <= 32'h47d38944;
+        227: sin_cos_data_stage0 <= 32'h49078842;
+        228: sin_cos_data_stage0 <= 32'h4a3b873f;
+        229: sin_cos_data_stage0 <= 32'h4b6e863b;
+        230: sin_cos_data_stage0 <= 32'h4ca08536;
+        231: sin_cos_data_stage0 <= 32'h4dd18430;
+        232: sin_cos_data_stage0 <= 32'h4f02832a;
+        233: sin_cos_data_stage0 <= 32'h50318222;
+        234: sin_cos_data_stage0 <= 32'h5160811a;
+        235: sin_cos_data_stage0 <= 32'h528e8010;
+        236: sin_cos_data_stage0 <= 32'h53bb7f06;
+        237: sin_cos_data_stage0 <= 32'h54e87dfb;
+        238: sin_cos_data_stage0 <= 32'h56137cee;
+        239: sin_cos_data_stage0 <= 32'h573e7be1;
+        240: sin_cos_data_stage0 <= 32'h58687ad3;
+        241: sin_cos_data_stage0 <= 32'h599179c4;
+        242: sin_cos_data_stage0 <= 32'h5aba78b4;
+        243: sin_cos_data_stage0 <= 32'h5be177a4;
+        244: sin_cos_data_stage0 <= 32'h5d087692;
+        245: sin_cos_data_stage0 <= 32'h5e2d757f;
+        246: sin_cos_data_stage0 <= 32'h5f52746c;
+        247: sin_cos_data_stage0 <= 32'h60767358;
+        248: sin_cos_data_stage0 <= 32'h619a7242;
+        249: sin_cos_data_stage0 <= 32'h62bc712c;
+        250: sin_cos_data_stage0 <= 32'h63de7015;
+        251: sin_cos_data_stage0 <= 32'h64fe6efd;
+        252: sin_cos_data_stage0 <= 32'h661e6de4;
+        253: sin_cos_data_stage0 <= 32'h673d6ccb;
+        254: sin_cos_data_stage0 <= 32'h685b6bb0;
+        255: sin_cos_data_stage0 <= 32'h69786a95;
         endcase
     end
 end
 
 
 always @(posedge CLK) begin
-    if (RESET) begin
-        //rotation_data_stage0 <= 0;
-    end else if (CE) begin
+    if (CE) begin
         // ROTATIONS lookup table ROM content
         case(step2_lookup_addr)
         0: rotation_data_stage0 <= 8'h13;
@@ -785,9 +915,7 @@ always @(posedge CLK) begin
     end
 end
 
-localparam EXTRA_DATA_BITS = 4;
 localparam INTERNAL_DATA_BITS = SIN_COS_LOOKUP_DATA_BITS + 2 + EXTRA_DATA_BITS;
-localparam FIRST_ROTATION_SHIFT = 9;  
 wire signed [INTERNAL_DATA_BITS-1:0] x_stage_1 = {1'b0, 1'b1, sin_cos_data_stage1[SIN_COS_LOOKUP_DATA_BITS-1:0], {EXTRA_DATA_BITS{1'b0}} }; 
 wire signed [INTERNAL_DATA_BITS-1:0] y_stage_1 = {1'b0, sin_value_top_bit_stage1, sin_cos_data_stage1[SIN_COS_LOOKUP_DATA_BITS*2-1:SIN_COS_LOOKUP_DATA_BITS], {EXTRA_DATA_BITS{1'b0}} }; 
 wire [ROTATIONS_LOOKUP_DATA_BITS:0] rotation_stage_1 = {rotation_data_stage1, first_rotation_sign_stage1};
@@ -805,16 +933,16 @@ generate
                 rotation_buf[i] <= 0;
             end else if (CE) begin
                 if (i == 0) begin
-                    x_buf[i] <= (rotation_stage_1[0]) ? x_stage_1 + (y_stage_1 >> (FIRST_ROTATION_SHIFT+i)) 
-                                                      : x_stage_1 - (y_stage_1 >> (FIRST_ROTATION_SHIFT+i));
-                    y_buf[i] <= (rotation_stage_1[0]) ? y_stage_1 - (x_stage_1 >> (FIRST_ROTATION_SHIFT+i))
-                                                      : y_stage_1 + (x_stage_1 >> (FIRST_ROTATION_SHIFT+i));
+                    x_buf[i] <= (rotation_stage_1[0]) ? x_stage_1 + (y_stage_1 >>> (FIRST_ROTATION_SHIFT+i)) 
+                                                      : x_stage_1 - (y_stage_1 >>> (FIRST_ROTATION_SHIFT+i));
+                    y_buf[i] <= (rotation_stage_1[0]) ? y_stage_1 - (x_stage_1 >>> (FIRST_ROTATION_SHIFT+i))
+                                                      : y_stage_1 + (x_stage_1 >>> (FIRST_ROTATION_SHIFT+i));
                     rotation_buf[i] <= (rotation_stage_1 >> 1);
                 end else begin
-                    x_buf[i] <= (rotation_buf[i-1][0]) ? x_buf[i-1] + (y_buf[i-1] >> (FIRST_ROTATION_SHIFT+i)) 
-                                                       : x_buf[i-1] - (y_buf[i-1] >> (FIRST_ROTATION_SHIFT+i));
-                    y_buf[i] <= (rotation_buf[i-1][0]) ? y_buf[i-1] - (x_buf[i-1] >> (FIRST_ROTATION_SHIFT+i))
-                                                       : y_buf[i-1] + (x_buf[i-1] >> (FIRST_ROTATION_SHIFT+i));
+                    x_buf[i] <= (rotation_buf[i-1][0]) ? x_buf[i-1] + (y_buf[i-1] >>> (FIRST_ROTATION_SHIFT+i)) 
+                                                       : x_buf[i-1] - (y_buf[i-1] >>> (FIRST_ROTATION_SHIFT+i));
+                    y_buf[i] <= (rotation_buf[i-1][0]) ? y_buf[i-1] - (x_buf[i-1] >>> (FIRST_ROTATION_SHIFT+i))
+                                                       : y_buf[i-1] + (x_buf[i-1] >>> (FIRST_ROTATION_SHIFT+i));
                     rotation_buf[i] <= (rotation_buf[i-1] >> 1);
                 end
             end
@@ -842,7 +970,7 @@ end
 
 //assign SIN = sin_cos_data_stage1[31:16];
 //assign COS = sin_cos_data_stage1[15:0];
-assign SIN = x_out[INTERNAL_DATA_BITS-1:INTERNAL_DATA_BITS-DATA_BITS];
-assign COS = y_out[INTERNAL_DATA_BITS-1:INTERNAL_DATA_BITS-DATA_BITS];
+assign SIN = y_out[INTERNAL_DATA_BITS-1:INTERNAL_DATA_BITS-DATA_BITS];
+assign COS = x_out[INTERNAL_DATA_BITS-1:INTERNAL_DATA_BITS-DATA_BITS];
 
 endmodule

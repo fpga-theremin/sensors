@@ -551,22 +551,40 @@ void SinCosCORDIC::initPiDiv4() {
 }
 
 void SinCosCORDIC::genVerilog(const char * fname) {
+    qDebug("");
     qDebug("localparam FIRST_ROTATION_SHIFT = %d;", startShift);
+    qDebug("localparam EXTRA_DATA_BITS = %d;", extraPrecisionBits);
+    qDebug("// for angle <= bound top bit of sin is 0, otherwise 1");
     qDebug("localparam SIN_HIGH_BIT_0_BOUND = %d;", sinHighBitBound);
+    qDebug("");
+    qDebug("// SIN&COS lookup table ROM internal register");
+    qDebug("reg [SIN_COS_LOOKUP_DATA_BITS*2-1:0] sin_cos_data_stage0 = 0;");
+    qDebug("// ROTATIONS lookup table ROM internal register");
+    qDebug("reg [ROTATIONS_LOOKUP_DATA_BITS-1:0] rotation_data_stage0 = 0;");
+    qDebug("");
+    qDebug("always @(posedge CLK) begin");
+    qDebug("    if (CE) begin");
     qDebug("        // SIN and COS lookup table ROM content");
     qDebug("        case(step1_lookup_addr)");
     for (int i = 0; i < steps1; i++) {
         qDebug("        %d: sin_cos_data_stage0 <= 32'h%08x;", i, sinCosTable[i]);
     }
     qDebug("        endcase");
-
+    qDebug("    end");
+    qDebug("end");
     qDebug("");
+    qDebug("");
+    qDebug("always @(posedge CLK) begin");
+    qDebug("    if (CE) begin");
     qDebug("        // ROTATIONS lookup table ROM content");
     qDebug("        case(step2_lookup_addr)");
     for (int i = 0; i < steps2; i++) {
         qDebug("        %d: rotation_data_stage0 <= 8'h%02x;", i, fracRotationTable[i] & 0xFF);
     }
     qDebug("        endcase");
+    qDebug("    end");
+    qDebug("end");
+    qDebug("");
 }
 
 SinCosCORDIC::SinCosCORDIC(bool usePiDiv4Table, int step1bits, int step2bits, int rotCount, int extraBits)
@@ -584,50 +602,53 @@ SinCosCORDIC::SinCosCORDIC(bool usePiDiv4Table, int step1bits, int step2bits, in
 
 void testCordic() {
     qDebug("CORDIC tests");
-    qDebug("rot\textraBits\tsumError\tpError");
+    qDebug("step1\trot\textraBits\tsumError\tpError");
     int samples = 1235793;
-    SinTable sinTable(18, 16);
-    for (int rotations = 8; rotations <= 12; rotations++) {
-        for (int extraBits = 0; extraBits <= rotations; extraBits++) {
-            SinCosCORDIC cordic(true, 7, 9, rotations, extraBits);
-            int x = 0;
-            int y = 0;
-            cordic.sinCos(x, y, 0x00123456);
+    for (int step1 = 7; step1 <= 8 ; step1++) {
+        SinTable sinTable(18 + (step1-7), 16);
+        for (int rotations = 8; rotations <= 12; rotations++) {
+            for (int extraBits = 0; extraBits <= rotations; extraBits++) {
+                SinCosCORDIC cordic(true, step1, 9, rotations, extraBits);
+                int x = 0;
+                int y = 0;
+                cordic.sinCos(x, y, 0x00123456);
 
-            int sumError = 0;
-            int maxxError = 0;
-            int maxyError = 0;
-            int angleStep = 1 << (32 - 2 - cordic.step1PhaseBits - cordic.step2PhaseBits);
-            for (uint64_t i = 0; i < 0x100000000ULL; i+=angleStep) {
-                int64_t phase32 = i;
-                //double phase = 2 * M_PI * i / samples + 0.000001;
-                //int64_t phase32 = phase * (1ULL<<31) / M_PI;
-                // rounding to number of supported bits
-                //phase32 = (phase32 & 0xFFFFC000) + 0x00002000;
-                double phase = (phase32 + 0x00002000) * M_PI / (1ULL << 31);
-                //int expectedy = sinTable.getForPhase(phase32);
-                //int expectedx = sinTable.getForPhase(((phase32 + 0x40000000) & 0xFFFFFFFF));
-                int expectedx = (int)(cos(phase)*32767);
-                int expectedy = (int)(sin(phase)*32767);
-                cordic.sinCos(x, y, phase32);
-                //qDebug(" [%d]  phase=%.9f  %08x   x=%d y=%d   expx=%d expy=%d   xerror=%d  yerror=%d", i, phase, phase32,
-                //       x, y, expectedx, expectedy, x-expectedx, y-expectedy);
-                int dx = expectedx - x;
-                int dy = expectedy - y;
-                dx = dx < 0 ? -dx : dx;
-                dy = dy < 0 ? -dy : dy;
-                if (maxxError < dx)
-                    maxxError = dx;
-                if (maxyError < dy)
-                    maxyError = dy;
-                sumError += dx + dy;
+                int sumError = 0;
+                int maxxError = 0;
+                int maxyError = 0;
+                int phaseBits = 3 + cordic.step1PhaseBits + cordic.step2PhaseBits;
+                int angleStep = 1 << (32 - phaseBits);
+                for (uint64_t i = 0; i < 0x100000000ULL; i+=angleStep) {
+                    int64_t phase32 = i;
+                    //double phase = 2 * M_PI * i / samples + 0.000001;
+                    //int64_t phase32 = phase * (1ULL<<31) / M_PI;
+                    // rounding to number of supported bits
+                    //phase32 = (phase32 & 0xFFFFC000) + 0x00002000;
+                    double phase = (phase32 + 0x00002000) * M_PI / (1ULL << 31);
+                    //int expectedy = sinTable.getForPhase(phase32);
+                    //int expectedx = sinTable.getForPhase(((phase32 + 0x40000000) & 0xFFFFFFFF));
+                    int expectedx = (int)(cos(phase)*32767);
+                    int expectedy = (int)(sin(phase)*32767);
+                    cordic.sinCos(x, y, phase32);
+                    //qDebug(" [%d]  phase=%.9f  %08x   x=%d y=%d   expx=%d expy=%d   xerror=%d  yerror=%d", i, phase, phase32,
+                    //       x, y, expectedx, expectedy, x-expectedx, y-expectedy);
+                    int dx = expectedx - x;
+                    int dy = expectedy - y;
+                    dx = dx < 0 ? -dx : dx;
+                    dy = dy < 0 ? -dy : dy;
+                    if (maxxError < dx)
+                        maxxError = dx;
+                    if (maxyError < dy)
+                        maxyError = dy;
+                    sumError += dx + dy;
+                }
+                qDebug("%d\t%d\t%d\t%d\t%.9f\t%d\t%d", step1, rotations, extraBits, sumError, sumError * 1.0 / samples, maxxError, maxyError);
             }
-            qDebug("%d\t%d\t%d\t%.9f\t%d\t%d", rotations, extraBits, sumError, sumError * 1.0 / samples, maxxError, maxyError);
         }
     }
     qDebug("Generating verilog:");
     {
-        SinCosCORDIC cordic(true, 7, 9, 9, 4);
+        SinCosCORDIC cordic(true, 8, 9, 9, 4);
         cordic.genVerilog("cordic.v");
     }
 
