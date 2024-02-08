@@ -5,7 +5,7 @@ localparam STEP1_PHASE_BITS = 8;
 localparam STEP2_PHASE_BITS = 9;
 localparam PHASE_BITS = 3 + STEP1_PHASE_BITS + STEP2_PHASE_BITS; // 19
 localparam LATENCY = 2 + STEP2_PHASE_BITS + 1;
-
+localparam EXTRA_DATA_BITS = 4;
 
 localparam DELAY_BITS = 4;
 
@@ -45,7 +45,8 @@ cordic_sin_cos #(
     .DATA_BITS(DATA_BITS),
     .PHASE_BITS(PHASE_BITS),
     .STEP1_PHASE_BITS(STEP1_PHASE_BITS),
-    .STEP2_PHASE_BITS(STEP2_PHASE_BITS)
+    .STEP2_PHASE_BITS(STEP2_PHASE_BITS),
+    .EXTRA_DATA_BITS(EXTRA_DATA_BITS)
 ) 
 cordic_sin_cos_inst 
 (
@@ -75,7 +76,7 @@ task nextCycle();
          cos_expected = ($cos(PHASE_DELAYED*2*PI/(1<<(PHASE_BITS)))*32767);
          sin_diff = SIN-sin_expected;
          cos_diff = COS-cos_expected;
-         if (PHASE >= 14) begin
+         if (PHASE > LATENCY) begin
              sum_sin_diff = sum_sin_diff + sin_diff;
              sum_cos_diff = sum_cos_diff + cos_diff;
              sum_abs_sin_diff = sum_abs_sin_diff + (sin_diff < 0 ? -sin_diff : sin_diff);
@@ -119,7 +120,17 @@ initial begin
     cycleCounter = 0;
 
     //repeat(3000) nextCycle();
-    repeat((1<<PHASE_BITS) + 14) nextCycle();
+    repeat((1<<PHASE_BITS) + LATENCY) nextCycle();
+    
+    $display( "DATA_BITS=%d PHASE_BITS=%d STEP1_PHASE_BITS=%d STEP2_PHASE_BITS=%d EXTRA_DATA_BITS=%d LATENCY=%d"   
+        , DATA_BITS
+        , PHASE_BITS
+        , STEP1_PHASE_BITS
+        , STEP2_PHASE_BITS
+        , EXTRA_DATA_BITS
+        , LATENCY
+    );
+    
 
     $display("*** sum sin_diff=%f (%f) cos_diff=%f (%f)   abs sin_diff=%f (%f) cos_diff=%f (%f)", 
         sum_sin_diff, sum_sin_diff/(1<<PHASE_BITS), 

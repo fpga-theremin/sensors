@@ -13,7 +13,9 @@ module cordic_sin_cos #(
     // size of PI/4 sin&cos lookup table (7 is 128)
     parameter STEP1_PHASE_BITS = 8,
     // size of rotations table (9 is 512)
-    parameter STEP2_PHASE_BITS = 9
+    parameter STEP2_PHASE_BITS = 9,
+    // additional internal data bits to increase precision, recommended: 4
+    parameter EXTRA_DATA_BITS = 4
 ) (
     /* input clock                                           */
     input wire CLK,
@@ -107,7 +109,6 @@ always @(posedge CLK) begin
 end
 
 localparam FIRST_ROTATION_SHIFT = 10;
-localparam EXTRA_DATA_BITS = 4;
 // for angle <= bound top bit of sin is 0, otherwise 1
 localparam SIN_HIGH_BIT_0_BOUND = 170;
 
