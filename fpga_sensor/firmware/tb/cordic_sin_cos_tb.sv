@@ -5,7 +5,7 @@ localparam STEP1_PHASE_BITS = 8;
 localparam STEP2_PHASE_BITS = 9;
 localparam PHASE_BITS = 3 + STEP1_PHASE_BITS + STEP2_PHASE_BITS; // module adc_dac_frontend
 localparam LATENCY = 2 + STEP2_PHASE_BITS + 1;
-localparam EXTRA_DATA_BITS = 4;
+localparam EXTRA_DATA_BITS = 5;
 
 logic [PHASE_BITS:0] cycleCounter = 0;
 logic CLK;

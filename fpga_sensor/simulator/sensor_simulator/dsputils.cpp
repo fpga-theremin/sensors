@@ -56,8 +56,8 @@ SinTable::~SinTable() {
 }
 
 void SinTable::init(int tableSizeBits, int valueBits, double scale, int phaseBits) {
-    Q_ASSERT(tableSizeBits >= 4 && tableSizeBits <= 19);
-    Q_ASSERT(valueBits >= 4 && valueBits <= 19);
+    Q_ASSERT(tableSizeBits >= 4 && tableSizeBits <= 20);
+    Q_ASSERT(valueBits >= 4 && valueBits <= 20);
     Q_ASSERT(phaseBits >= 16 && phaseBits <= 48);
     if (table)
         delete[] table;

@@ -5,6 +5,9 @@
 
 #define END_OF_LIST -1000000
 
+static const int ncoValueBits[] = {8, 9, 10, 11, 12, 13, 14, 15, 16, 17, /* 18,*/ END_OF_LIST};
+static const int sinTableBits[] = {/*7,*/ 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, END_OF_LIST};
+
 static const int sampleRates[] = {3, 4, 10, 20, 25, 40, 65, 80, 100, 125, 200, END_OF_LIST};
 static const int phaseBits[] = {24, 26, 28, 30, 32, 34, 36, END_OF_LIST};
 
@@ -13,8 +16,6 @@ static const int lpFilterStages[] = {1, 2, 3, 4, 5, 6, 7, 8, END_OF_LIST};
 static const int lpFilterShiftBits[] = {3, 4, 5, 6, 7, 8, 9, 10, END_OF_LIST};
 static const int mulDropBits[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, END_OF_LIST};
 static const int accDropBits[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 14, 16, END_OF_LIST};
-static const int ncoValueBits[] = {8, 9, 10, 11, 12, 13, 14, 15, 16, 17, /* 18,*/ END_OF_LIST};
-static const int sinTableBits[] = {/*7,*/ 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, END_OF_LIST};
 static const int adcValueBits[] = {/*6, 7,*/ 8, 9, 10, 11, 12, 13, 14, /*16,*/ END_OF_LIST};
 static const int adcInterpolationRate[] = {1, 2, 3, 4, END_OF_LIST};
 static const int adcMovingAvg[] = {1, 3, 5, 7, 15, END_OF_LIST};
