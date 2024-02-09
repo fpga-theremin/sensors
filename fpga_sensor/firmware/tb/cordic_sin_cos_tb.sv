@@ -3,7 +3,7 @@ module cordic_sin_cos_tb();
 localparam DATA_BITS = 16;
 localparam STEP1_PHASE_BITS = 8;
 localparam STEP2_PHASE_BITS = 9;
-localparam PHASE_BITS = 3 + STEP1_PHASE_BITS + STEP2_PHASE_BITS; // 19
+localparam PHASE_BITS = 3 + STEP1_PHASE_BITS + STEP2_PHASE_BITS; // module adc_dac_frontend
 localparam LATENCY = 2 + STEP2_PHASE_BITS + 1;
 localparam EXTRA_DATA_BITS = 4;
 
@@ -74,8 +74,8 @@ localparam PI = 3.14159265359;
 task nextCycle();
      begin
          @(posedge CLK) #1 PHASE = PHASE + 1;
-         sin_expected = ($sin(PHASE_DELAYED*2*PI/(1<<(PHASE_BITS)))*32767);
-         cos_expected = ($cos(PHASE_DELAYED*2*PI/(1<<(PHASE_BITS)))*32767);
+         sin_expected = ($sin((PHASE_DELAYED+0.5)*2*PI/(1<<(PHASE_BITS)))*32767);
+         cos_expected = ($cos((PHASE_DELAYED+0.5)*2*PI/(1<<(PHASE_BITS)))*32767);
          sin_diff = SIN-sin_expected;
          cos_diff = COS-cos_expected;
          abs_sin_diff = sin_diff < 0 ? -sin_diff : sin_diff;

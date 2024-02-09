@@ -9,7 +9,7 @@ module cordic_sin_cos #(
     parameter DATA_BITS = 16,
     // number of bits in input phase, higher bits used if too much bits are provided
     // really used: 3 + STEP1_PHASE_BITS + STEP2_PHASE_BITS bits 
-    parameter PHASE_BITS = 19,
+    parameter PHASE_BITS = 20,
     // size of PI/4 sin&cos lookup table (7 is 128)
     parameter STEP1_PHASE_BITS = 8,
     // size of rotations table (9 is 512)
@@ -39,6 +39,9 @@ module cordic_sin_cos #(
 localparam SIN_COS_LOOKUP_DATA_BITS = 16;
 localparam ROTATIONS_LOOKUP_DATA_BITS = 8;
 localparam ROTATIONS = ROTATIONS_LOOKUP_DATA_BITS + 1;
+
+// for angle <= bound top bit of sin is 0, otherwise 1
+localparam SIN_HIGH_BIT_0_BOUND = 170;
 
 // top 3 bits of phase are splitting period into PI/4 ranges.
 // all calculations are being made for 0..PI/4, then transformations like swap sin and cos or sign inversion are applied
@@ -109,14 +112,13 @@ always @(posedge CLK) begin
 end
 
 localparam FIRST_ROTATION_SHIFT = 10;
-// for angle <= bound top bit of sin is 0, otherwise 1
-localparam SIN_HIGH_BIT_0_BOUND = 170;
 
 // SIN&COS lookup table ROM internal register
 reg [SIN_COS_LOOKUP_DATA_BITS*2-1:0] sin_cos_data_stage0 = 0;
 // ROTATIONS lookup table ROM internal register
 reg [ROTATIONS_LOOKUP_DATA_BITS-1:0] rotation_data_stage0 = 0;
 
+(* ram_style = "block" *)  
 always @(posedge CLK) begin
     if (CE) begin
         // SIN and COS lookup table ROM content
@@ -382,6 +384,7 @@ always @(posedge CLK) begin
 end
 
 
+    (* ram_style = "block" *)  
 always @(posedge CLK) begin
     if (CE) begin
         // ROTATIONS lookup table ROM content
