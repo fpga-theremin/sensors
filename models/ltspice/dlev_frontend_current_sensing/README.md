@@ -65,3 +65,28 @@ Expected to see 1200 Vpp on antenna and 40mA drive strength. Draws about 30mA fr
 
 ![Sumulation results](images/ltspice_sim_ind_current_ant_voltage_res_high_q.png)
 
+
+Components
+----------
+
+It's possible to get rid of BJTs, by adding IC for current feedback opamp, and buffer opamp IC.
+
+
+Current feedback opamp on discrete BJTs may be replaced with IC. Possible candidates:
+
+* LMH6723 - can work from 4.5V EUR2.5 on Mouser, not in stock on JLCPCB
+* CLC450, CLC452 - datasheet says it can only work from 5V, not in stock on JLCPCB
+* LT6210 - per datasheet, can work from 3V, up to 80mA drive current, EUR3.91 on Mouser, not in stock on JLCPCB
+* TBD: more options?
+
+LP filter output buffer can be replaced with some cheap opamp. Possible candidates:
+
+* TBD
+
+Comparators
+
+* ADCMP600 - $2.05 on JLCPCB, big stock
+* TBD: something cheaper?
+
+
+
