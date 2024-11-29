@@ -75,8 +75,20 @@ It's possible to get rid of BJTs, by adding IC for current feedback opamp, and b
 Current feedback opamp on discrete BJTs may be replaced with IC. Possible candidates:
 
 * LMH6723 - can work from 4.5V EUR2.5 on Mouser, not in stock on JLCPCB
+* LT1395 - min supply voltage 4V, up to 80mA drive current, Mouser price $3.38, not in stock on JLCPCB (estimated price $1.7)
+* LT6210 - can work from 3V, up to 80mA drive current, EUR3.91 on Mouser, not in stock on JLCPCB (estimated price $2.16)
+* LT6211 - dual, can work from 3V, up to 75mA drive current, EUR 3.99 on Mouser, not in stock on JLCPCB
+* AD8014 - min supply 4.5V, drives 40-50mA load, EUR 4.54 on Mouser, in stock $2.99 on JLCPCB
+* AD8000 - min supply 4.5V, drives 100mA, $5.7 on JLCPCB
+* OPA2675 - dual, min supply 4.5V, can drive 1000mA!!! mouser price EUR3.28, in stock on JLCPCB $4.47
+* AD8002 - dual, min supply 6V, up to 70mA drive, JLCPCB price $0.07 but manufacturer is Idchip, and is called Audio amplifier
+* OPA683 - min supply voltage 5V
+* EL5160 - min supply voltage 5V
+* ADA4860 - min supply voltage 5V
+* AD8007 - min supply voltage 5V
+* OPA2673 - dual, min supply 5.75V but in stock on JLCPCB $1.67
 * CLC450, CLC452 - datasheet says it can only work from 5V, not in stock on JLCPCB
-* LT6210 - per datasheet, can work from 3V, up to 80mA drive current, EUR3.91 on Mouser, not in stock on JLCPCB
+* OPA695 - minimum supply 5V, $2.66 on JLCPCB
 * TBD: more options?
 
 LP filter output buffer can be replaced with some cheap opamp. Possible candidates:
