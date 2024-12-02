@@ -34,6 +34,14 @@ In the simulation below, 2mH inductor having 120 Ohms serial resistance is used.
 With such inductor and 2.4Vpp drive, draws about 15mA from power supply.
 
 
+Simplified schematic - LP filter can reuse output buffer.
+
+LTSpice model: [dlev_frontend_curr_sens_v01.asc](dlev_frontend_curr_sens_v02.asc)
+
+![Spice model](images/dlev_afe_current_sensing_ltspice_model_simplified.png)
+
+
+
 Converting 3.3V square drive signal to ~24Vpp sine centered near 2.25V:
 
 ![Sumulation results](images/ltspice_sim_square_input_to_sine.png)
@@ -74,10 +82,10 @@ It's possible to get rid of BJTs, by adding IC for current feedback opamp, and b
 
 Current feedback opamp on discrete BJTs may be replaced with IC. Possible candidates:
 
-* LMH6723 - can work from 4.5V EUR2.5 on Mouser, not in stock on JLCPCB
-* LT1395 - min supply voltage 4V, up to 80mA drive current, Mouser price $3.38, not in stock on JLCPCB (estimated price $1.7)
 * LT6210 - can work from 3V, up to 80mA drive current, EUR3.91 on Mouser, not in stock on JLCPCB (estimated price $2.16)
 * LT6211 - dual, can work from 3V, up to 75mA drive current, EUR 3.99 on Mouser, not in stock on JLCPCB
+* LMH6723 - can work from 4.5V EUR2.5 on Mouser, not in stock on JLCPCB
+* LT1395 - min supply voltage 4V, up to 80mA drive current, Mouser price $3.38, not in stock on JLCPCB (estimated price $1.7)
 * AD8014 - min supply 4.5V, drives 40-50mA load, EUR 4.54 on Mouser, in stock $2.99 on JLCPCB
 * AD8000 - min supply 4.5V, drives 100mA, $5.7 on JLCPCB
 * OPA2675 - dual, min supply 4.5V, can drive 1000mA!!! mouser price EUR3.28, in stock on JLCPCB $4.47
