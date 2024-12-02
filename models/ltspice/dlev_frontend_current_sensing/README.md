@@ -36,7 +36,7 @@ With such inductor and 2.4Vpp drive, draws about 15mA from power supply.
 
 Simplified schematic - LP filter can reuse output buffer.
 
-LTSpice model: [dlev_frontend_curr_sens_v01.asc](dlev_frontend_curr_sens_v02.asc)
+LTSpice model: [dlev_frontend_curr_sens_v02.asc](dlev_frontend_curr_sens_v02.asc)
 
 ![Spice model](images/dlev_afe_current_sensing_ltspice_model_simplified.png)
 
