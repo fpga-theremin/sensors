@@ -41,6 +41,13 @@ LTSpice model: [dlev_frontend_curr_sens_v02.asc](dlev_frontend_curr_sens_v02.asc
 ![Spice model](images/dlev_afe_current_sensing_ltspice_model_simplified.png)
 
 
+Schematic with integrating OTA current sensor, single comparator.
+
+LTSpice model: [dlev_frontend_curr_sens_v04.asc](dlev_frontend_curr_sens_v04.asc)
+
+![Spice model](images/dlev_afe_current_sensing_ltspice_model_v4.png)
+
+
 
 Converting 3.3V square drive signal to ~24Vpp sine centered near 2.25V:
 
@@ -96,6 +103,8 @@ Current feedback opamp on discrete BJTs may be replaced with IC. Possible candid
 * OPA2675 - dual, min supply 4.5V, can drive 1000mA!!! mouser price EUR3.28, in stock on JLCPCB $4.47
 
 
+LTSpice has LT1395 and LT6210 out of the box.
+
 Schematic from LT1395 current feedback opamp datasheet (close to proposed schematic):
 
 ![LT1395 datasheet](images/LT1395_simplified_schematic.png)
@@ -104,7 +113,6 @@ Schematic from LT6210 current feedback opamp datasheet (common emitter output st
 
 ![LT6210 datasheet](images/LT6210_simplified_schematic.png)
  
-LTSpice has LT1395 and LT6210 out of the box.
 
 Simulation with LT1395 and LT6210 instead of discrete opamp shows that a trick with 
 getting drive signal shifted by 90 degrees from negative input current will not work because these ICs are tuned to have minumum feedback current during operation.
