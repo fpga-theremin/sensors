@@ -41,13 +41,22 @@ LTSpice model: [dlev_frontend_curr_sens_v02.asc](dlev_frontend_curr_sens_v02.asc
 ![Spice model](images/dlev_afe_current_sensing_ltspice_model_simplified.png)
 
 
-Schematic with integrating OTA current sensor, single comparator.
+V4: Schematic with integrating OTA current sensor, single comparator.
 
 LTSpice model: [dlev_frontend_curr_sens_v04.asc](dlev_frontend_curr_sens_v04.asc)
 
 ![Spice model](images/dlev_afe_current_sensing_ltspice_model_v4.png)
 
 
+V5: Simplified buffer, separate buffers for LP filter and REF output, simplified current sensor.
+
+LTSpice model: [dlev_frontend_curr_sens_v05.asc](dlev_frontend_curr_sens_v05.asc)
+
+![Spice model](images/dlev_afe_current_sensing_ltspice_model_v5.png)
+
+
+Some simulation results
+-----------------------
 
 Converting 3.3V square drive signal to ~24Vpp sine centered near 2.25V:
 
