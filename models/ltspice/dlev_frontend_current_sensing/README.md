@@ -76,7 +76,7 @@ Simulation results near resonance: drive voltage, inductor current, sense and re
 
 Simulation results near resonance: inductor current and antenna voltage:
 
-![Sim results](images/images/sim_lc_current_and_ant_voltage_v6.png)
+![Sim results](images/sim_lc_current_and_ant_voltage_v6.png)
 
 
 
