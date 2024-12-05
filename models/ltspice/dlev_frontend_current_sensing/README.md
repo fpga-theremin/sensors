@@ -22,8 +22,8 @@ Interface
 * Ground
 
 
-Schematic
----------
+V1 Schematic
+------------
 
 LTSpice model: [dlev_frontend_curr_sens_v01.asc](dlev_frontend_curr_sens_v01.asc)
 
@@ -35,6 +35,7 @@ With such inductor and 2.4Vpp drive, draws about 15mA from power supply.
 
 
 Simplified schematic - LP filter can reuse output buffer.
+-----------------------------------------------------------------------------------------------
 
 LTSpice model: [dlev_frontend_curr_sens_v02.asc](dlev_frontend_curr_sens_v02.asc)
 
@@ -42,6 +43,7 @@ LTSpice model: [dlev_frontend_curr_sens_v02.asc](dlev_frontend_curr_sens_v02.asc
 
 
 V4: Schematic with integrating OTA current sensor, single comparator.
+-----------------------------------------------------------------------------------------------
 
 LTSpice model: [dlev_frontend_curr_sens_v04.asc](dlev_frontend_curr_sens_v04.asc)
 
@@ -49,14 +51,37 @@ LTSpice model: [dlev_frontend_curr_sens_v04.asc](dlev_frontend_curr_sens_v04.asc
 
 
 V5: Simplified buffer, separate buffers for LP filter and REF output, simplified current sensor.
+-----------------------------------------------------------------------------------------------
 
 LTSpice model: [dlev_frontend_curr_sens_v05.asc](dlev_frontend_curr_sens_v05.asc)
 
 ![Spice model](images/dlev_afe_current_sensing_ltspice_model_v5.png)
 
 
-Some simulation results
------------------------
+V6: Get rid of comparator in current sensor. Only cheap components used.
+-----------------------------------------------------------------------
+
+Let's remove comparator, and use the same sine to square converter using unbuffered inverters, like for ref.
+
+Sensing current and voltage had to be increased to provide bigger voltage swing for inverter input.
+
+
+LTSpice model: [dlev_frontend_curr_sens_v06.asc](dlev_frontend_curr_sens_v06.asc)
+
+![Spice model](images/dlev_afe_current_sensing_ltspice_model_v6.png)
+
+Simulation results near resonance: drive voltage, inductor current, sense and ref outputs:
+
+![Sim results](images/sim_drive_and_sense_io_v6.png)
+
+Simulation results near resonance: inductor current and antenna voltage:
+
+![Sim results](images/images/sim_lc_current_and_ant_voltage_v6.png)
+
+
+
+Some simulation results (v1)
+----------------------------
 
 Converting 3.3V square drive signal to ~24Vpp sine centered near 2.25V:
 
