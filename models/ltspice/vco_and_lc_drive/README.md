@@ -55,3 +55,15 @@ LTSpice model: [vco_and_lc_drive_v03.asc](vco_and_lc_drive_v03.asc)
 ![Spice model](images/pll_v3_ltspice_model.png)
 
 
+Current sensing LC oscillator with PLL on BJTs for Theremins v4
+===============================================================
+
+Simplified version.
+
+* Opamp as output buffer
+
+
+LTSpice model: [vco_and_lc_drive_v04.asc](vco_and_lc_drive_v04.asc)
+![Spice model](images/pll_v4_ltspice_model.png)
+
+
