@@ -52,6 +52,6 @@ Simplified version.
 
 
 LTSpice model: [vco_and_lc_drive_v03.asc](vco_and_lc_drive_v03.asc)
-[Spice model](images/pll_v3_ltspice_model.png)
+![Spice model](images/pll_v3_ltspice_model.png)
 
 
