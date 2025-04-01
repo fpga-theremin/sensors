@@ -67,3 +67,19 @@ LTSpice model: [vco_and_lc_drive_v04.asc](vco_and_lc_drive_v04.asc)
 ![Spice model](images/pll_v4_ltspice_model.png)
 
 
+Current Sensing Oscillator
+==========================
+
+LTSpice model: [current_sensing_osc_v01.asc](current_sensing_osc_v01.asc)
+![Spice model](images/current_sensing_oscillator_ltspice_model_v01.png)
+
+Simulation results.
+
+Drive voltage and current
+![Spice model](images/current_sensing_oscillator_v01_sim_drive_voltage_and_current.png)
+
+Antenna voltage and inductor current
+![Spice model](images/current_sensing_oscillator_v01_sim_inductor_current_and_antenna_voltage.png)
+
+
+
