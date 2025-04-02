@@ -28,3 +28,23 @@ Current sensor sine and square outputs (REF, SENSE):
 ![Simulation results](images/dlev_afe_v01_sim_sense_and_outs.png)
 
 
+
+Improved version with comparator
+================================
+
+A bit more expensive but better version (no issues with sensing of low current signal).
+
+Conversion of low amplitude sine to square is a pain. Comparator may help here.
+
+ADCMP600 is $1.83 on JLCPCB
+
+
+Simulation results
+------------------
+
+LTSpice model: [dlev_afe_v01.asc](dlev_afe_v02.asc)
+![Spice model](images/dlev_afe_v02_ltspice_model.png)
+
+Current sensor sine and square outputs (REF, SENSE):
+![Simulation results](images/dlev_afe_v02_sim_sense_and_outs.png)
+
