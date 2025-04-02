@@ -42,7 +42,7 @@ ADCMP600 is $1.83 on JLCPCB
 Simulation results
 ------------------
 
-LTSpice model: [dlev_afe_v01.asc](dlev_afe_v02.asc)
+LTSpice model: [dlev_afe_v02.asc](dlev_afe_v02.asc)
 ![Spice model](images/dlev_afe_v02_ltspice_model.png)
 
 Current sensor sine and square outputs (REF, SENSE):
