@@ -6,7 +6,7 @@ Current Sensing LC Oscillator for Digital Theremin
 - Antenna viltage swing 300 - 1000 Vpp depending on inductor parameters when powered from 3.3V
 
 LTSpice model: [curr_sens_osc_v01.asc](curr_sens_osc_v01.asc)
-![Spice model](images/images/osc_v01_ltspice_model.png)
+![Spice model](images/osc_v01_ltspice_model.png)
 
 * LC tank is fed by single unbuffered inverter
 * Drive inverter has sensing resistors on both power supply rails
