@@ -17,15 +17,15 @@ public class TransformerGen {
 	// TBD: place to .ini file, commandline parameters, or GUI
 	public static class Options {
 		//
-		String footprintName = "CurrentSensingTransformer1";
+		String footprintName = "CurrSensTrans1";
 		int traceWidth1 = 160_000;
 		int traceWidth2 = 80_000;
 		int step = 400_000;
 		int innerRadius = 3_000_000;
 		// number of turns for single spiral coil, in half-turns
-		int halfTurnsCount = 6 * 2 + 1;
+		int halfTurnsCount = 4 * 2 + 1;
 		// pad parameters
-		int padSize = 1_200_000; //1_600_000;
+		int padSize = 1_000_000; //1_600_000;
 		int padDrillSize = 600_000; //800_000;
 		// coil end rounding radius
 		int endRadius = 800_000;
@@ -33,6 +33,15 @@ public class TransformerGen {
 		String coil1PinName2 = "1";
 		String coil2PinName1 = "3";
 		String coil2PinName2 = "4";
+		
+		// set to 0 if you don't need internal hole
+		int internalCutHoleRadius = 1_500_000;
+		int cutLineWidth = 50_000;
+		String cutLineType = "default";
+		int cornerCutHoleSize = 5_750_000;
+		int cornerCutHoleWidth = 4_000_000;
+		int cornerCutHoleRadius = 5_400_000;
+		int cornerCutHoleRounding = 500_000;
 	}
 	
 	String layer = "F.Cu";
@@ -144,7 +153,7 @@ public class TransformerGen {
 	
 	public void putReference(String value) {
         startProperty("Reference", value);
-        putProp(2, "at", 0, -500, 0);
+        putProp(2, "at", 0, 500_000 - options.innerRadius, 0);
         putProp(2, "unlocked", "yes");
         putLayer("F.SilkS");
         putUUID();
@@ -374,6 +383,159 @@ public class TransformerGen {
 		
 	}
 	
+	public void putLine(int x0, int y0, int x1, int y1, int width, String type) {
+        puts(1, "(fp_line");
+        putProp(2, "start", x0, y0);
+        putProp(2, "end", x1, y1);
+        putStroke(width, type);
+        putProp(2, "layer", layer);
+        putUUID();
+        puts(1, ")");
+	}
+	
+	public static int sqrt(long v) {
+		double d = v / 1000000.0;
+		return (int)(Math.sqrt(d) * 1000_000);
+	}
+	
+	/**
+	 * Quadrants:
+	 * 
+	 *    2 | 3
+	 *    --+--
+	 *    1 | 0
+	 * 
+	 * 
+	 * @param width
+	 * @param centerx
+	 * @param centery
+	 * @param rr
+	 * @param quadrant
+	 */
+	public void putQArc(int width, int centerx, int centery, int rr, int quadrant) {
+		quadrant = quadrant & 3;
+		int rr45 = mulSin45(rr);
+		if (quadrant == 0) {
+			putArc(options.cutLineWidth, 
+					centerx + rr, centery, 
+					centerx + rr45, centery + rr45, 
+					centerx, centery + rr);
+		} else if (quadrant == 1) {
+			putArc(options.cutLineWidth, 
+					centerx, centery + rr, 
+					centerx - rr45, centery + rr45, 
+					centerx - rr, centery);
+		} else if (quadrant == 2) {
+			putArc(options.cutLineWidth,
+					centerx - rr, centery,
+					centerx - rr45, centery - rr45,
+					centerx, centery - rr);
+		} else if (quadrant == 3) {
+			putArc(options.cutLineWidth, 
+					centerx, centery - rr, 
+					centerx + rr45, centery - rr45, 
+					centerx + rr, centery);
+		}
+	}
+
+	public void putCornerHole(int quadrant) {
+		quadrant = quadrant & 3;
+		int sx = 1;
+		int sy = 1;
+		if (quadrant == 0) {
+			sx = 1; 
+			sy = 1; 
+		} else if (quadrant == 1) {
+			sx = -1; 
+			sy = 1; 
+		} else if (quadrant == 2) {
+			sx = -1; 
+			sy = -1; 
+		} else if (quadrant == 3) {
+			sx = 1; 
+			sy = -1; 
+		}
+		
+		int sz = options.cornerCutHoleSize;
+		int cornerx = sz * sx;
+		int cornery = sz * sy;
+		int rr = options.cornerCutHoleRounding;
+		int rr45 = mulSin45(rr);
+		int w = options.cornerCutHoleWidth;
+		int r = options.cornerCutHoleRadius;
+		int r45 = mulSin45(r);
+		// corner
+		putQArc(options.cutLineWidth, 
+				cornerx - sx*rr, cornery - sy * rr, // center x,y 
+				rr, quadrant);
+
+		// top
+		putLine(cornerx - sx * rr, cornery, cornerx - sx * (w - rr), cornery, options.cutLineWidth, "default");
+
+		int flip = (quadrant & 1) << 1;
+		putQArc(options.cutLineWidth, 
+				cornerx - sx*(w - rr), cornery - sy*rr, // center x,y 
+				rr, (quadrant + 1) ^ flip);
+		
+		// left
+		putLine(cornerx, cornery - sy*rr, cornerx, cornery -sy * (w - rr), options.cutLineWidth, "default");
+
+		putQArc(options.cutLineWidth, 
+				cornerx - sx*rr, cornery - sy*(w - rr), // center x,y 
+				rr, (quadrant - 1) ^ flip);
+
+		// x^2 + y^2 == r^2
+		// x == -sz + w
+		// y == sqrt(r^2 - x^2)
+		// y == sqrt(r^2 - (-sz + w)^2)
+		int px = -sz + w;
+		int dy = (int)Math.sqrt((double)r * r - (double)px*px);
+		
+		putLine(cornerx - sx * w, cornery - sy * rr,  cornerx - sx * w, sy * dy, options.cutLineWidth, "default");
+
+		putLine(cornerx - sx * rr, cornery - sy * w,  
+				sx * dy, cornery - sy * w, options.cutLineWidth, "default");
+
+		
+		int ax1 = sx * dy;
+		int ay1 = cornery - sy * w;
+		int ax2 = cornerx - sx * w;
+		int ay2 = sy * dy;
+		
+		// center
+		putArc(options.cutLineWidth, 
+				ax1, ay1, 
+				sx * r45, sy * r45,
+				ax2, ay2);
+		
+		
+		
+	}
+	
+	public void putHoles() {
+		setLayer("Edge.Cuts");
+		if (options.internalCutHoleRadius > 0) {
+			putCircle(0, 0, options.internalCutHoleRadius, options.cutLineWidth, options.cutLineType);
+		}
+		if (options.cornerCutHoleSize > 0) {
+			putCornerHole(2);
+			putCornerHole(0);
+			putCornerHole(3);
+			putCornerHole(1);
+		}
+	}
+	
+	public void putCircle(int x, int y, int radius, int width, String type) {
+        puts(1, "(fp_circle");
+        putProp(2, "center", x, y);
+        putProp(2, "end", x + radius, y);
+        putStroke(width, type);
+        putProp(2, "fill", "no");
+        putProp(2, "layer", layer);
+        putUUID();
+        puts(1, ")");
+	}
+	
 	public void generateFile(String filename) throws IOException {
 		openFile(filename);
 		
@@ -381,7 +543,7 @@ public class TransformerGen {
 		genHeader();
 		
 		//putArc(120_000, 5_000, 0, 0, 5_000, -5_000, 0);
-		putSpiral(0, 0, 
+		putSpiral(0, 0,
 				options.traceWidth1, 
 				options.innerRadius, 
 				400_000, options.halfTurnsCount);
@@ -389,6 +551,8 @@ public class TransformerGen {
 				options.traceWidth2,
 				options.innerRadius, 
 				400_000, options.halfTurnsCount + 1);
+		
+		putHoles();
 		
 		genFooter();
 		
