@@ -17,6 +17,36 @@ public class TransformerGen {
 	// TBD: place to .ini file, commandline parameters, or GUI
 	public static class Options {
 		//
+		String footprintName = "CurrSensTrans2";
+		int traceWidth1 = 200_000;
+		int traceWidth2 = 100_000;
+		int step = 500_000;
+		int innerRadius = 3_000_000;
+		// number of turns for single spiral coil, in half-turns
+		int halfTurnsCount = 4 * 2 + 1;
+		// pad parameters
+		int padSize = 1_000_000; //1_600_000;
+		int padDrillSize = 600_000; //800_000;
+		// coil end rounding radius
+		int endRadius = 800_000;
+		String coil1PinName1 = "2";
+		String coil1PinName2 = "1";
+		String coil2PinName1 = "3";
+		String coil2PinName2 = "4";
+		
+		// set to 0 if you don't need internal hole
+		int internalCutHoleRadius = 1_500_000;
+		int cutLineWidth = 50_000;
+		String cutLineType = "default";
+		int cornerCutHoleSize = 5_750_000;
+		int cornerCutHoleWidth = 4_000_000;
+		int cornerCutHoleRadius = 5_400_000;
+		int cornerCutHoleRounding = 500_000;
+	}
+
+/*
+        Backup: good settings with thin traces
+        
 		String footprintName = "CurrSensTrans1";
 		int traceWidth1 = 160_000;
 		int traceWidth2 = 80_000;
@@ -42,7 +72,8 @@ public class TransformerGen {
 		int cornerCutHoleWidth = 4_000_000;
 		int cornerCutHoleRadius = 5_400_000;
 		int cornerCutHoleRounding = 500_000;
-	}
+ */
+	
 	
 	String layer = "F.Cu";
 	
