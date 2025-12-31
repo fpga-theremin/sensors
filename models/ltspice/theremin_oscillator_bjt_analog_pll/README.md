@@ -1,18 +1,30 @@
 Current Sensing Theremint Oscillator With PLL and Differential Full Quadrant Sine Output
 ========================================================================================
 
-- Stable amplitude for wide range of output frequencies (100KHz .. 2MHz)
-
 - VCO is based on State Variable Filter with fully differential integrators.
 
 - Full quadrant 0.5Vpp 1V differential voltage VCO outputs, allows to synthesize any other phases.
 
 - Pure sine waveform 3Vpp drive signal for LC tank (less than -70dB harmonics)
 
-- 4.5V power supply
+- 4.5V power supply (draws about 20mA when driving LC tank with 10mA current)
 
-LTSpice model: [vco_and_lc_drive_v01.asc](theremin_oscillator_bjt_pll_v01)
+- Stable amplitude for wide range of output frequencies (100KHz .. 2MHz)
+
+- PCB transformer as a current sensor
+
+- Analog multiplier as a precise phase detector
+
+
+LTSpice model: [theremin_oscillator_bjt_pll_v01.asc](theremin_oscillator_bjt_pll_v01.asc)
 ![Spice model](images/theremin_oscillator_bjt_pll_spice_model.png)
+
+The schematic is expected to be cheap, with PCB manufacturing and assembly using JLCPCB.
+
+* about 60 BJTs, most of them should be matching pairs
+* LMH6642 is used as LC tank drive buffer, can provide up to 75mA current, with close to R/R output voltage.
+* MCP6121 is used as Control Voltage buffer
+
 
 Antenna voltage and inductor current
 
