@@ -50,3 +50,52 @@ VCO differential output
 
 ![Simulation results](images/theremin_oscillator_bjt_pll_sim_vco_output.png)
 
+
+Simplified LM13700 based SVF VCO
+================================
+
+Simplified LM13700 based voltage controlled oscillator.
+
+Still provides full quadrant output (two sine signals shifted by 90 degrees), but not differential as in previous case.
+
+Opamps used in VCO may drive LC tank directly with close to rails amplitude (0.2V minimal offset from rails is recommended).
+
+LTSpice model: [theremin_oscillator_bjt_pll_v01.asc](ota_svf_vco_v01.asc)
+![Spice model](images/ota_svg_vco_ltspice_model.png)
+
+- Stable amplitude at frequency range 200KHz-2MHz
+
+- Single LM13700, two LMH6642 (or single LMH6643), 4 BJTs. 
+
+- Working range may be adjusted by R10, R20 to cover the desired frequency range
+
+- R18 controls amplitude of the output signals, while R17 is responsible for keeping the amplitude constant for the range of frequencies
+
+- R14, R12 provide fine-tuning for input bias, should be tuned to keep the same zero point of both VCO outputs.
+
+
+Simulation results
+------------------
+
+Output signal amplitude in wide frequency range (sweep 400KHz to 1600KHz)
+
+
+![Simulation results](images/ota_svg_vco_sim_outs_full_range.png)
+
+Zoom in of VCO output signals
+
+![Simulation results](images/ota_svg_vco_sim_outs_zoomin.png)
+
+
+Resonanse visible in antenna voltage and inductor current while drive frequency is crossing LC resonant frequency
+
+![Simulation results](images/ota_svg_vco_sim_ant_voltage_and_drive_current.png)
+
+							
+Consumed current from power lines
+							
+![Simulation results](images/ota_svg_vco_sim_power.png)
+
+
+
+
