@@ -60,7 +60,8 @@ Still provides full quadrant output (two sine signals shifted by 90 degrees), bu
 
 Opamps used in VCO may drive LC tank directly with close to rails amplitude (0.2V minimal offset from rails is recommended).
 
-LTSpice model: [theremin_oscillator_bjt_pll_v01.asc](ota_svf_vco_v01.asc)
+LTSpice model: [ota_svf_vco_v01.asc](ota_svf_vco_v01.asc)
+
 ![Spice model](images/ota_svg_vco_ltspice_model.png)
 
 - Stable amplitude at frequency range 200KHz-2MHz
