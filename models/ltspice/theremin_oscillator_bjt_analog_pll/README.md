@@ -88,7 +88,7 @@ Zoom in of VCO output signals
 ![Simulation results](images/ota_svg_vco_sim_outs_zoomin.png)
 
 
-Resonanse visible in antenna voltage and inductor current while drive frequency is crossing LC resonant frequency
+Resonance visible in antenna voltage and inductor current while drive frequency is crossing LC resonant frequency
 
 ![Simulation results](images/ota_svg_vco_sim_ant_voltage_and_drive_current.png)
 
@@ -96,6 +96,45 @@ Resonanse visible in antenna voltage and inductor current while drive frequency 
 Consumed current from power lines
 							
 ![Simulation results](images/ota_svg_vco_sim_power.png)
+
+
+
+Simplified LM13700 PLL based Theremin Sensor
+============================================
+
+Adding phase detector on LM13700 OTA.
+
+
+LTSpice model: [ota_svf_vco_pll_sensor_v01.asc](ota_svf_vco_pll_sensor_v01.asc)
+
+![Spice model](images/ota_svf_vco_pll_sensor_ltspice_model.png)
+
+Simulation results
+------------------
+
+Antenna voltage
+
+![Simulation results](images/ota_svf_vco_pll_sensor_sim_ant_voltage.png)
+
+Control Voltage and inductor current - PLL locking process
+
+![Simulation results](images/ota_svf_vco_pll_sensor_sim_control_voltage_ind_current.png)
+	
+Drive signal voltage and inductor current - when locked
+
+![Simulation results](images/ota_svf_vco_pll_sensor_sim_drive_v_inductor_current.png)
+
+Drive signal spectrum
+
+![Simulation results](images/ota_svf_vco_pll_sensor_sim_drive_spectrum.png)
+	
+VCO outputs - two sines with 90 degrees phase shift
+
+![Simulation results](images/ota_svf_vco_pll_sensor_sim_vco_sine_outputs.png)
+
+Square outputs - 4 different phases
+
+![Simulation results](images/ota_svf_vco_pll_sensor_sim_square_outputs.png)
 
 
 
