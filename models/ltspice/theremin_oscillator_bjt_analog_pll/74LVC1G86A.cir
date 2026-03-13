@@ -1,0 +1,80 @@
+*-------------------------------------------------------------------------------
+*
+*
+* 2-input XOR gate
+* tpd 3n7,2n8,2n3,1n9
+* tr 2n,2n5,2n5,2n5
+.SUBCKT 74LVC1G86 A B Y VCC VGND vcc1=3.3 speed1=1 tripdt1=100p
+.param TD1 710p*(5/VCC1)**1.1*Speed1
+*
+XIN1 A Ai VCC VGND 74LVC_IN vcc2={vcc1} tripdt2={tripdt1}
+XIN2 B Bi VCC VGND 74LVC_IN vcc2={vcc1} tripdt2={tripdt1}
+*
+A1 Ai Bi 0 0 0 0 Yi 0 XOR tripdt={tripdt1} td={td1}
+*
+XOUT Yi Y VCC VGND 74LVC_OUT vcc2={vcc1} speed2={speed1}
+*
+.ENDS 74LVC1G86
+
+*-------------------------------------------------------------------------------
+*
+*
+* Standard Picogate input has ~100mV of hysteresis
+.subckt 74lvc_in IN OUT VCC VGND vcc3={vcc2} tripdt3={tripdt2}
+.param Vh1 10m*(5/VCC3)
+.model Desd D(Vfwd=0.65 Ron=10)
+*
+* I/P ESD structure
+D1 VGND IN Desd
+R1 IN INR 100
+D2 VGND INR Desd
+* No ESD diode to VCC because I/P is 5V tolerant at VCC<5V
+*
+* Input parasitics
+C1 INR VGND 1p5
+C2 VCC INR 1p5
+*
+* VCC to 1V translator
+E1 DRV 0 INR VGND table(0,1 {VCC3/2},500m {VCC3},0)
+*
+* Output buffer with hysteresis
+A1 DRV 0 0 0 0 OUT 0 0 SCHMITT Vt=0.5 Vh={Vh1} tripdt={tripdt3}
+*
+.ends 74lvc_in
+
+*======================= OUTPUT LEVEL TRANSLATORS, DRIVERS =====================
+*
+*
+* Standard output driver
+* There is only one driver strength used in the Picogate series, rated at <B1>32mA/5V
+.subckt 74lvc_out IN OUT VCC VGND vcc3={vcc2} speed3={speed2}
+.model Desd D(Vfwd=0.65 Ron=10)
+.model strSW SW(Ron={Ron} Roff=1G Vt={0.48*VCC3} Vh=-100m Ilimit={Ilimit} level=2)
+.model wkSW SW(Ron={Ron*10} Roff=1G Vt=500m Vh=-210m Ilimit={Ilimit/10} level=2
+*.param Ilimit 215m*(VCC-1.1)/(5-1.1)
+.param Ilimit 215m*(3.3-1.1)/(5-1.1)
+.param Ron 7.5*(5/3.3)**0.5
+.param Cval 1p*Speed3
+*
+* 1V to VCC translator
+E1 DRV VGND IN 0 table(0,{VCC3} 500m,{VCC3/2} 1,0)
+*
+* Speed control
+R1 DRV DRVF 250
+C3 DRVF VGND {Cval}
+*
+* Output driver
+S1 VGND OUT DRVF VGND strSW
+S2 OUT VCC VCC DRVF strSW
+S3 VGND OUT DRVF VGND wkSW
+S4 OUT VCC VCC DRVF wkSW
+C1 VCC OUT 5p
+C2 OUT VGND 5p
+*
+* ESD structure
+D1 OUT VCC Desd
+D2 VGND OUT Desd
+*
+.ends 74lvc_out
+
+
