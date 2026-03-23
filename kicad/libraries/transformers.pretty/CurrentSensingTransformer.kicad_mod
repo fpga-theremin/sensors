@@ -1,0 +1,143 @@
+(footprint "CurrentSensingTransformer"
+	(version 20241229)
+	(generator "pcbnew")
+	(generator_version "9.0")
+	(layer "F.Cu")
+	(property "Reference" "REF**"
+		(at 0 -0.5 0)
+		(unlocked yes)
+		(layer "F.SilkS")
+		(uuid "53f7f965-940c-4cb0-9748-b08bdd8d80f3")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.1)
+			)
+		)
+	)
+	(property "Value" "CurrentSensingTransformer"
+		(at 0 1 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(uuid "499c1641-9046-42dd-b24b-1cae4cd35b63")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Datasheet" ""
+		(at 0 0 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "7095eff4-a715-4b02-bd29-b5c6a1629f1e")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Description" ""
+		(at 0 0 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "3e7b4213-110b-4e88-93c0-46beb17f0b8f")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(attr through_hole)
+	(fp_arc
+		(start -5 0)
+		(mid 0.25 -5.25)
+		(end 5.5 0)
+		(stroke
+			(width 0.15)
+			(type solid)
+		)
+		(layer "F.Cu")
+		(uuid "6d6ecf7f-313c-4a52-bc29-eb89642fee5a")
+	)
+	(fp_arc
+		(start 5 0)
+		(mid 0 5)
+		(end -5 0)
+		(stroke
+			(width 0.15)
+			(type solid)
+		)
+		(layer "F.Cu")
+		(uuid "ca9b7cae-d8dc-4454-b3c5-f75fa08bf592")
+	)
+	(fp_arc
+		(start 5.5 0)
+		(mid 0 5.5)
+		(end -5.5 0)
+		(stroke
+			(width 0.15)
+			(type solid)
+		)
+		(layer "F.Cu")
+		(uuid "5d7051c1-2c1a-4ed3-868c-fc08b38a9906")
+	)
+	(fp_arc
+		(start 6.5 10)
+		(mid 3.525126 9.181981)
+		(end 2 6.5)
+		(stroke
+			(width 0.2)
+			(type solid)
+		)
+		(layer "F.Cu")
+		(uuid "21d5f1c7-25b0-4f0b-85bd-05a200fbf9e3")
+	)
+	(fp_line
+		(start -6 -5)
+		(end 0 -7.5)
+		(stroke
+			(width 0.05)
+			(type default)
+		)
+		(layer "Edge.Cuts")
+		(uuid "d7c81de6-8482-4a46-bd04-73b3746073ab")
+	)
+	(fp_circle
+		(center 6.5 -5.5)
+		(end 8 -4)
+		(stroke
+			(width 0.05)
+			(type default)
+		)
+		(fill no)
+		(layer "Edge.Cuts")
+		(uuid "8cfdb3a9-5a7f-4284-967f-cc1829a26af7")
+	)
+	(fp_text user "${REFERENCE}"
+		(at 0 2.5 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(uuid "3d6860ce-fbbe-4017-ad37-ed37f1049311")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(pad "2" thru_hole circle
+		(at 7.5 5.5)
+		(size 1.6 1.6)
+		(drill 0.8)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+		(uuid "cda7c348-5268-42db-b523-e55e516b4410")
+	)
+	(embedded_fonts no)
+)

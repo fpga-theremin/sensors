@@ -12,35 +12,86 @@ import java.util.UUID;
  * To be used in Theremin Sine Wave Analog PLL Current Sensing Oscillator project. 
  */
 public class TransformerGen {
+	
+	public static final String LAYER_1_NAME = "F.Cu";
+	public static final String LAYER_2_NAME = "In1.Cu";
 
+	public enum CoilType {
+		SPIRAL_0,
+		SPIRAL_90,
+		SPIRAL_180,
+		SPIRAL_270
+	}
+	public static class CoilOptions {
+		CoilType type = CoilType.SPIRAL_0;
+		String pinName1 = "2";
+		String pinName2 = "1";
+		int traceWidth = 200_000;
+		int step = 500_000;
+		int innerRadius = 3_000_000;
+		// number of turns for single spiral coil, in half-turns
+		int halfTurnsCount = 4 * 2 + 1;
+		
+		int endRadius = 1_000_000;
+		
+		String layerName = LAYER_1_NAME;
+	}
+
+//	public static class LayerOptions {
+//		String coil1PinName1 = "2";
+//		String coil1PinName2 = "1";
+//		String coil2PinName1 = "3";
+//		String coil2PinName2 = "4";
+//
+//		int traceWidth1 = 200_000;
+//		int traceWidth2 = 100_000;
+//		int step = 500_000;
+//		int innerRadius = 3_000_000;
+//
+//		// number of turns for single spiral coil, in half-turns
+//		int halfTurnsCount = 4 * 2 + 1;
+//		
+//		int endRadius = 800_000;
+//		
+//		int coilCount = 2;
+//		
+//		String layerName = LAYER_1_NAME;
+//	}
+	
 	// parameters of planar PCB transformer footprint to generate
 	// TBD: place to .ini file, commandline parameters, or GUI
 	public static class Options {
 		//
 		String footprintName = "CurrSensTrans2";
-		int traceWidth1 = 200_000;
-		int traceWidth2 = 100_000;
-		int step = 500_000;
-		int innerRadius = 3_000_000;
+		//int traceWidth1 = 200_000;
+		//int traceWidth2 = 100_000;
+		//int step = 500_000;
+		//int innerRadius = 3_000_000;
 		// number of turns for single spiral coil, in half-turns
-		int halfTurnsCount = 4 * 2 + 1;
+		//int halfTurnsCount = 4 * 2 + 1;
+		
 		// pad parameters
 		int padSize = 1_000_000; //1_600_000;
 		int padDrillSize = 600_000; //800_000;
 		// coil end rounding radius
 		int endRadius = 800_000;
-		String coil1PinName1 = "2";
-		String coil1PinName2 = "1";
-		String coil2PinName1 = "3";
-		String coil2PinName2 = "4";
 		
+		//String coil1PinName1 = "2";
+//		String coil1PinName2 = "1";
+//		String coil2PinName1 = "3";
+//		String coil2PinName2 = "4";
+		
+		CoilOptions[] coils = new CoilOptions[]  {
+				new CoilOptions()
+		};
+
 		// set to 0 if you don't need internal hole
 		int internalCutHoleRadius = 1_500_000;
 		int cutLineWidth = 50_000;
 		String cutLineType = "default";
-		int cornerCutHoleSize = 5_750_000;
-		int cornerCutHoleWidth = 4_000_000;
-		int cornerCutHoleRadius = 5_400_000;
+		int cornerCutHoleSize = 5_750_000 + 400_000;
+		int cornerCutHoleWidth = 4_000_000 + 400_000;
+		int cornerCutHoleRadius = 5_400_000 + 400_000;
 		int cornerCutHoleRounding = 500_000;
 	}
 
@@ -182,9 +233,10 @@ public class TransformerGen {
         puts(1, ")");
 	}
 	
-	public void putReference(String value) {
+	public void putReference(String value, CoilOptions coil) {
         startProperty("Reference", value);
-        putProp(2, "at", 0, 500_000 - options.innerRadius, 0);
+        //putProp(2, "at", 0, 500_000 - coil.innerRadius - 10_000_000, 0);
+        putProp(2, "at", 0, -500_000, 0);
         putProp(2, "unlocked", "yes");
         putLayer("F.SilkS");
         putUUID();
@@ -247,7 +299,7 @@ public class TransformerGen {
         puts(1, "(generator \"pcbnew\")");
         puts(1, "(generator_version \"9.0\")");
         puts(1, "(layer \"F.Cu\")");
-        putReference("Ref**");
+        putReference("Ref**", options.coils[0]);
         putValue(options.footprintName);
         putDatasheet("");
         putDescription("");
@@ -268,8 +320,34 @@ public class TransformerGen {
 	}
 
 	public void genCoils() {
-		setLayer("F.Cu");
+//		setLayer(options.layers[0].layerName);
 		
+		//putArc(120_000, 5_000, 0, 0, 5_000, -5_000, 0);
+		for (CoilOptions coil : options.coils) {
+			putSpiral(coil);
+		}
+		//putSpiral180(options.layers[0]);
+
+//		putSpiral(0, 0,
+//				options.traceWidth1, 
+//				options.innerRadius, 
+//				400_000, options.halfTurnsCount);
+
+//		if (options.layers[0].coilCount > 1) {
+//			//putInnerSpiral(options.layers[0]);
+//		}
+//		
+//		if (options.layers.length > 1) {
+//			setLayer(options.layers[1].layerName);
+//			//
+//			putSpiral270(options.layers[1]);
+//			//putInnerSpiral(options.layers[1]);
+//		}
+
+//		putInnerSpiral(0, 0,
+//				options.traceWidth2,
+//				options.innerRadius, 
+//				400_000, options.halfTurnsCount + 1);
 	}
 	
 	public void putPad(int x, int y, String name) {
@@ -297,7 +375,10 @@ public class TransformerGen {
 	public int mulSin45(int rr) {
 		return (int)(rr * 707_107L / 1_000_000);
 	}
-	public void putSpiral(int x, int y, int width, int innerRadius, int step, int halfTurnCount) {
+
+	public void putSpiral(int x, int y, int width, int innerRadius, int step, int halfTurnCount, String pinName1, String pinName2) {
+		x -= step/4;
+
 		int radius = innerRadius + step/2;
 		int rr = options.endRadius;
 		int rr45 = mulSin45(rr);
@@ -307,7 +388,7 @@ public class TransformerGen {
 				x+radius - rr + rr45, y-rr45,
 				x+radius, y
 				);
-		putPad(x+radius - rr, y - rr, options.coil1PinName2);
+		putPad(x+radius - rr, y - rr, pinName2);
 		
 		for (int i = 0; i < halfTurnCount; i++) {
 			if ((i % 2) == 0) {
@@ -327,10 +408,174 @@ public class TransformerGen {
 				x-radius - rr + rr45, y-rr45,
 				x-radius, y
 				);
-		putPad(x-radius - rr, y - rr, options.coil1PinName1);
+		putPad(x-radius - rr, y - rr, pinName1);
 	}
 	
-	public void putInnerSpiral(int x, int y, int width, int innerRadius, int step, int halfTurnCount) {
+	public void putSpiral90(int x, int y, int width, int innerRadius, int step, int halfTurnCount, String pinName1, String pinName2) {
+		//y += step/4;
+
+		int radius = innerRadius + step/2;
+		int rr = options.endRadius;
+		int rr45 = mulSin45(rr);
+
+		// sin(45)=0.707107
+		int r45 = mulSin45(radius);
+		
+		putArc(width, 
+				x - rr,        y-radius + step/4 + rr,
+				x - rr45, 	   y-radius + step/4 + rr - rr45,
+				x,             y-radius + step/4
+		);
+//		putArc(width, 
+//				x+radius - rr, y - rr,
+//				x+radius - rr + rr45, y-rr45,
+//				x+radius, y
+//				);
+		putPad(x - rr, y - radius + step/4 + rr, pinName2);
+
+		putArc(width, 
+				x, y-radius + step/4,
+				x+r45 + step/8, y-r45 + step/4,
+				x+radius, y
+				);
+		
+		for (int i = 0; i < halfTurnCount - 1; i++) {
+			if ((i % 2) == 0) {
+				putArc(width, x + radius, y, 
+						x, y+radius + step/4, 
+						x - radius - step/2, y);
+			} else {
+				putArc(width, x - radius - step/2, y, 
+						x + step/4, y-radius-step/2-step/4, 
+						x + radius + step, y);
+				radius += step;
+			}
+		}
+
+		r45 = mulSin45(radius);
+		putArc(width, x + radius, y, 
+				x + r45, y+r45, 
+				x, y+radius + step/4);
+		
+		putArc(width, 
+				x - rr,   y + step/4 + radius + rr,
+				x - rr45, y + step/4 + radius + rr - rr45,
+				x,        y + step/4 + radius
+				);
+		
+		putPad(x - rr, y+radius + rr, pinName1);
+	}
+	
+	public void putSpiral270(int x, int y, int width, int innerRadius, int step, int halfTurnCount, String pinName1, String pinName2) {
+		//y += step/4;
+
+		int radius = innerRadius + step/2;
+		int rr = options.endRadius;
+		int rr45 = mulSin45(rr);
+
+		// sin(45)=0.707107
+		int r45 = mulSin45(radius);
+		
+		putArc(width, 
+				x + rr,        y+radius -step/4 - rr,
+				x + rr45, 	   y+radius -step/4 - rr + rr45,
+				x,             y+radius -step/4
+		);
+//		putArc(width, 
+//				x+radius - rr, y - rr,
+//				x+radius - rr + rr45, y-rr45,
+//				x+radius, y
+//				);
+		putPad(x + rr, y + radius -step/4 - rr, pinName2);
+
+		putArc(width, 
+				x, y+radius-step/4,
+				x-r45, y-step/8+r45,
+				x-radius, y
+				);
+		
+		for (int i = 0; i < halfTurnCount - 1; i++) {
+			if ((i % 2) == 0) {
+				putArc(width, x + radius + step/2, y, 
+						x, y - radius - step/4, 
+						x - radius, y);
+			} else {
+				putArc(width, x - radius - step, y, 
+						x + step/4, y+radius+step/2+step/4, 
+						x + radius + step/2, y);
+				radius += step;
+			}
+		}
+
+		r45 = mulSin45(radius);
+		putArc(width, x - radius, y, 
+				x - r45, y - r45, 
+				x, y-radius - step/4);
+		
+		putArc(width, 
+				x + rr,   y - step/4 - radius - rr,
+				x + rr45-step/4, y - step/4 - radius - rr + rr45,
+				x,        y - step/4 - radius
+				);
+		
+		putPad(x + rr, y-radius - rr, pinName1);
+	}
+	
+	public void putSpiral180(int x, int y, int width, int innerRadius, int step, int halfTurnCount, String pinName1, String pinName2) {
+
+		x += step/4;
+		
+		int radius = innerRadius + step/2;
+		int rr = options.endRadius;
+		int rr45 = mulSin45(rr);
+		
+		putArc( width, 
+				x-radius + rr, y + rr,
+				x-radius + rr - rr45, y+rr45,
+				x-radius, y
+				);
+		putPad( x - radius + rr, y + rr, pinName2 );
+		
+		for (int i = 0; i < halfTurnCount; i++) {
+			if ((i % 2) == 0) {
+				putArc(width, 
+						x - radius, y, 
+						x, y-radius, 
+						x + radius, y);
+
+				//				putArc(width, 
+//						x + radius, y,
+//						x, y - radius, 
+//						x - radius, y 
+//						);
+			} else {
+				putArc(width, 
+						x + radius, y, 
+						x - step/2, y+radius+step/2, 
+						x - radius - step, y);
+//				putArc(width, 
+//						x - radius, y, 
+//						x + step/2, y-radius-step/2, 
+//						x + radius + step, y);
+				radius += step;
+			}
+		}
+
+		putArc(width, 
+				x+radius + rr, y + rr,
+				x+radius + rr - rr45, y+rr45,
+				x+radius, y
+				);
+//		putArc(width, 
+//				x-radius - rr, y - rr,
+//				x-radius - rr + rr45, y-rr45,
+//				x-radius, y
+//				);
+		//putPad(x-radius - rr, y - rr, pinName1);
+		putPad(x+radius + rr, y + rr, pinName1);
+	}
+	
+	public void putInnerSpiral(int x, int y, int width, int innerRadius, int step, int halfTurnCount, String pinName1, String pinName2) {
 		int radius = innerRadius;
 		int rr = options.endRadius;
 		
@@ -345,7 +590,7 @@ public class TransformerGen {
 				x+rr45, y+radius-rr+rr45, 
 				x+rr, y+radius-rr
 				);
-		putPad(x+rr, y+radius-rr, options.coil2PinName2);
+		putPad(x+rr, y+radius-rr, pinName2);
 
 		
 		putArc(width, 
@@ -389,7 +634,7 @@ public class TransformerGen {
 					lastx - r45, lasty + rr - r45,
 					lastx, lasty
 					);
-			putPad(lastx - rr, lasty + rr, options.coil2PinName1);
+			putPad(lastx - rr, lasty + rr, pinName1);
 		
 		
 		} else {
@@ -567,26 +812,70 @@ public class TransformerGen {
         puts(1, ")");
 	}
 	
+	public void putSpiral(CoilOptions coil) {
+		setLayer(coil.layerName);
+		switch(coil.type) {
+		case SPIRAL_0:
+			putSpiral(0, 0,
+					coil.traceWidth, 
+					coil.innerRadius,
+					400_000, coil.halfTurnsCount,
+					coil.pinName1,
+					coil.pinName2
+					);
+			break;
+		case SPIRAL_90:
+			putSpiral90(0, 0,
+					coil.traceWidth, 
+					coil.innerRadius,
+					400_000, coil.halfTurnsCount,
+					coil.pinName1,
+					coil.pinName2
+					);
+			break;
+		case SPIRAL_180:
+			putSpiral180(0, 0,
+					coil.traceWidth, 
+					coil.innerRadius,
+					400_000, coil.halfTurnsCount,
+					coil.pinName1,
+					coil.pinName2
+					);
+			break;
+		case SPIRAL_270:
+			putSpiral270(0, 0,
+					coil.traceWidth, 
+					coil.innerRadius,
+					400_000, coil.halfTurnsCount,
+					coil.pinName1,
+					coil.pinName2
+					);
+			break;
+		}
+	}
+	
+//	public void putInnerSpiral(LayerOptions layer) {
+//		if (layer.coilCount > 1) {
+//			putInnerSpiral(0, 0,
+//					layer.traceWidth2,
+//					layer.innerRadius, 
+//					400_000, layer.halfTurnsCount + 1,
+//					layer.coil2PinName1,
+//					layer.coil2PinName2);
+//		}
+//	}
+
 	public void generateFile(String filename) throws IOException {
 		openFile(filename);
 		
 		puts(0, "(footprint \"" + options.footprintName + "\"");
 		genHeader();
 		
-		//putArc(120_000, 5_000, 0, 0, 5_000, -5_000, 0);
-		putSpiral(0, 0,
-				options.traceWidth1, 
-				options.innerRadius, 
-				400_000, options.halfTurnsCount);
-		putInnerSpiral(0, 0,
-				options.traceWidth2,
-				options.innerRadius, 
-				400_000, options.halfTurnsCount + 1);
+		genCoils();
 		
 		putHoles();
 		
 		genFooter();
-		
 		
 		closeFile();
 	}
@@ -617,8 +906,7 @@ public class TransformerGen {
 		}	
 	}
 	
-	public static void main(String[] args) {
-		TransformerGen gen = new TransformerGen();
+	public static void generateFootprint(TransformerGen gen) {
 		String filename = gen.options.footprintName + ".kicad_mod";
 		System.out.println("Generating file " + filename);
 		try {
@@ -627,6 +915,59 @@ public class TransformerGen {
 			e.printStackTrace();
 		}
 		System.out.println("Done");
+	}
+
+	public static void genTrans1To2() {
+		TransformerGen gen = new TransformerGen();
+		gen.options.internalCutHoleRadius = 0;
+		CoilOptions coil1 = new CoilOptions();
+		coil1.layerName = LAYER_1_NAME;
+		coil1.traceWidth = 200_000;
+		coil1.pinName1 = "2";
+		coil1.pinName1 = "1";
+		coil1.halfTurnsCount = 5*2 + 1;
+		CoilOptions coil2 = new CoilOptions();
+		coil2.layerName = LAYER_2_NAME;
+		coil2.traceWidth = 100_000;
+		coil2.pinName1 = "6";
+		coil2.pinName2 = "5";
+		coil2.halfTurnsCount = 5*2 + 1;
+		coil2.type = CoilType.SPIRAL_90;
+		CoilOptions coil3 = new CoilOptions();
+		coil3.layerName = LAYER_2_NAME;
+		coil3.traceWidth = 100_000;
+		coil3.pinName1 = "4";
+		coil3.pinName2 = "3";
+		coil3.halfTurnsCount = 5*2 + 1;
+		coil3.type = CoilType.SPIRAL_270;
+		gen.options.coils = new CoilOptions[]  {
+						coil1,
+						coil2,
+						coil3
+				};
+		gen.options.footprintName = "CurrSensTrans3";
+		generateFootprint(gen);
+	}
+	
+	public static void genTrans1To1() {
+		TransformerGen gen = new TransformerGen();
+		gen.options.footprintName = "CurrSensTrans2";
+		generateFootprint(gen);
+	}
+	
+	public static void main(String[] args) {
+		
+		genTrans1To2();
+//		
+//		TransformerGen gen = new TransformerGen();
+//		String filename = gen.options.footprintName + ".kicad_mod";
+//		System.out.println("Generating file " + filename);
+//		try {
+//			gen.generateFile(filename);
+//		} catch (IOException e) {
+//			e.printStackTrace();
+//		}
+//		System.out.println("Done");
 	}
 
 }
