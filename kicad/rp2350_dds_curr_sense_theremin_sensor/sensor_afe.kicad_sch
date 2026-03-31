@@ -4203,7 +4203,7 @@
 			(uuid "0a2d8355-1eb5-46d3-b24f-c6c5050f60df")
 		)
 		(instances
-			(project "ThereminSensorAnalogPLL"
+			(project "RP2350_DDS_curr_sensing_sensor"
 				(path "/f295a831-110a-4671-83dc-e79cf5dd395a/3d1747b0-aa66-49d8-8176-ac1412e75a50"
 					(reference "#PWR02")
 					(unit 1)
@@ -4334,7 +4334,7 @@
 			(uuid "3a13ea27-a44d-469d-9628-27dcf2b2b2e6")
 		)
 		(instances
-			(project "ThereminSensorAnalogPLL"
+			(project "RP2350_DDS_curr_sensing_sensor"
 				(path "/f295a831-110a-4671-83dc-e79cf5dd395a/3d1747b0-aa66-49d8-8176-ac1412e75a50"
 					(reference "U3")
 					(unit 2)
@@ -4411,7 +4411,7 @@
 			(uuid "a06088bc-19c1-4b15-ae7f-6b354af29ff3")
 		)
 		(instances
-			(project "ThereminSensorAnalogPLL"
+			(project "RP2350_DDS_curr_sensing_sensor"
 				(path "/f295a831-110a-4671-83dc-e79cf5dd395a/3d1747b0-aa66-49d8-8176-ac1412e75a50"
 					(reference "R3")
 					(unit 1)
@@ -4477,7 +4477,7 @@
 			(uuid "4a5ffe18-9959-4f26-908a-01f4c600733a")
 		)
 		(instances
-			(project "ThereminSensorAnalogPLL"
+			(project "RP2350_DDS_curr_sensing_sensor"
 				(path "/f295a831-110a-4671-83dc-e79cf5dd395a/3d1747b0-aa66-49d8-8176-ac1412e75a50"
 					(reference "#PWR026")
 					(unit 1)
@@ -4543,7 +4543,7 @@
 			(uuid "de115db8-5052-4ffe-a7d8-3e5f12c6d000")
 		)
 		(instances
-			(project "ThereminSensorAnalogPLL"
+			(project "RP2350_DDS_curr_sensing_sensor"
 				(path "/f295a831-110a-4671-83dc-e79cf5dd395a/3d1747b0-aa66-49d8-8176-ac1412e75a50"
 					(reference "#PWR03")
 					(unit 1)
@@ -4609,7 +4609,7 @@
 			(uuid "4020e08d-5709-4e5f-95f9-c6bcada9352e")
 		)
 		(instances
-			(project "ThereminSensorAnalogPLL"
+			(project "RP2350_DDS_curr_sensing_sensor"
 				(path "/f295a831-110a-4671-83dc-e79cf5dd395a/3d1747b0-aa66-49d8-8176-ac1412e75a50"
 					(reference "#PWR06")
 					(unit 1)
@@ -4675,7 +4675,7 @@
 			(uuid "d2030738-eefb-4b47-aad1-2e454686748c")
 		)
 		(instances
-			(project "ThereminSensorAnalogPLL"
+			(project "RP2350_DDS_curr_sensing_sensor"
 				(path "/f295a831-110a-4671-83dc-e79cf5dd395a/3d1747b0-aa66-49d8-8176-ac1412e75a50"
 					(reference "#PWR021")
 					(unit 1)
@@ -4754,7 +4754,7 @@
 			(uuid "e28358ff-9d19-4a89-9aef-aadcd6dd8b24")
 		)
 		(instances
-			(project "ThereminSensorAnalogPLL"
+			(project "RP2350_DDS_curr_sensing_sensor"
 				(path "/f295a831-110a-4671-83dc-e79cf5dd395a/3d1747b0-aa66-49d8-8176-ac1412e75a50"
 					(reference "R13")
 					(unit 1)
@@ -4820,7 +4820,7 @@
 			(uuid "4b614c5f-1d2e-41cd-adef-a45833a52c00")
 		)
 		(instances
-			(project "ThereminSensorAnalogPLL"
+			(project "RP2350_DDS_curr_sensing_sensor"
 				(path "/f295a831-110a-4671-83dc-e79cf5dd395a/3d1747b0-aa66-49d8-8176-ac1412e75a50"
 					(reference "#PWR07")
 					(unit 1)
@@ -4911,7 +4911,7 @@
 			(uuid "967bbbf5-64bc-4ca2-89c8-aea5f4688f21")
 		)
 		(instances
-			(project "ThereminSensorAnalogPLL"
+			(project "RP2350_DDS_curr_sensing_sensor"
 				(path "/f295a831-110a-4671-83dc-e79cf5dd395a/3d1747b0-aa66-49d8-8176-ac1412e75a50"
 					(reference "Q3")
 					(unit 2)
@@ -5042,7 +5042,7 @@
 			(uuid "ff2b5e35-e08a-49dc-9050-4b2ee4d1b4de")
 		)
 		(instances
-			(project "ThereminSensorAnalogPLL"
+			(project "RP2350_DDS_curr_sensing_sensor"
 				(path "/f295a831-110a-4671-83dc-e79cf5dd395a/3d1747b0-aa66-49d8-8176-ac1412e75a50"
 					(reference "U2")
 					(unit 2)
@@ -5121,7 +5121,7 @@
 			(uuid "16860c40-63ec-49de-9502-ee007dfad856")
 		)
 		(instances
-			(project "ThereminSensorAnalogPLL"
+			(project "RP2350_DDS_curr_sensing_sensor"
 				(path "/f295a831-110a-4671-83dc-e79cf5dd395a/3d1747b0-aa66-49d8-8176-ac1412e75a50"
 					(reference "C5")
 					(unit 1)
@@ -5198,7 +5198,7 @@
 			(uuid "838d4e6a-a747-4238-9821-08d2322b38bc")
 		)
 		(instances
-			(project "ThereminSensorAnalogPLL"
+			(project "RP2350_DDS_curr_sensing_sensor"
 				(path "/f295a831-110a-4671-83dc-e79cf5dd395a/3d1747b0-aa66-49d8-8176-ac1412e75a50"
 					(reference "R9")
 					(unit 1)
@@ -5276,7 +5276,7 @@
 			(uuid "99a22524-2ed2-4744-bb87-371cb1782262")
 		)
 		(instances
-			(project "ThereminSensorAnalogPLL"
+			(project "RP2350_DDS_curr_sensing_sensor"
 				(path "/f295a831-110a-4671-83dc-e79cf5dd395a/3d1747b0-aa66-49d8-8176-ac1412e75a50"
 					(reference "R18")
 					(unit 1)
@@ -5407,7 +5407,7 @@
 			(uuid "ff2b5e35-e08a-49dc-9050-4b2ee4d1b4df")
 		)
 		(instances
-			(project "ThereminSensorAnalogPLL"
+			(project "RP2350_DDS_curr_sensing_sensor"
 				(path "/f295a831-110a-4671-83dc-e79cf5dd395a/3d1747b0-aa66-49d8-8176-ac1412e75a50"
 					(reference "U3")
 					(unit 1)
@@ -5473,7 +5473,7 @@
 			(uuid "512b498c-1c2e-4670-9024-bc830444465c")
 		)
 		(instances
-			(project "ThereminSensorAnalogPLL"
+			(project "RP2350_DDS_curr_sensing_sensor"
 				(path "/f295a831-110a-4671-83dc-e79cf5dd395a/3d1747b0-aa66-49d8-8176-ac1412e75a50"
 					(reference "#PWR01")
 					(unit 1)
@@ -5592,7 +5592,7 @@
 			(uuid "94a11177-f567-46c0-a597-4e3553b1746d")
 		)
 		(instances
-			(project "ThereminSensorAnalogPLL"
+			(project "RP2350_DDS_curr_sensing_sensor"
 				(path "/f295a831-110a-4671-83dc-e79cf5dd395a/3d1747b0-aa66-49d8-8176-ac1412e75a50"
 					(reference "U1")
 					(unit 1)
@@ -5725,7 +5725,7 @@
 			(uuid "ff2b5e35-e08a-49dc-9050-4b2ee4d1b4e0")
 		)
 		(instances
-			(project "ThereminSensorAnalogPLL"
+			(project "RP2350_DDS_curr_sensing_sensor"
 				(path "/f295a831-110a-4671-83dc-e79cf5dd395a/3d1747b0-aa66-49d8-8176-ac1412e75a50"
 					(reference "U3")
 					(unit 3)
@@ -5844,7 +5844,7 @@
 			(uuid "94a11177-f567-46c0-a597-4e3553b1746c")
 		)
 		(instances
-			(project "ThereminSensorAnalogPLL"
+			(project "RP2350_DDS_curr_sensing_sensor"
 				(path "/f295a831-110a-4671-83dc-e79cf5dd395a/3d1747b0-aa66-49d8-8176-ac1412e75a50"
 					(reference "U1")
 					(unit 3)
@@ -5921,7 +5921,7 @@
 			(uuid "e3fcbb7d-e8d3-4bb3-9300-fd12c6862879")
 		)
 		(instances
-			(project "ThereminSensorAnalogPLL"
+			(project "RP2350_DDS_curr_sensing_sensor"
 				(path "/f295a831-110a-4671-83dc-e79cf5dd395a/3d1747b0-aa66-49d8-8176-ac1412e75a50"
 					(reference "R5")
 					(unit 1)
@@ -5987,7 +5987,7 @@
 			(uuid "6427a38d-b26a-4aef-a467-f6c4ffc86f3d")
 		)
 		(instances
-			(project "ThereminSensorAnalogPLL"
+			(project "RP2350_DDS_curr_sensing_sensor"
 				(path "/f295a831-110a-4671-83dc-e79cf5dd395a/3d1747b0-aa66-49d8-8176-ac1412e75a50"
 					(reference "#PWR022")
 					(unit 1)
@@ -6078,7 +6078,7 @@
 			(uuid "b238602d-0133-4882-9990-fbad76377b01")
 		)
 		(instances
-			(project "ThereminSensorAnalogPLL"
+			(project "RP2350_DDS_curr_sensing_sensor"
 				(path "/f295a831-110a-4671-83dc-e79cf5dd395a/3d1747b0-aa66-49d8-8176-ac1412e75a50"
 					(reference "Q4")
 					(unit 1)
@@ -6144,7 +6144,7 @@
 			(uuid "a6e818ac-33d6-46a8-9546-bb3bc9a44709")
 		)
 		(instances
-			(project "ThereminSensorAnalogPLL"
+			(project "RP2350_DDS_curr_sensing_sensor"
 				(path "/f295a831-110a-4671-83dc-e79cf5dd395a/3d1747b0-aa66-49d8-8176-ac1412e75a50"
 					(reference "#PWR05")
 					(unit 1)
@@ -6221,7 +6221,7 @@
 			(uuid "19580a4f-7a00-49ea-84b9-d1f9eb81fb70")
 		)
 		(instances
-			(project "ThereminSensorAnalogPLL"
+			(project "RP2350_DDS_curr_sensing_sensor"
 				(path "/f295a831-110a-4671-83dc-e79cf5dd395a/3d1747b0-aa66-49d8-8176-ac1412e75a50"
 					(reference "R1")
 					(unit 1)
@@ -6287,7 +6287,7 @@
 			(uuid "c928fb98-a71a-4634-b422-ec365414e110")
 		)
 		(instances
-			(project "ThereminSensorAnalogPLL"
+			(project "RP2350_DDS_curr_sensing_sensor"
 				(path "/f295a831-110a-4671-83dc-e79cf5dd395a/3d1747b0-aa66-49d8-8176-ac1412e75a50"
 					(reference "#PWR04")
 					(unit 1)
@@ -6365,7 +6365,7 @@
 			(uuid "29ffdf6f-0207-4ae1-801b-8470b9d7b51a")
 		)
 		(instances
-			(project "ThereminSensorAnalogPLL"
+			(project "RP2350_DDS_curr_sensing_sensor"
 				(path "/f295a831-110a-4671-83dc-e79cf5dd395a/3d1747b0-aa66-49d8-8176-ac1412e75a50"
 					(reference "R19")
 					(unit 1)
@@ -6444,7 +6444,7 @@
 			(uuid "98f1169a-24ee-4450-a5ad-eb613dafc84f")
 		)
 		(instances
-			(project "ThereminSensorAnalogPLL"
+			(project "RP2350_DDS_curr_sensing_sensor"
 				(path "/f295a831-110a-4671-83dc-e79cf5dd395a/3d1747b0-aa66-49d8-8176-ac1412e75a50"
 					(reference "R15")
 					(unit 1)
@@ -6510,7 +6510,7 @@
 			(uuid "16445156-c115-40d3-872b-1e9a0976bd1e")
 		)
 		(instances
-			(project "ThereminSensorAnalogPLL"
+			(project "RP2350_DDS_curr_sensing_sensor"
 				(path "/f295a831-110a-4671-83dc-e79cf5dd395a/3d1747b0-aa66-49d8-8176-ac1412e75a50"
 					(reference "#PWR010")
 					(unit 1)
@@ -6643,7 +6643,7 @@
 			(uuid "ff2b5e35-e08a-49dc-9050-4b2ee4d1b4e1")
 		)
 		(instances
-			(project "ThereminSensorAnalogPLL"
+			(project "RP2350_DDS_curr_sensing_sensor"
 				(path "/f295a831-110a-4671-83dc-e79cf5dd395a/3d1747b0-aa66-49d8-8176-ac1412e75a50"
 					(reference "U2")
 					(unit 3)
@@ -6721,7 +6721,7 @@
 			(uuid "26afa3ef-bd6a-448a-87e2-5e3f9bffa8db")
 		)
 		(instances
-			(project "ThereminSensorAnalogPLL"
+			(project "RP2350_DDS_curr_sensing_sensor"
 				(path "/f295a831-110a-4671-83dc-e79cf5dd395a/3d1747b0-aa66-49d8-8176-ac1412e75a50"
 					(reference "R17")
 					(unit 1)
@@ -6787,7 +6787,7 @@
 			(uuid "0812cad4-049e-49af-aea1-ccc8c0fe97fd")
 		)
 		(instances
-			(project "ThereminSensorAnalogPLL"
+			(project "RP2350_DDS_curr_sensing_sensor"
 				(path "/f295a831-110a-4671-83dc-e79cf5dd395a/3d1747b0-aa66-49d8-8176-ac1412e75a50"
 					(reference "#PWR019")
 					(unit 1)
@@ -6866,7 +6866,7 @@
 			(uuid "24e4a07e-b926-4f5f-a4e4-a0d6e42cd55f")
 		)
 		(instances
-			(project "ThereminSensorAnalogPLL"
+			(project "RP2350_DDS_curr_sensing_sensor"
 				(path "/f295a831-110a-4671-83dc-e79cf5dd395a/3d1747b0-aa66-49d8-8176-ac1412e75a50"
 					(reference "C1")
 					(unit 1)
@@ -6957,7 +6957,7 @@
 			(uuid "52c912d2-218c-463c-b7c6-a533fe665432")
 		)
 		(instances
-			(project "ThereminSensorAnalogPLL"
+			(project "RP2350_DDS_curr_sensing_sensor"
 				(path "/f295a831-110a-4671-83dc-e79cf5dd395a/3d1747b0-aa66-49d8-8176-ac1412e75a50"
 					(reference "Q2")
 					(unit 2)
@@ -7036,7 +7036,7 @@
 			(uuid "152416d0-fccc-4f0c-bdad-548d7ef3c207")
 		)
 		(instances
-			(project "ThereminSensorAnalogPLL"
+			(project "RP2350_DDS_curr_sensing_sensor"
 				(path "/f295a831-110a-4671-83dc-e79cf5dd395a/3d1747b0-aa66-49d8-8176-ac1412e75a50"
 					(reference "R12")
 					(unit 1)
@@ -7102,7 +7102,7 @@
 			(uuid "39a9ec7b-1241-4f2e-94b4-10ba0872d72c")
 		)
 		(instances
-			(project "ThereminSensorAnalogPLL"
+			(project "RP2350_DDS_curr_sensing_sensor"
 				(path "/f295a831-110a-4671-83dc-e79cf5dd395a/3d1747b0-aa66-49d8-8176-ac1412e75a50"
 					(reference "#PWR017")
 					(unit 1)
@@ -7221,7 +7221,7 @@
 			(uuid "94a11177-f567-46c0-a597-4e3553b1746c")
 		)
 		(instances
-			(project "ThereminSensorAnalogPLL"
+			(project "RP2350_DDS_curr_sensing_sensor"
 				(path "/f295a831-110a-4671-83dc-e79cf5dd395a/3d1747b0-aa66-49d8-8176-ac1412e75a50"
 					(reference "U4")
 					(unit 3)
@@ -7298,7 +7298,7 @@
 			(uuid "ae8f8f39-7517-4b2c-80e8-85b8de30f002")
 		)
 		(instances
-			(project "ThereminSensorAnalogPLL"
+			(project "RP2350_DDS_curr_sensing_sensor"
 				(path "/f295a831-110a-4671-83dc-e79cf5dd395a/3d1747b0-aa66-49d8-8176-ac1412e75a50"
 					(reference "R8")
 					(unit 1)
@@ -7364,7 +7364,7 @@
 			(uuid "6606dd18-81b0-4100-bc8c-9a2bf2e20b57")
 		)
 		(instances
-			(project "ThereminSensorAnalogPLL"
+			(project "RP2350_DDS_curr_sensing_sensor"
 				(path "/f295a831-110a-4671-83dc-e79cf5dd395a/3d1747b0-aa66-49d8-8176-ac1412e75a50"
 					(reference "#PWR023")
 					(unit 1)
@@ -7430,7 +7430,7 @@
 			(uuid "269a9031-4f30-48c6-b2c9-5b2db141e8c4")
 		)
 		(instances
-			(project "ThereminSensorAnalogPLL"
+			(project "RP2350_DDS_curr_sensing_sensor"
 				(path "/f295a831-110a-4671-83dc-e79cf5dd395a/3d1747b0-aa66-49d8-8176-ac1412e75a50"
 					(reference "#PWR012")
 					(unit 1)
@@ -7496,7 +7496,7 @@
 			(uuid "a47a0bc6-0f58-4d17-a01f-a16d4d70706c")
 		)
 		(instances
-			(project "ThereminSensorAnalogPLL"
+			(project "RP2350_DDS_curr_sensing_sensor"
 				(path "/f295a831-110a-4671-83dc-e79cf5dd395a/3d1747b0-aa66-49d8-8176-ac1412e75a50"
 					(reference "#PWR020")
 					(unit 1)
@@ -7617,7 +7617,7 @@
 			(uuid "94a11177-f567-46c0-a597-4e3553b1746b")
 		)
 		(instances
-			(project "ThereminSensorAnalogPLL"
+			(project "RP2350_DDS_curr_sensing_sensor"
 				(path "/f295a831-110a-4671-83dc-e79cf5dd395a/3d1747b0-aa66-49d8-8176-ac1412e75a50"
 					(reference "U4")
 					(unit 5)
@@ -7683,7 +7683,7 @@
 			(uuid "177e7f7f-c25b-4647-8bf7-2144bb373ddb")
 		)
 		(instances
-			(project "ThereminSensorAnalogPLL"
+			(project "RP2350_DDS_curr_sensing_sensor"
 				(path "/f295a831-110a-4671-83dc-e79cf5dd395a/3d1747b0-aa66-49d8-8176-ac1412e75a50"
 					(reference "#PWR013")
 					(unit 1)
@@ -7762,7 +7762,7 @@
 			(uuid "d4757a73-3712-4fba-9717-66f80846ac0a")
 		)
 		(instances
-			(project "ThereminSensorAnalogPLL"
+			(project "RP2350_DDS_curr_sensing_sensor"
 				(path "/f295a831-110a-4671-83dc-e79cf5dd395a/3d1747b0-aa66-49d8-8176-ac1412e75a50"
 					(reference "R7")
 					(unit 1)
@@ -7828,7 +7828,7 @@
 			(uuid "e13a8822-49f5-4339-b67d-5b40cd3ba341")
 		)
 		(instances
-			(project "ThereminSensorAnalogPLL"
+			(project "RP2350_DDS_curr_sensing_sensor"
 				(path "/f295a831-110a-4671-83dc-e79cf5dd395a/3d1747b0-aa66-49d8-8176-ac1412e75a50"
 					(reference "#PWR018")
 					(unit 1)
@@ -7894,7 +7894,7 @@
 			(uuid "dc9a459b-7cbc-45fa-aedb-5532a035a000")
 		)
 		(instances
-			(project "ThereminSensorAnalogPLL"
+			(project "RP2350_DDS_curr_sensing_sensor"
 				(path "/f295a831-110a-4671-83dc-e79cf5dd395a/3d1747b0-aa66-49d8-8176-ac1412e75a50"
 					(reference "#PWR025")
 					(unit 1)
@@ -7960,7 +7960,7 @@
 			(uuid "4a2365db-d839-4562-aec2-7114fbf4802d")
 		)
 		(instances
-			(project "ThereminSensorAnalogPLL"
+			(project "RP2350_DDS_curr_sensing_sensor"
 				(path "/f295a831-110a-4671-83dc-e79cf5dd395a/3d1747b0-aa66-49d8-8176-ac1412e75a50"
 					(reference "#PWR011")
 					(unit 1)
@@ -8039,7 +8039,7 @@
 			(uuid "d0a9857e-1721-461f-9b24-707738dcb4d4")
 		)
 		(instances
-			(project "ThereminSensorAnalogPLL"
+			(project "RP2350_DDS_curr_sensing_sensor"
 				(path "/f295a831-110a-4671-83dc-e79cf5dd395a/3d1747b0-aa66-49d8-8176-ac1412e75a50"
 					(reference "C3")
 					(unit 1)
@@ -8118,7 +8118,7 @@
 			(uuid "0815755a-ece8-42fd-8d55-b2a01c421d6c")
 		)
 		(instances
-			(project "ThereminSensorAnalogPLL"
+			(project "RP2350_DDS_curr_sensing_sensor"
 				(path "/f295a831-110a-4671-83dc-e79cf5dd395a/3d1747b0-aa66-49d8-8176-ac1412e75a50"
 					(reference "R10")
 					(unit 1)
@@ -8197,7 +8197,7 @@
 			(uuid "37794a36-b867-49a3-bd0f-f908910ebf05")
 		)
 		(instances
-			(project "ThereminSensorAnalogPLL"
+			(project "RP2350_DDS_curr_sensing_sensor"
 				(path "/f295a831-110a-4671-83dc-e79cf5dd395a/3d1747b0-aa66-49d8-8176-ac1412e75a50"
 					(reference "C2")
 					(unit 1)
@@ -8263,7 +8263,7 @@
 			(uuid "e724a796-2124-470c-bff0-9b599bd778a7")
 		)
 		(instances
-			(project "ThereminSensorAnalogPLL"
+			(project "RP2350_DDS_curr_sensing_sensor"
 				(path "/f295a831-110a-4671-83dc-e79cf5dd395a/3d1747b0-aa66-49d8-8176-ac1412e75a50"
 					(reference "#PWR09")
 					(unit 1)
@@ -8354,7 +8354,7 @@
 			(uuid "b238602d-0133-4882-9990-fbad76377b02")
 		)
 		(instances
-			(project "ThereminSensorAnalogPLL"
+			(project "RP2350_DDS_curr_sensing_sensor"
 				(path "/f295a831-110a-4671-83dc-e79cf5dd395a/3d1747b0-aa66-49d8-8176-ac1412e75a50"
 					(reference "Q3")
 					(unit 1)
@@ -8445,7 +8445,7 @@
 			(uuid "b238602d-0133-4882-9990-fbad76377b01")
 		)
 		(instances
-			(project "ThereminSensorAnalogPLL"
+			(project "RP2350_DDS_curr_sensing_sensor"
 				(path "/f295a831-110a-4671-83dc-e79cf5dd395a/3d1747b0-aa66-49d8-8176-ac1412e75a50"
 					(reference "Q2")
 					(unit 1)
@@ -8524,7 +8524,7 @@
 			(uuid "9784cf48-7d1a-43f0-aced-fe4bd830ac13")
 		)
 		(instances
-			(project "ThereminSensorAnalogPLL"
+			(project "RP2350_DDS_curr_sensing_sensor"
 				(path "/f295a831-110a-4671-83dc-e79cf5dd395a/3d1747b0-aa66-49d8-8176-ac1412e75a50"
 					(reference "R14")
 					(unit 1)
@@ -8655,7 +8655,7 @@
 			(uuid "ff2b5e35-e08a-49dc-9050-4b2ee4d1b4e2")
 		)
 		(instances
-			(project "ThereminSensorAnalogPLL"
+			(project "RP2350_DDS_curr_sensing_sensor"
 				(path "/f295a831-110a-4671-83dc-e79cf5dd395a/3d1747b0-aa66-49d8-8176-ac1412e75a50"
 					(reference "U2")
 					(unit 1)
@@ -8732,7 +8732,7 @@
 			(uuid "325d0d33-5a08-416b-9bdb-be4800e0b0e8")
 		)
 		(instances
-			(project "ThereminSensorAnalogPLL"
+			(project "RP2350_DDS_curr_sensing_sensor"
 				(path "/f295a831-110a-4671-83dc-e79cf5dd395a/3d1747b0-aa66-49d8-8176-ac1412e75a50"
 					(reference "R4")
 					(unit 1)
@@ -8811,7 +8811,7 @@
 			(uuid "ef3466f0-2354-4b91-bafd-cffe4378f436")
 		)
 		(instances
-			(project "ThereminSensorAnalogPLL"
+			(project "RP2350_DDS_curr_sensing_sensor"
 				(path "/f295a831-110a-4671-83dc-e79cf5dd395a/3d1747b0-aa66-49d8-8176-ac1412e75a50"
 					(reference "R2")
 					(unit 1)
@@ -8877,7 +8877,7 @@
 			(uuid "ea2d2eb3-54b6-458f-9673-bd0c1e82e4af")
 		)
 		(instances
-			(project "ThereminSensorAnalogPLL"
+			(project "RP2350_DDS_curr_sensing_sensor"
 				(path "/f295a831-110a-4671-83dc-e79cf5dd395a/3d1747b0-aa66-49d8-8176-ac1412e75a50"
 					(reference "#PWR014")
 					(unit 1)
@@ -8944,7 +8944,7 @@
 			(uuid "4a704dc2-b181-4cf8-a6bf-c61ae44274b9")
 		)
 		(instances
-			(project "ThereminSensorAnalogPLL"
+			(project "RP2350_DDS_curr_sensing_sensor"
 				(path "/f295a831-110a-4671-83dc-e79cf5dd395a/3d1747b0-aa66-49d8-8176-ac1412e75a50"
 					(reference "J1")
 					(unit 1)
@@ -9035,7 +9035,7 @@
 			(uuid "b238602d-0133-4882-9990-fbad76377b01")
 		)
 		(instances
-			(project "ThereminSensorAnalogPLL"
+			(project "RP2350_DDS_curr_sensing_sensor"
 				(path "/f295a831-110a-4671-83dc-e79cf5dd395a/3d1747b0-aa66-49d8-8176-ac1412e75a50"
 					(reference "Q1")
 					(unit 2)
@@ -9156,7 +9156,7 @@
 			(uuid "94a11177-f567-46c0-a597-4e3553b1746b")
 		)
 		(instances
-			(project "ThereminSensorAnalogPLL"
+			(project "RP2350_DDS_curr_sensing_sensor"
 				(path "/f295a831-110a-4671-83dc-e79cf5dd395a/3d1747b0-aa66-49d8-8176-ac1412e75a50"
 					(reference "U1")
 					(unit 5)
@@ -9275,7 +9275,7 @@
 			(uuid "94a11177-f567-46c0-a597-4e3553b1746d")
 		)
 		(instances
-			(project "ThereminSensorAnalogPLL"
+			(project "RP2350_DDS_curr_sensing_sensor"
 				(path "/f295a831-110a-4671-83dc-e79cf5dd395a/3d1747b0-aa66-49d8-8176-ac1412e75a50"
 					(reference "U4")
 					(unit 1)
@@ -9352,7 +9352,7 @@
 			(uuid "1ee665a5-1130-4420-a5f8-4f3d1cd3a2a3")
 		)
 		(instances
-			(project "ThereminSensorAnalogPLL"
+			(project "RP2350_DDS_curr_sensing_sensor"
 				(path "/f295a831-110a-4671-83dc-e79cf5dd395a/3d1747b0-aa66-49d8-8176-ac1412e75a50"
 					(reference "R6")
 					(unit 1)
@@ -9442,7 +9442,7 @@
 			(uuid "0ecf13ae-2349-4da0-bde0-b030bdd5bb7f")
 		)
 		(instances
-			(project "ThereminSensorAnalogPLL"
+			(project "RP2350_DDS_curr_sensing_sensor"
 				(path "/f295a831-110a-4671-83dc-e79cf5dd395a/3d1747b0-aa66-49d8-8176-ac1412e75a50"
 					(reference "Q4")
 					(unit 2)
@@ -9524,7 +9524,7 @@
 			(uuid "7a6f6479-f2ba-4059-961f-45e04305c943")
 		)
 		(instances
-			(project "ThereminSensorAnalogPLL"
+			(project "RP2350_DDS_curr_sensing_sensor"
 				(path "/f295a831-110a-4671-83dc-e79cf5dd395a/3d1747b0-aa66-49d8-8176-ac1412e75a50"
 					(reference "TR1")
 					(unit 1)
@@ -9603,7 +9603,7 @@
 			(uuid "ba3fa9b4-0b58-4779-8b2b-2cfc18009ded")
 		)
 		(instances
-			(project "ThereminSensorAnalogPLL"
+			(project "RP2350_DDS_curr_sensing_sensor"
 				(path "/f295a831-110a-4671-83dc-e79cf5dd395a/3d1747b0-aa66-49d8-8176-ac1412e75a50"
 					(reference "C4")
 					(unit 1)
@@ -9680,7 +9680,7 @@
 			(uuid "db79a5aa-66ce-4cec-b3bd-1e5e1667b5e1")
 		)
 		(instances
-			(project "ThereminSensorAnalogPLL"
+			(project "RP2350_DDS_curr_sensing_sensor"
 				(path "/f295a831-110a-4671-83dc-e79cf5dd395a/3d1747b0-aa66-49d8-8176-ac1412e75a50"
 					(reference "R16")
 					(unit 1)
@@ -9759,7 +9759,7 @@
 			(uuid "407f3338-dcb6-421e-8b33-6d5f6df2c7e6")
 		)
 		(instances
-			(project "ThereminSensorAnalogPLL"
+			(project "RP2350_DDS_curr_sensing_sensor"
 				(path "/f295a831-110a-4671-83dc-e79cf5dd395a/3d1747b0-aa66-49d8-8176-ac1412e75a50"
 					(reference "R11")
 					(unit 1)
@@ -9842,7 +9842,7 @@
 			(uuid "06ac4dd1-8e59-47e0-8c1f-af27daccee28")
 		)
 		(instances
-			(project "ThereminSensorAnalogPLL"
+			(project "RP2350_DDS_curr_sensing_sensor"
 				(path "/f295a831-110a-4671-83dc-e79cf5dd395a/3d1747b0-aa66-49d8-8176-ac1412e75a50"
 					(reference "D1")
 					(unit 1)
@@ -9908,7 +9908,7 @@
 			(uuid "515d938c-62ef-4ec4-a89e-c56e8c48537b")
 		)
 		(instances
-			(project "ThereminSensorAnalogPLL"
+			(project "RP2350_DDS_curr_sensing_sensor"
 				(path "/f295a831-110a-4671-83dc-e79cf5dd395a/3d1747b0-aa66-49d8-8176-ac1412e75a50"
 					(reference "#PWR08")
 					(unit 1)
@@ -9974,7 +9974,7 @@
 			(uuid "04af6030-5c1f-4252-9d7b-2816f8018f7a")
 		)
 		(instances
-			(project "ThereminSensorAnalogPLL"
+			(project "RP2350_DDS_curr_sensing_sensor"
 				(path "/f295a831-110a-4671-83dc-e79cf5dd395a/3d1747b0-aa66-49d8-8176-ac1412e75a50"
 					(reference "#PWR016")
 					(unit 1)
@@ -10040,7 +10040,7 @@
 			(uuid "bc72b0b7-73f3-449a-9915-3c1202e7fa6e")
 		)
 		(instances
-			(project "ThereminSensorAnalogPLL"
+			(project "RP2350_DDS_curr_sensing_sensor"
 				(path "/f295a831-110a-4671-83dc-e79cf5dd395a/3d1747b0-aa66-49d8-8176-ac1412e75a50"
 					(reference "#PWR024")
 					(unit 1)
@@ -10131,7 +10131,7 @@
 			(uuid "b238602d-0133-4882-9990-fbad76377b01")
 		)
 		(instances
-			(project "ThereminSensorAnalogPLL"
+			(project "RP2350_DDS_curr_sensing_sensor"
 				(path "/f295a831-110a-4671-83dc-e79cf5dd395a/3d1747b0-aa66-49d8-8176-ac1412e75a50"
 					(reference "Q1")
 					(unit 1)
@@ -10197,7 +10197,7 @@
 			(uuid "b3719d79-c886-422c-b0c5-fff37975187f")
 		)
 		(instances
-			(project "ThereminSensorAnalogPLL"
+			(project "RP2350_DDS_curr_sensing_sensor"
 				(path "/f295a831-110a-4671-83dc-e79cf5dd395a/3d1747b0-aa66-49d8-8176-ac1412e75a50"
 					(reference "#PWR015")
 					(unit 1)
